@@ -1,0 +1,863 @@
+#!/usr/bin/env python
+"""
+Commmand to launch bonzai ntuple production
+"""
+
+#TODO:
+#  1. Make a function to restore/repair production database
+#  2. Add a --report-error option similar than --report but for errors.
+#  3. Evaluate the use of json file diff to determine the list of top-up runs instead of querying DAS.
+#  4. Add support to work without eos mount. Eos mount  is available only on lxplus.
+
+import argparse
+import sys
+import re
+import sqlite3
+import time
+import hashlib
+import os
+import das_client
+import os.path
+import datetime
+import operator
+import pwd
+import glob
+import urllib
+import tempfile
+import urllib
+import urllib2
+import platform
+import atexit
+import shutil
+import subprocess
+import socket
+from sets import Set
+from contextlib import contextmanager
+from threading import Timer
+from tempfile import mkdtemp
+#from shearslib import *
+from distutils.spawn import find_executable
+fake = False
+
+eos_cmd="/afs/cern.ch/project/eos/installation/pro/bin/eos.select"
+
+hostname = socket.gethostname()
+print "\nhostname = %s" % hostname
+# if(hostname.find("lpc") > 0):
+#     eos_mount_point="/eos/uscms/"
+# if(hostname.find("lxplus") > 0):
+#     eos_mount_point="/eos/cms/"
+eos_mount_point="/eos/cms/"
+print "eos_mount_point = %s" % eos_mount_point
+
+
+myself=os.path.realpath(__file__)
+mydir=os.path.dirname(myself)
+getlumi=mydir + "/getlumi"
+
+CMSSW = os.environ["CMSSW_BASE"]
+pruner_path=CMSSW + "/src/shears/Bonzais/Pruner/pruner"
+
+try:
+    from CRABAPI.RawCommand import crabCommand
+    from CRABClient.ClientExceptions import ClientException, TaskNotFoundException, CachefileNotFoundException, ConfigurationException, ConfigException, UsernameException, ProxyException
+except ImportError:
+    sys.stderr.write("\nFatal error: CRAB 3 environment needs to be set before running this script.\n")
+    sys.exit(1)
+
+from httplib import HTTPException
+from WMCore.Configuration import Configuration
+from WMCore.Configuration import loadConfigurationFile
+
+######################################################################
+# Miscellaneous functions
+#
+def getThePFNScontent(theDir):
+    try:
+        output = subprocess.check_output(["ls",theDir])
+        splitedOutput=re.split("\n",output)
+    except ValueError:
+        print "the directory is not good"
+    return splitedOutput
+
+def time2str(t):
+    """Convert unix time to human-readable text."""
+    return time.strftime("%Y-%m-%d-%T-%Z", time.localtime(t))
+
+def check_environment():
+    for f in [ "job_bonzai_prod.sh", "donothing_cfg.py" ]:
+        if not os.path.isfile(f):
+            print "File %s was not found. Copying file from %s." % (f, mydir)
+            try:
+                shutil.copyfile(mydir + "/" + f, "./" + f)
+            except IOError:
+                sys.stderr.write("File copy failed.\n")
+            #end try
+        #endif
+    #next f
+
+#
+######################################################################
+
+######################################################################
+# EOS tools
+#
+@contextmanager
+def eos_mount():
+    """Looks for EOS mount point and creates one if none was found."""
+    myusername = pwd.getpwuid(os.getuid())[0]
+
+    mountpoint = None
+    mymount = True
+    with open("/etc/mtab") as f:
+        pat = re.compile(r'eoscms.cern.ch ([^\s]+) fuse (?:[^\s]+,)*user=([^\s]+)')
+        for l in f:
+            m = pat.match(l)
+            if m:
+                (mountpoint_, user) = m.groups()
+                if user == myusername:
+                    mymount = False
+                    mountpoint = mountpoint_
+                    break;
+                #endif user
+             #endif m
+        #next l
+    #endwith
+    try:
+        if mymount:
+            mountpoint = mkdtemp(prefix='grow_bonzais')
+            rc = os.system(eos_cmd + " -b fuse mount " + mountpoint + " > /dev/null 2>&1 || { echo Failed to mount EOS; false; }  1>&2")
+            if rc != 0:
+                mountpoint = None
+            else:
+                print "EOS mounted under %s." % mountpoint
+            #endif
+        else:
+            print "Use eos mount found in %s" % mountpoint
+        #endif
+        yield mountpoint
+    finally:
+        if mymount and mountpoint:
+            print "Unmounting EOS from %s." % mountpoint
+            os.system("fusermount -u " + mountpoint)
+            os.rmdir(mountpoint)
+
+def eos_to_local_path(path):
+    myusername = pwd.getpwuid(os.getuid())[0]
+    #print "eos_to_local_path=%s" % path
+        
+    if path.find("/store/") == 0: #path: /store/...
+        if not eos_mount_point:
+            raise RuntimeError("Error: cannot proceed because of the EOS file system mounting failure.")
+        return eos_mount_point.rstrip("/") + path
+    elif path.find("/eos/") == 0: #path: /eos/...
+        #an eos path
+        if not eos_mount_point:
+            raise RuntimeError("Error: cannot proceed because of the EOS file system mounting failure.")
+        return path
+    else:
+        #not recognised as an eos path
+        return path
+    #endif
+#enddef
+
+def eos_to_eos_path(p):
+    """Remove the eos mount point from a path."""
+    storeIndex = p.find("/store/")
+    if  storeIndex == 0:
+        p = "root://cmsxrootd.fnal.gov/" + p
+    if storeIndex > 0:
+        p = "root://cmsxrootd.fnal.gov/" + p[storeIndex:len(p)]
+    return p
+#enddef
+
+# End of EOS tools
+######################################################################
+
+
+def ds_from_catname(catalog):
+    catalog_basename=os.path.basename(catalog)
+
+    catname_re = re.compile(r'B[ao][ao]babs-(.*)-[^-\s]*.*.txt')
+
+    m = catname_re.match(os.path.basename(catalog))
+
+    if not m:
+        sys.stderr.write("Format of catalog name, %s, is not valid. Correct format is Baobabs-<dataset>-all.txt\n" % catalog)
+        return None
+
+    return m.groups()[0]
+
+def cat_get_file_count(catalog):
+    f = open(eos_to_local_path(catalog))
+    nfiles = 0
+    for l in f:
+        l.strip(" \t\r\n")
+        if len(l[:-1]) > 0 and l[0] not in ['*', '#']:
+            nfiles += 1
+        #endif
+    #next l
+    return nfiles
+
+######################################################################
+# CRAB interface
+def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, outDir, deps):
+    """Builds the crab configuration file."""
+
+    catalog_basename = os.path.basename(catalog)
+
+#    catname_re = re.compile(r'Baobabs-([^-\s]+)-[^-\s]*.txt')
+    ds = ds_from_catname(catalog)
+
+    # print("\033[1;33m dataset is "+ds+"\033[1;37m")
+    # print("catalog path = "+catalog)
+
+    n_files = cat_get_file_count(catalog)
+
+    toks = outDir.split(":")
+    if len(toks) == 1:
+        storage_site = 'T2_CH_CERN'
+        dir_path = toks[0]
+    else:
+        storage_site = toks[0]
+        dir_path = toks[1]
+
+#    nJobs = nfiles  / filesPerJob
+#    if nfiles > nJobs * filesPerJob:
+#        nJobs += 1
+
+    crab_dir = "crabBonzai_%s-%s-%s" % (ds, selection, subselection)
+
+    if ds is None:
+        return
+
+    output_file = "Bonzai-%s-%s-%s.root" % (ds, selection, subselection)
+
+    config = Configuration()
+
+    config.section_('General')
+#----------------------------------------------------------------------
+
+#Switch for the copy of the results to the storage site.
+    config.General.transferOutputs = True
+
+#Whether or not to copy the job log files to the storage site.
+    config.General.transferLogs = True
+
+# Name of the project directory created by CRAB
+    config.General.requestName = "%s-%s-%s" % (ds, selection, subselection)
+
+# Crab task directory (see crab -d option)
+#    config.General.workArea = crab_dir
+
+    config.section_('JobType')
+#----------------------------------------------------------------------
+
+# Specifies if this task is running an analysis ('Analysis') on an existing dataset
+# or is running MC event generation ('PrivateMC')
+    config.JobType.pluginName = 'PrivateMC'
+
+# A user script that should be run on the worker node instead of the default cmsRun.
+# The user must ensure that a properly named framework job report file will be written;
+# this can be done e.g. by calling cmsRun within the script as
+# cmsRun -j FrameworkJobReport.xml -p PSet.py.
+    config.JobType.scriptExe = 'job_bonzai_prod.sh'
+    config.JobType.scriptArgs = ['sel=%s' % selection, 'subsel=%s' % subselection, 'output_file=%s' % output_file, 'input_catalog=%s' % input_file, 'files_per_job=%d' % filesPerJob ]
+
+# Allows use of non-production CMSSW version
+# (required for CMSSW_5_3_11 on slc6_amd64_gcc472)
+   #JobType.allowUndistributedCMSSW = True
+
+# CMSS Configuration file
+    config.JobType.psetName = 'donothing_cfg.py'
+
+# Private input files and directories needed by the jobs. Must be < 100 MB.
+    deps.append(input_file);
+    deps.append(pruner_path);
+    config.JobType.inputFiles = deps
+
+# Output files that need to be collected, besides default CMSSW outputs
+    config.JobType.outputFiles = [ output_file ]
+
+# Increase required time to run jobs (defaults to 1315)
+    config.JobType.maxJobRuntimeMin = 1400
+
+    config.section_('Data')
+#----------------------------------------------------------------------
+
+# Name of the dataset to analyze
+    #config.Data.inputDataset = 'none'
+
+# Output directory on the storage site (storage site defined in the Site section)
+    config.Data.outLFNDirBase = dir_path
+
+#Mode to use to split the task in jobs.
+# for 'Analysis' job type: 'FileBased', 'LumiBased' (recommended for real data), or 'EventAwareLumiBased'
+# for 'PrivateMC' job type: 'EventBased'
+# Should be set here to EventBased, although the splitting is done in files.
+    config.Data.splitting = 'EventBased'
+
+# Number of units (here number of files) to produce or process
+    config.Data.totalUnits =  n_files
+
+# Number of units (here number of files)  per job
+    config.Data.unitsPerJob = filesPerJob
+
+# Switch for publication of output data to DBS
+    config.Data.publication = False
+
+    config.section_('User')
+#----------------------------------------------------------------------
+
+    config.section_('Site')
+#----------------------------------------------------------------------
+
+#A list of sites where the jobs should not run.
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia']
+     
+#A list of sites where the jobs should run.
+    #config.Site.whitelist = [ 'T2_BE_IIHE' ]
+
+#Site where the output should be copied.
+# See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
+    config.Site.storageSite = storage_site
+
+    return config
+
+#
+# End of CRAB and DAS interface
+######################################################################
+
+
+
+######################################################################
+# Job submission tools
+#
+
+def tasks_prepare_and_submit(catalog, selection, subselection, filesPerJob, outDir):
+    """Submits crab jobs to produce the Bonzai ntuples."""
+
+    #dataset
+    ds = ds_from_catname(catalog)
+    #DJALOG
+    print "dataset: "+str(ds)
+    
+    if ds is None:
+        return
+    
+    task_input_catalog = "crabBonzai_%s-%s-%s_inputs.txt" % (ds, selection, subselection)
+    # print catalog
+    print "\npath to catalog:"
+    print eos_to_local_path(catalog)
+
+    try:
+        shutil.copyfile(eos_to_local_path(catalog), task_input_catalog);
+    except IOError, e:
+        sys.stderr.write("%s\n" % e)
+        return
+
+    deps = []
+
+    crab_config = crab_get_config(catalog, selection, subselection, task_input_catalog, filesPerJob, outDir, deps)
+
+    crab_config_file = "crabBonzai_%s-%s-%s.py" % (ds, selection, subselection)
+
+    f = open(crab_config_file, "w")
+    f.write(str(crab_config))
+    f.close()
+
+    if args.no_submit:
+        return
+    else:
+        tasks_submit_task(catalog, selection, subselection)
+    #endif
+#enddef
+
+
+def tasks_submit_task(catalog, selection, subselection, resubmission = False):
+    """Submit a task to CRAB"""
+
+    ds = ds_from_catname(catalog)
+
+    if ds is None:
+        return
+
+    crab_dir = "crabBonzai_%s-%s-%s" % (ds, selection, subselection)
+
+    crab_config_file = crab_dir + ".py"
+
+    try:
+        globs = {}
+        locs = {}
+        execfile(crab_config_file, globs, locs)
+        if resubmission:
+            print "Resubmitting dataset %s task %d..." % (prim_dataset, task_id)
+            res = crabCommand('resubmit', '-d', crab_dir)
+            print "Resubmission status: ", res['status']
+#            if res['status'] == 'SUCCESS':
+#                db_update_task_record(prim_dataset, task_id, {'status': 'resubmitted'})
+        else:
+            res = crabCommand('submit', config=locs['config'])
+            taskname = res['uniquerequestname']
+            print "Task name:", taskname
+
+            # print "Glidemon monitoring URL: http://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % urllib.quote_plus(taskname)
+            # print "Dashboard monitoring URL:http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=crab&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=%s" % urllib.quote_plus(taskname)
+
+
+#            try:
+#                props = {}
+#                for k in "uniquerequestname", "requestname":
+#                    props[k] = res[k]
+#                    props["status"] = "submitted"
+#                    props['ntuple_subdir'] = prim_dataset + "/" + props['requestname'] + "/" + props['uniquerequestname'].split(":")[0];
+#                    db_update_task_record(prim_dataset, task_id, props)
+#            except KeyError:
+#                sys.stderr.write("\nError while submitting job for dataset %s. No requestname was returned.\n" % prim_dataset)
+#                db_update_task_record(prim_dataset, task_id, { "status": "submission_error"})
+    except HTTPException, e:
+#        db_update_task_record(prim_dataset, task_id, { "status": "submission_error"})
+        print e.headers
+    except ClientException, e:
+#        db_update_task_record(prim_dataset, task_id, { "status": "submission_error"})
+        print e
+#enddef
+
+# End of task submission tools
+######################################################################
+
+
+######################################################################
+# Ntuple catalog management
+
+def catalog_read_boabab_catalog_header(baobab_catalog):
+    '''Reads information located in the header of a baobab catalog file.'''
+
+    baobab_catalog = eos_to_local_path(baobab_catalog)
+
+    pds_line     = re.compile('^\s*#\s*primary dataset[:\s=]+([^\s]+)')
+    dtype_line   = re.compile('^\s*#\s*data type[:\s=]+([^\s]+)')
+    nevents_line = re.compile('^\s*#\s*processed events[:\s=]+([^\s]+)')
+    nfiles_line  = re.compile('^\s*#\s*processed files[:\s=]+([^\s]+)')
+    lumi_line    = re.compile('^\s*#\s*lumi[:\s=]+([\d]*.[\d]+|[\d]+.?).*')
+    xsec_line    = re.compile('^\s*#\s*sample[\s]+xsec[:\s=]+([\d]*.[\d]+|[\d]+.?).*')
+    task_block_start = re.compile('^\s*#\s*task id[:\s=]+([\d]*).*')
+    comment_line = re.compile('^\s*#')
+    no_comment_or_header_line = re.compile('^\s*[^#*]')
+
+    pds     = ""
+    dtype   = ""
+    nevents = ""
+    nfiles  = ""
+    lumi    = ""
+    xsec    = ""
+
+    with open(baobab_catalog) as fin:
+        file_section_task_id = -1
+        for l in fin:
+            l.strip()
+
+            m = task_block_start.match(l)
+            if m:
+                break
+
+            m = no_comment_or_header_line.match(l)
+            if m:
+                break
+
+            m = pds_line.match(l)
+            if m:
+                pds = m.groups()[0]
+                continue
+
+            m = dtype_line.match(l)
+            if m:
+                dtype = m.groups()[0]
+                continue
+
+            m = nevents_line.match(l)
+            if m:
+                nevents = m.groups()[0]
+                continue
+
+            m = nfiles_line.match(l)
+            if m:
+                nfiles = m.groups()[0]
+                continue
+
+            m = lumi_line.match(l)
+            if m:
+                lumi = m.groups()[0]
+                continue
+
+            m = xsec_line.match(l)
+            if m:
+                xsec = m.groups()[0]
+                continue
+    #endwidth
+
+    return {'primary_dataset': pds, 'datatype': dtype, 'primary_events': nevents, 'primary_files': nfiles,
+            'luminosity': lumi, 'xsec': xsec }
+#enddef
+
+def read_xsec(fname, sample):
+    """Reads a sample cross section table file. fname is the file path and sample the sample name. Returns None if the cross section value was not found."""
+    res = None
+    f = open(fname)
+    for il, l in enumerate(f):
+        l = l.strip()
+        if len(l) == 0 or l[0] == "#":
+            continue
+        cols = l.split()
+        if len(cols) < 2:
+            sys.stderr.write("Syntax error in line %d of cross section file %s.\n" % (il+1, fname))
+            continue
+        #endif
+        if cols[0] == sample:
+              val = float(cols[1])
+              if res is not None and res != val:
+                   sys.stderr.write("Cross section of sample %s is specified several times with differennt values in file %s.\n" % fname)
+              res = val
+        #endif
+     #next il, l
+    return res
+#enddef
+
+
+def _catalog_make_bonzai_catalog(baobab_catalog, ntuple_dir, sel, subsel):
+    '''Produces a bonzai ntuple catalog'''
+    print("~~~~~~~ Making catalog! ~~~~~~~")
+
+    print("ntuple_dir="+ntuple_dir)
+    ntuple_dir_path = eos_to_local_path(ntuple_dir)
+    print("ntuple_dir_path="+ntuple_dir_path)
+
+    dataset = ds_from_catname(baobab_catalog)
+    print "dataset=%s" % dataset
+
+    print("baobab_catalog="+baobab_catalog)
+    info = catalog_read_boabab_catalog_header(baobab_catalog)
+    print("\ninfo=")
+    print(info)
+
+    if not ntuple_dir_path:
+        sys.stderr("\nNot EOS mount point found. A mount point is needed to access the %d directory\n" % dirpath)
+        conn.close()
+        return None
+
+    cat_dir_path = os.path.dirname(os.path.dirname(ntuple_dir_path + "/")) + "/Catalogs/"
+    print("\ncat_dir_path="+cat_dir_path)
+
+
+    print "sel=%s" % sel
+    print "subsel=%s" % subsel
+
+    ntuple_subdir = 'CRAB_PrivateMC/crab_%s-%s-%s' % (dataset, sel, subsel)
+    print("ntuple_subdir="+ntuple_subdir)
+
+    
+    print "\nFull Directory to check:\n%s\n" % (ntuple_dir_path+'/'+ntuple_subdir)
+
+    checkDirectory=(getThePFNScontent(ntuple_dir_path+'/'+ntuple_subdir))[:-1]
+    print("checkDirectory = %s" % checkDirectory)
+    # print(checkDirectory)
+
+
+    #if not os.path.isdir(ntuple_dir_path + "/" + ntuple_subdir):
+    #    sys.stderr.write("Directory %s was not found!\n\n" % (ntuple_dir_path + "/" + ntuple_subdir))
+#        return
+
+#    mtime = lambda f: os.stat(ntuple_dir_path + "/" + ntuple_subdir + "/" + f).st_mtime
+#    subdirs = sorted(os.listdir(ntuple_dir_path + "/" + ntuple_subdir), key=mtime)
+    subdirs = checkDirectory
+    if len(subdirs) == 0:
+        sys.stderr.write("Directory %s is empty!\n" % ntuple_dir)
+        return
+
+    if len(subdirs) > 1:
+          sys.stderr.write("Warning: directory %s contains several directories! Ntuple from the most recent one, %s, will be used.\n\n" % (ntuple_subdir, subdirs[-1]))
+
+    ntuple_subdir = ntuple_subdir + "/" +  subdirs[-1]
+    print("ntuple_subdir="+ntuple_subdir)
+
+#creates directory if it does not exist as it should
+    try:
+        os.mkdir(cat_dir_path)
+    except OSError:
+        pass
+    print("\nbaobab_catalog="+baobab_catalog)
+    bonzai_catalog_basename = os.path.basename(baobab_catalog)
+    # print("bonzai_catalog_basename="+bonzai_catalog_basename)
+    
+    r = re.compile(r'(.*)\.txt')
+    m = r.match(bonzai_catalog_basename)
+    if m:
+        bonzai_catalog_basename = m.groups()[0]
+
+    r = re.compile(r'B[oa][oa]babs?[-_]?(.*)')
+    m = r.match(bonzai_catalog_basename)
+    if m:
+        bonzai_catalog_basename = m.groups()[0]
+
+    bonzai_catalog_basename = 'Bonzais-%s-%s-%s.txt' % (bonzai_catalog_basename, sel, subsel)
+
+    bonzai_catalog = cat_dir_path + bonzai_catalog_basename
+    print("bonzai_catalog="+bonzai_catalog)
+
+    xsec = None
+    if args.cross_sections:
+        if len(info['primary_dataset'].strip()) == 0:
+            sys.stderr.write("Primary dataset information, which is required to retrieve the sample cross section, is missing from the Boabab catalog %f.\n" % baobab_catalog)
+        try:
+            xsec = read_xsec(args.cross_sections, info['primary_dataset'])
+        except IOError, e:
+            print e
+        if xsec is None:
+            if len(info['xsec']) != 0:
+                sys.stderr.write("Failed to get cross section value from file %s for the dataset %s. The value %f found in the Baobab catalog will be used.\n" %  (args.cross_sections, info['primary_dataset'], info['xsec']))
+            else:
+                sys.stderr.write("Failed to get cross section value from file %s for the dataset %s.\n" %  (args.cross_sections, info['primary_dataset']))
+        #endif
+    #endif
+    if xsec is None:
+        xsec = info['xsec']
+
+    print "\nxsec=%s" % xsec
+
+
+    fout = open(bonzai_catalog, "w")
+
+    fout.write('''# primary dataset: %s
+    * data type: %s
+    * primary events: %s
+    * primary files: %s
+    * lumi: %s
+    * sample xsec: %s\n\n''' % (info['primary_dataset'], info['datatype'], info['primary_events'], info['primary_files'], info['luminosity'], xsec))
+
+    ntuple_pattern = ntuple_dir_path + "/" + ntuple_subdir + "/*/Bonzai*.root"
+    print("ntuple_pattern="+ntuple_pattern)
+
+    print "\n >>>>> Looking for ntuples with path like \n%s\n" % ntuple_pattern
+    for ntf in glob.glob(ntuple_pattern):
+        statinfo = os.stat(ntf)
+        eos_path = eos_to_eos_path(ntf)
+        print "eos_path=%s" % eos_path
+        fout.write("%s %d %s\n" % (eos_path, statinfo.st_size, time2str(statinfo.st_mtime)))
+
+    fout.close()
+    return eos_to_eos_path(bonzai_catalog)
+#enddef catalog_make_bonzai_catalog
+
+def catalog_make_bonzai_catalog(task_list_file):
+    '''Produces a bonzai catalog.'''
+    tasks = read_bonzai_task_list(task_list_file)
+    for t in tasks:
+        (catalog, selection, subselection, filesPerJob, outDir) = t
+        print("catalog=%s"%catalog)
+        print("selection=%s"%selection)
+        print("subselection=%s"%subselection)
+        print("filesPerJob=%s"%filesPerJob)
+        print("outDir=%s\n"%outDir)
+        catname = _catalog_make_bonzai_catalog(catalog, outDir, selection, subselection)
+        print "\n>>>>>>> Catalog created:\n%s" % catname
+#endef catalog_make_bonzai_catalog
+#
+######################################################################
+
+######################################################################
+# Upper level production management tools
+#
+def read_bonzai_task_list(task_list_file):
+    '''Reads and interpreat a Bonzai task list file'''
+
+    tasks = []
+
+    commentLine = re.compile(r'^\s*^#')
+
+    f = open(task_list_file)
+
+    baseDirLine = re.compile(r'[*#]\s*base directory[:\s=]+\s*([^\s]+)')
+    outDirLine = re.compile(r'[*#]\s*output directory[:\s=]+\s*([^\s]+)')
+    print ""
+    baseDir = ""
+    outDir = ""
+    for i, l in enumerate(f):
+        l = l.strip()
+        m = baseDirLine.match(l)
+        if m:
+            baseDir = eos_to_local_path(m.groups()[0])
+            print baseDir
+            continue
+
+        m = outDirLine.match(l)
+        if m:
+            outDir = m.groups()[0].split(":")[1]
+            print outDir
+            continue
+
+        if (len(l) == 0) or l[0] == '#':
+            continue
+
+        if l[0] == '*':
+            sys.stderr.write("Line %d of file %d was not understood.\n\n" % (i+1, job_list))
+            continue;
+
+        toks = re.split(r'\s+', l)
+        if len(toks) != 4:
+            print ">", l,  "<"
+            sys.stderr.write("Job specification not recognized in line %d of file %s\n" % (i+1, job_list))
+            continue
+        #endif
+        (catalog, selection, subselection, filesPerJob) = toks
+        if catalog[0] != '/':
+            if not baseDir:
+                sys.stderr.write("Base directory required for line %d of file %s. Is '* base directory: ...' line missing?\n\n" %
+                                 (i+1, job_list))
+                continue
+            #endif
+            catalog = baseDir + "/" + catalog
+        #endif
+        filesPerJob = int(filesPerJob)
+        tasks.append([catalog, selection, subselection, filesPerJob, outDir])
+    #next i, l
+    print "tasks:\n"+str(tasks)+"\n"
+    return tasks
+
+#enddef read_bonzai_task_list
+
+def prod_process_bonzai_tasks(task_list):
+    tasks = read_bonzai_task_list(task_list)
+    for t in tasks:
+        tasks_prepare_and_submit(*t)
+
+### def prod_process_bonzai_tasks(job_list):
+###
+###     commentLine = re.compile(r'^\s*^#')
+###
+###     f = open(job_list)
+###
+###     baseDirLine = re.compile(r'[*#]\s*base directory[:\s=]+\s*([^\s]+)')
+###     outDirLine = re.compile(r'[*#]\s*output directory[:\s=]+\s*([^\s]+)')
+###
+###     baseDir = ""
+###     outDir = ""
+###     for i, l in enumerate(f):
+###         l = l.strip()
+###         m = baseDirLine.match(l)
+###         if m:
+###             baseDir = eos_to_local_path(m.groups()[0])
+###             continue
+###
+###         m = outDirLine.match(l)
+###         if m:
+###             outDir = m.groups()[0]
+###             continue
+###
+###         if (len(l) == 0) or l[0] == '#':
+###             continue
+###
+###         if l[0] == '*':
+###             sys.stderr.write("Line %d of file %d was not understood.\n\n" % (i+1, job_list))
+###             continue;
+###
+###         toks = re.split(r'\s+', l)
+###         if len(toks) != 4:
+###             print ">", l,  "<"
+###             sys.stderr.write("Job specification not recognized in line %d of file %s\n" % (i+1, job_list))
+###             continue
+###         #endif
+###         (catalog, selection, subselection, filesPerJob) = toks
+###         if catalog[0] != '/':
+###             if not baseDir:
+###                 sys.stderr.write("Base directory required for line %d of file %s. Is '* base directory: ...' line missing?\n\n" %
+###                                  (i+1, job_list))
+###                 continue
+###             #endif
+###             catalog = baseDir + "/" + catalog
+###         #endif
+###         filesPerJob = int(filesPerJob)
+###         tasks_prepare_and_submit(catalog, selection, subselection, filesPerJob, outDir)
+###     #next i, l
+### #enddef prod_process_job_list
+
+# Upper level production management tools
+######################################################################
+
+def parse_command_line():
+    """Parse the command line parser"""
+    parser = argparse.ArgumentParser(description='Launch baobab nutple production.')
+
+    parser.add_argument('--task-list', action='store', default=None,
+                        help='Specifies the file containing the list of task to submit. The file must contain one task specification per line. The specificaiton consist of three space-separated value: catalog of input files, pruner selection, pruner subselection. The catalog can be an eos path (/store/...).')
+
+#    parser.add_argument('--output-dir', action = 'store', default = None,
+#                        help='Specifies the EOS base directory for the ouput.')
+
+    parser.add_argument('--no-submit', action='store_true',
+                        help="Option to disable job submission. With this option active, the crab configuration files will be generated, but the crab submit command will not be called")
+
+    parser.add_argument('--make-catalogs', action='store', metavar='FILE',
+                        help="Command to produce the catalogs of produced bonzai ntuples of the tasks listed in FILE.")
+
+    parser.add_argument('--cross-sections', action='store', metavar='FILE',
+                        help="To be used with --make-catalog command. Takes the cross section value from the cross section table FILE instead of the one from the boabab catalog. The file FILE should contain one line per data set, with the data set name followed by the cross section value in pb and separated by a unlimited number of space or tabulation. Lines starting with a # sign are considered as comment lines and are ignored.")
+    return parser.parse_args()
+#enddef
+
+def main():
+    """Entry function. Parses the command line, sets the environment up and calls the run function."""
+
+    global args
+    global eos_mount_point
+    
+    args = parse_command_line()
+
+    if (args.task_list is None) and (args.make_catalogs is None):
+        sys.stderr.write("The list of tasks must be provided with the option --task-list")
+
+#    if args.output_dir is None:
+#        sys.stderr.write("The EOS base directory to write the bonzais to  must be provided with the option --output-dir")
+
+    #with eos_mount() as eos_mount_point:
+    if not eos_mount_point:
+        sys.stderr.write("\nWarning: failed to mount the EOS file system. Some functionalities will not work.\n\n")
+
+    if eos_mount_point:
+        if not os.path.isfile(pruner_path):
+            if not os.path.isdir(os.path.dirname(pruner_path)):
+                print "The pruner directory, %s, was not found.\n\n" % os.path.dirname(pruner_path)
+                sys.exit(1)
+            #endif
+            print "The pruner executable was not found, trying to compile it in %s." % os.path.dirname(pruner_path)
+            os.system("cd %s && make" % os.path.dirname(pruner_path))
+            if not os.path.isfile(pruner_path):
+                sys.stderr.write("Compilation failed.\n\n")
+                sys.exit(1)
+            #endif
+        #endif
+
+        if args.make_catalogs:
+            catalog_make_bonzai_catalog(args.make_catalogs)
+            return
+
+        check_environment()
+
+        if not args.task_list:
+            sys.stderr.write("A task list must be specified with the --task-list option.\n\n")
+            sys.exit(1)
+
+        if not os.path.isfile(args.task_list):
+            sys.stderr.write("The supplied task list file, %s, was not found!\n\n" % args.task_list)
+            sys.exit(1)
+
+        prod_process_bonzai_tasks(args.task_list)
+
+    #endwith
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt, e:
+        print "\nBye!"
+        pass

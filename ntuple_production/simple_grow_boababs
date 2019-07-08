@@ -1,0 +1,409 @@
+#!/usr/bin/env python
+"""
+Commmand to launch baobab ntuple production
+"""
+import argparse
+import sys
+import re
+import glob
+import os
+import os.path
+import pwd
+import socket
+
+try:
+    from CRABAPI.RawCommand import crabCommand
+except ImportError:
+    sys.stderr.write("\nCRAB 3 environment needs to be set before running this script and before setting the CMSSW environment (cmsenv or scram runtime).\n\n")
+    sys.exit(1)
+
+from httplib import HTTPException
+from WMCore.Configuration import Configuration
+
+CMSSW = os.environ["CMSSW_BASE"]
+#input_json_file=CMSSW + "/src/shears/ntuple_production/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
+input_json_file=CMSSW + "/src/shears/ntuple_production/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
+
+hostname = socket.gethostname()
+print "\nhostname = %s" % hostname
+#if(hostname.find("lxplus") > 0):
+#    eos_mount_point="/eos/cms/"
+#    print "eos_mount_point = %s" % eos_mount_point
+# for now just setting eos_mount_point because if statement isn't working
+eos_mount_point="/eos/cms/"
+print "eos_mount_point = %s" % eos_mount_point
+
+def getLumiMaskJsonFile():
+    """Gets the input json file indicating the certified luminosity section which can be processed."""
+    candidates = glob.glob(input_json_file)
+    latest_ts = 0
+    latest_file = None
+    for f in candidates:
+        ts = os.path.getmtime(f)
+        if ts > latest_ts:
+            latest_file = f
+            latest_ts = ts
+    if not latest_file:
+        raise RuntimeError("JSON file required to process real data was not found. We have looked for files named %s" % input_json_file)
+    return latest_file
+
+
+def checkDataSetName(dataset):
+    a = dataset.split("/")
+    if len(a) != 4:
+        sys.stderr.write("Dataset name must contains three part /primary_dataset/conditions/tier")
+        return False
+    p = re.compile("MINIAOD(|SIM)")
+    if not p.match(a[3]):
+        sys.stderr.write("Only MINIAOD and MINIOADSIM data tiers are supported.")
+        return False
+    return True
+
+def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
+    """Build the crab configuration file."""
+    
+    dataset_tier = dataset.split("/")[3]
+
+    if dataset_tier.find("SIM") > 0:
+        isMC = True
+    else:
+        isMC = False
+    #endif
+    
+    config = Configuration()
+
+    config.section_('General')
+#----------------------------------------------------------------------
+
+#Request name. Used to identify job batch and to name the result directory    
+    #config.General.requestName = dataset.split('/')[1]+("_%04d"%iDataset)
+    if isMC:
+        config.General.requestName = dataset.split('/')[1]
+    else:
+        config.General.requestName = dataset.split('/')[1]+"_"+dataset.split("/")[2]#+("_%04d"%iDataset)
+    #config.General.requestName = dataset.split('/')[1]+"_"+dataset.split("/")[2]
+
+#Switch for the copy of the results to the storage site.
+    config.General.transferOutputs = True
+
+#Whether or not to copy the job log files to the storage site.
+    config.General.transferLogs = True
+
+    config.section_('JobType')
+#----------------------------------------------------------------------
+
+    # Running an analysis over a data set
+    config.JobType.pluginName = 'Analysis'
+
+# CMSS Configuration file
+    config.JobType.psetName = 'grow_baobabs_cfg.py'
+    # config.JobType.psetName = 'simple_run_cfg.py'
+#    config.JobType.psetName = 'pset.py'
+
+#Need to add the L1PreFire root file
+    #inputs = []
+    #prefireFile = "L1PrefiringMaps_new.root"
+    #inputs.append(prefireFile)
+    #config.JobType.inputFiles = inputs 
+
+    # Increase required time to run jobs (defaults to 1315)
+    config.JobType.maxJobRuntimeMin = 1400
+
+    # Specify options for cfg file (as one would on command line)
+    #config.JobType.pyCfgParams = ["maxEvents=-1"]
+
+    config.section_('Data')
+#----------------------------------------------------------------------
+# Name of the dataset to analyze
+    config.Data.inputDataset = dataset
+
+# List of certified luminosity section, which can be processed
+# (applies to real data only)
+    if not isMC:
+        config.Data.lumiMask = getLumiMaskJsonFile()
+
+# Output directory on the storage site (storage site defined in the Site section)
+    print "Out Dir: %s\n" % outDir.split(":")[1]
+    config.Data.outLFNDirBase = outDir.split(":")[1]
+
+#Mode to use to split the task in jobs. 
+# for 'Analysis' job type: 'FileBased', 'LumiBased' (recommended for real data), or 'EventAwareLumiBased'
+# for 'PrivateMC' job type: 'EventBased'
+    if isMC:
+        config.Data.splitting = 'FileBased'
+    else:
+        config.Data.splitting = 'EventAwareLumiBased'
+
+# Number of units to produce or process
+    if maxEvents and maxEvents > 0:
+        config.Data.totalUnits = maxEvents
+        if maxEvents < unitsPerJob:
+            unitsPerJob = maxEvents
+
+# Number of units (events in case of PrivateMC)  per job
+    config.Data.unitsPerJob = unitsPerJob
+
+# Switch for publication of output data to DBS
+    config.Data.publication = False
+
+    config.section_('User')
+#----------------------------------------------------------------------
+    
+    config.section_('Site')
+#----------------------------------------------------------------------
+
+#A list of sites where the jobs should not run.
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia']
+    
+    #This does not seem to be a good idea since not all the files are in the US sites.
+    #config.Site.whitelist = ["T2_US*","T3_US*"]
+
+#Site where the output should be copied. 
+# See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
+    #config.Site.storageSite = 'T2_CH_CERN'
+    print "Storage site = %s" % outDir.split(":")[0]
+    config.Site.storageSite = outDir.split(":")[0]
+    
+    return config
+
+def submitJobs(dataset, iDataset, unitsPerJob, outDir, maxEvents, no_submit):
+    """Submit crab jobs to produce the Baobab ntuple from a provided dataset."""
+    crab_config = getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents)
+
+    dataset_tier = dataset.split("/")[3]
+    if dataset_tier.find("SIM") > 0:
+        isMC = True
+    else:
+        isMC = False
+
+    #crab_cfg_file = "crab_" + dataset.split("/")[1] + ("_%04d" % iDataset)+".py"
+    #crab_cfg_file = "crab_" + dataset.split("/")[1] + "_" + dataset.split("/")[2] + ".py"
+    if isMC:
+        crab_cfg_file = "crab_" + dataset.split("/")[1] + ".py"
+    else:
+        crab_cfg_file = "crab_" + dataset.split("/")[1] + "_" + dataset.split("/")[2] + ".py"
+    f = open(crab_cfg_file, "w")
+    f.write(str(crab_config))
+    f.close()
+
+    if no_submit:
+        print "Crab configuration file %s created." % crab_cfg_file
+        return
+
+    try:
+        res = crabCommand('submit', config = crab_config)
+        print res
+    except HTTPException, e:
+        print e.headers
+
+def eos_to_local_path(path):
+    myusername = pwd.getpwuid(os.getuid())[0]
+    print "eos_to_local_path=%s" % path
+        
+    if path.find("/store/") == 0: #path: /store/...
+        if not eos_mount_point:
+            raise RuntimeError("Error: cannot proceed because of the EOS file system mounting failure.")
+        return eos_mount_point.rstrip("/") + path
+    elif path.find("/eos/") == 0: #path: /eos/...
+        #an eos path
+        if not eos_mount_point:
+            raise RuntimeError("Error: cannot proceed because of the EOS file system mounting failure.")
+        return path
+    else:
+        #not recognised as an eos path
+        return path
+
+def eos_to_eos_path(path):
+    if path.find("/store/") == 0: #path: /store/...
+        return path
+    elif path.find("/eos/") == 0: #path: /eos/...
+        path = path[path.find("/store"):len(path)]
+        return path
+
+
+def GetNTupleSubDirectories(directory):
+    subDirectory=""
+    
+    return subDirectory
+
+def catalog_make_ntuple_catalog(dataset, ntuple_dir):
+
+    datatype=0
+    ntuple_subdir=0
+    
+    prim_dataset = dataset.split("/")[1]
+    reco_dataset = dataset.split("/")[2]
+    dataset_tier = dataset.split("/")[3]
+    if dataset_tier.find("SIM") > 0:
+        datatype = 'mc'
+    else:
+        datatype = 'data'
+
+    ntuple_dir_path = eos_to_local_path(ntuple_dir)
+
+    if not ntuple_dir_path:
+        sys.stderr("\nNo EOS mount point found. A mount point is needed to access the directory\n")
+        return None
+    print "ntuple_dir_path=%s" % ntuple_dir_path
+
+    cat_dir_path = os.path.dirname(os.path.dirname(ntuple_dir_path + "/")) + "/Catalogs"
+    print "\ncat_dir_path=%s" % cat_dir_path
+
+    # Find out the ntuple subdirectory here
+    #ntuple_subdir = GetNTupleSubDirectories(cat_dir_path)
+    #ntuple_dir_path += "/" + ntuple_subdir
+
+
+    #creates directory if it does not exist as it should
+    try:
+        os.mkdir(cat_dir_path)
+    except OSError:
+        pass
+
+
+
+    def write_file_header(fout, prim_dataset, datatype, processed_events, processed_files, lumi, xsec):
+        if xsec:
+            xsec_str = "# sample xsec: %s\n" % xsec
+        else:
+            xsec_str = ""
+        #endif
+        fout.write('''# primary dataset: %s
+# data type: %s
+# processed events: %s
+# processed files: %s
+# lumi: %s
+%s
+''' % (prim_dataset, datatype, str(processed_events or ''), str(processed_files or ''), str(lumi or ''), xsec_str))
+    #enddef
+        
+
+
+    cat_alltasks = cat_dir_path + "/Baobabs-%s-all.txt" % prim_dataset
+    print "cat_alltasks=%s" % cat_alltasks
+
+    fout_thistask = open(cat_alltasks, "w")
+
+    nevents=-1
+    nfiles=-1
+    lumi=-1
+    xsec=0
+    write_file_header(fout_thistask, prim_dataset, datatype, nevents, nfiles, lumi, xsec)
+
+    task_id=0
+    date=""
+    nevents=-1
+    nfiles=-1
+    lumi=None
+
+    fout_thistask.write('''
+# task id: %d
+# task submission date: %s
+# reco dataset: %s
+# task nevents: %d
+# task nfiles: %d
+# task lumi: %s /pb\n
+'''     % (task_id, date, reco_dataset, nevents, nfiles, str(lumi)))
+ 
+    
+    files = glob.glob(ntuple_dir_path +"/"+ prim_dataset+"/*/*/*/ntupleOut_*.root")
+    print "Number of root files = %s" % len(files)
+    for ntf in files:
+        
+        statinfo = os.stat(ntf)
+        eos_path = eos_to_eos_path(ntf)
+        #print eos_path
+        fout_thistask.write("%s\n" % (eos_path))
+
+
+    try:
+        fout_thistask.close()
+        sys.stdout.write("\nNtuple catalog written to %s\n" % (cat_alltasks))
+    except IOError, e:
+        sys.stderr.write("\nError. Failed to write new catalog file for primary dataset %s to include ntuples of task %d.\n" % (prim_dataset, task_id))
+        return None
+
+    return
+#enddef catalog_make_ntuple_catalog
+
+
+
+def main(arguments):
+
+    parser = argparse.ArgumentParser(description='Tool from the Shears framwork [1] to launch a Baobab nutple production on the GRID.', epilog='[1]  https://twiki.cern.ch/twiki/bin/viewauth/CMS/ShearsAnalysisFramework')
+
+    parser.add_argument('dataset_catalogs', nargs='+',
+                        help='Catalog files containing the list of CMS datasets to process')
+    
+    parser.add_argument('--max-events', type=int, action='store', default=-1,
+                        help='Specify the maximum number of events to process for each dataset. The default is to process to full dataset.')
+    
+    parser.add_argument('--unitsPerJob', type=int, action='store', default = 100000,
+                        help='Specify the number of units per job (based on data splitting)')
+    
+    parser.add_argument('--no-submit', action='store_true',
+                        help='With this option the crab configuration files are created but the crab tasks are not submitted')
+    parser.add_argument('--make-catalogs', action='store_true',
+                        help='Make catalog files. Not fully implemented. Mostly for MC.')
+    args = parser.parse_args()
+
+
+    outDirLine = re.compile(r'#\s*output directory[:\s=]+\s*([^\s]+)')
+    commentLine = re.compile(r'^\s*^#')
+    
+    for dataset_catalog in args.dataset_catalogs:
+        try:
+            f = open(dataset_catalog)
+        except IOError, e:
+            print e
+            continue
+        outDir = None
+
+        #Run through the file and look for the output directory
+        for dataset in f:
+            m = outDirLine.match(dataset)
+            if m and len(m.groups()) > 0:
+                outDir = m.groups()[0]
+            elif not outDir:
+                sys.stderr.write('''Fatal error while processing dataset catalog '%s'.
+Output directory line is missing from the input dataset catalog.
+The line should be before any dataset name and should have the following format:
+# output directory: /store/group/phys_smp/AnalysisFramework/Baobab/.../ntuples.
+''' % dataset_catalog)
+                break
+
+
+        if(len(outDir.split(":")) < 2):
+            print "Please put the storage site in the output directory argument as:\n output directory: site:/store/user/..."
+            exit(1)
+
+
+        f.seek(0)
+        if not args.make_catalogs:
+            iDataset=0
+            for dataset in f:
+                dataset=dataset.strip()
+                if len(dataset) == 0 or commentLine.match(dataset):
+                    continue
+                if checkDataSetName(dataset):
+                    submitJobs(dataset, iDataset, args.unitsPerJob, outDir, args.max_events, args.no_submit)
+                iDataset+=1
+
+        f.seek(0)
+        if args.make_catalogs:
+
+            iDataset=0
+            for dataset in f:
+                dataset=dataset.strip()
+                if len(dataset) == 0 or commentLine.match(dataset):
+                    continue
+                if checkDataSetName(dataset):
+                    print "\ndataset = %s" % dataset
+                    print "outDir = %s" % outDir
+                    catalog_make_ntuple_catalog(dataset, outDir.split(":")[1])
+                iDataset+=1
+            
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
+
