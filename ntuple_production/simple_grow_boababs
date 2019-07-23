@@ -21,8 +21,11 @@ from httplib import HTTPException
 from WMCore.Configuration import Configuration
 
 CMSSW = os.environ["CMSSW_BASE"]
+
 #input_json_file=CMSSW + "/src/shears/ntuple_production/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
-input_json_file=CMSSW + "/src/shears/ntuple_production/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
+
+# 2017 Golden JSON
+input_json_file=CMSSW + "/src/shears/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
 
 hostname = socket.gethostname()
 print "\nhostname = %s" % hostname
@@ -66,8 +69,10 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
 
     if dataset_tier.find("SIM") > 0:
         isMC = True
+        print "Input dataset is recognized as MC"
     else:
         isMC = False
+        print "Input dataset is NOT recognized as MC"
     #endif
     
     config = Configuration()
@@ -110,7 +115,12 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
     config.JobType.maxJobRuntimeMin = 1400
 
     # Specify options for cfg file (as one would on command line)
-    #config.JobType.pyCfgParams = ["maxEvents=-1"]
+    # Change the year according to what dataset you are processing!
+    year = 2017
+    if isMC:
+        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isMC=1"]
+    else:
+        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isMC=0"]
 
     config.section_('Data')
 #----------------------------------------------------------------------
@@ -121,9 +131,10 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
 # (applies to real data only)
     if not isMC:
         config.Data.lumiMask = getLumiMaskJsonFile()
+        print ("Using this JSON file as lumi mask: "+str(input_json_file))
 
 # Output directory on the storage site (storage site defined in the Site section)
-    print "Out Dir: %s\n" % outDir.split(":")[1]
+    print "Output Dir: %s\n" % outDir.split(":")[1]
     config.Data.outLFNDirBase = outDir.split(":")[1]
 
 #Mode to use to split the task in jobs. 
@@ -176,8 +187,6 @@ def submitJobs(dataset, iDataset, unitsPerJob, outDir, maxEvents, no_submit):
     else:
         isMC = False
 
-    #crab_cfg_file = "crab_" + dataset.split("/")[1] + ("_%04d" % iDataset)+".py"
-    #crab_cfg_file = "crab_" + dataset.split("/")[1] + "_" + dataset.split("/")[2] + ".py"
     if isMC:
         crab_cfg_file = "crab_" + dataset.split("/")[1] + ".py"
     else:

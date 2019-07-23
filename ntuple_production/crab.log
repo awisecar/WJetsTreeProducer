@@ -1,4 +1,0 @@
-DEBUG 2019-07-08 12:32:12,710: 	 Executing command: 'status'
-DEBUG 2019-07-08 12:32:12,711: 	 Found CRAB cache file /afs/cern.ch/user/a/awisecar/.crab3
-DEBUG 2019-07-08 12:32:57,701: 	 Executing command: 'report'
-DEBUG 2019-07-08 12:32:57,701: 	 Found CRAB cache file /afs/cern.ch/user/a/awisecar/.crab3

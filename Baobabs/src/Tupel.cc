@@ -26,11 +26,7 @@
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "PhysicsTools/PatUtils/interface/TriggerHelper.h"
-#include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 #include "CondFormats/DataRecord/interface/HBHENegativeEFilterRcd.h"
-#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
-#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
-#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/Common/interface/ValueMap.h"
 #include "DataFormats/Common/interface/Handle.h"
@@ -43,6 +39,7 @@
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
@@ -56,17 +53,25 @@
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/BTauReco/interface/JetTag.h"
-#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
-#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
-#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
-#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
-#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+
 #include "EgammaAnalysis/ElectronTools/interface/EGammaCutBasedEleId.h"
 #include "EgammaAnalysis/ElectronTools/interface/ElectronEffectiveArea.h"
 #include "EgammaAnalysis/ElectronTools/interface/PFIsolationEstimator.h"
 #include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
+
 #include "JetMETCorrections/Objects/interface/JetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "JetMETCorrections/Modules/interface/JetResolution.h"
+#include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
+
+#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "TreeHelper.h"
 
@@ -160,20 +165,19 @@ private:
   //contains one event, with general information
   void writeHeader();
 
-  //Retrieves event objects ---
+  //Main analysis functions ---
   void readEvent(const edm::Event& iEvent);
-  bool processVtx(const edm::Event& iEvent);
-  void processPu(const edm::Event& iEvent);
-  void processGenParticles(const edm::Event& iEvent);
   void processLHE(const edm::Event& iEvent);
+  bool processVtx(const edm::Event& iEvent);
   void processGenJets(const edm::Event& iEvent);
+  void processGenParticles(const edm::Event& iEvent);
   void processMET(const edm::Event& iEvent);
-  void processMETFilter(const edm::Event& iEvent);
+  void processPu(const edm::Event& iEvent);
   void processTrigger(const edm::Event& iEvent);
+  void processMETFilter(const edm::Event& iEvent);
+  void processMuons(const edm::Event& iEvent);
   void processJets();    
   void processJetsAK8();    
-  void processMuons(const edm::Event& iEvent);
-  void processElectrons(const edm::Event& iEvent);
 
   enum triggerObjectType { hltmuons, hltelectrons} ;
   ULong64_t matchWithTriggerObject(const edm::Event&, TLorentzVector, triggerObjectType);
@@ -194,6 +198,8 @@ private:
    */
   bool compTrigger(const char* triggerBasename, const char* triggerName) const;
   
+  // Select the year you want to process
+  std::string yearToProcess_;
  
   // Collections/parameters grabbed from cfg file ---
   // std::string recoSw_;
@@ -231,11 +237,6 @@ private:
   edm::EDGetTokenT< double > prefweight_token;
   edm::EDGetTokenT< double > prefweightup_token;
   edm::EDGetTokenT< double > prefweightdown_token;
-
-  /** Selection of list of trigger to copy
-   * in the ntuple
-   */
-  std::string triggerMenu_;
 
   /** Total number of events analyzed so far
    */
@@ -282,20 +283,8 @@ private:
   std::unique_ptr<ULong64_t>              TrigHltMu_;
   std::unique_ptr<std::vector<unsigned> > TrigHltMu_prescale_;
   std::map<std::string, ULong64_t>        TrigHltMuMap_; //bit assignment
-  std::unique_ptr<ULong64_t>              TrigHltDiMu_;
-  std::unique_ptr<std::vector<unsigned> > TrigHltDiMu_prescale_;
-  std::map<std::string, ULong64_t>        TrigHltDiMuMap_; //bit assignment
-  std::unique_ptr<ULong64_t>              TrigHltEl_;
-  std::unique_ptr<std::vector<unsigned> > TrigHltEl_prescale_;
-  std::map<std::string, ULong64_t>        TrigHltElMap_; //bit assignment
-  std::unique_ptr<ULong64_t>              TrigHltDiEl_;
-  std::unique_ptr<std::vector<unsigned> > TrigHltDiEl_prescale_;
-  std::map<std::string, ULong64_t>        TrigHltDiElMap_; //bit assignment
-  std::unique_ptr<ULong64_t>              TrigHltElMu_;
-  std::unique_ptr<std::vector<unsigned> > TrigHltElMu_prescale_;
-  std::map<std::string, ULong64_t>        TrigHltElMuMap_; //bit assignment
   std::map<std::string, ULong64_t>        TrigHltMuObjMap_;//bit assignment
-  std::map<std::string, ULong64_t>        TrigHltElObjMap_;//bit assignment
+
   struct  TrigHltMapRcd {
     TrigHltMapRcd(): pMap(0), pTrig(0), pPrescale(0) {}
     TrigHltMapRcd(std::map<std::string, ULong64_t>* pMap_, ULong64_t* pTrig_, std::vector<unsigned>* pPrescale_): pMap(pMap_), pTrig(pTrig_), pPrescale(pPrescale_) {
@@ -314,14 +303,15 @@ private:
   std::unique_ptr<std::vector<float> > METPt_;
   std::unique_ptr<std::vector<float> > METPx_;
   std::unique_ptr<std::vector<float> > METPy_;
-  std::unique_ptr<std::vector<float> > METPz_;
+  // std::unique_ptr<std::vector<float> > METPz_;
   std::unique_ptr<std::vector<float> > METE_;
   std::unique_ptr<std::vector<float> > METPhi_;
+  // std::unique_ptr<std::vector<float> > METEta_;
 
   std::unique_ptr<std::vector<float> > GMETPt_;
   std::unique_ptr<std::vector<float> > GMETPx_;
   std::unique_ptr<std::vector<float> > GMETPy_;
-  std::unique_ptr<std::vector<float> > GMETPz_;
+  // std::unique_ptr<std::vector<float> > GMETPz_;
   std::unique_ptr<std::vector<float> > GMETE_;
   std::unique_ptr<std::vector<float> > GMETPhi_;
 
@@ -382,31 +372,38 @@ private:
   std::unique_ptr<std::vector<float> > 	MuE_;
   std::unique_ptr<std::vector<bool> > MuIdLoose_;
   std::unique_ptr<std::vector<bool> > MuIdMedium_;
-  std::unique_ptr<std::vector<unsigned> > MuIdTight_;
+  std::unique_ptr<std::vector<bool> > MuIdTight_;
   std::unique_ptr<std::vector<float> > 	MuCh_;
   std::unique_ptr<std::vector<float> > 	MuVtxZ_;
   std::unique_ptr<std::vector<float> > 	MuDxy_;
   std::unique_ptr<std::vector<float> > 	MuPfIso_;
   std::unique_ptr<std::vector<float> > 	MuDz_;
   std::unique_ptr<std::vector<unsigned> > MuHltMatch_;
-  std::unique_ptr<std::vector<float> > MuTkNormChi2_;
-  std::unique_ptr<std::vector<int> > MuTkHitCnt_;
-  std::unique_ptr<std::vector<int> > MuMatchedStationCnt_;
-  std::unique_ptr<std::vector<int> > MuPixelHitCnt_;
-  std::unique_ptr<std::vector<int> > MuTkLayerCnt_;
+  // std::unique_ptr<std::vector<float> > MuTkNormChi2_;
+  // std::unique_ptr<std::vector<int> > MuTkHitCnt_;
+  // std::unique_ptr<std::vector<int> > MuMatchedStationCnt_;
+  // std::unique_ptr<std::vector<int> > MuPixelHitCnt_;
+  // std::unique_ptr<std::vector<int> > MuTkLayerCnt_;
 
   //PF Jets - AK4
   std::unique_ptr<std::vector<float> > JetAk04Pt_;
   std::unique_ptr<std::vector<float> > JetAk04Eta_;
+  std::unique_ptr<std::vector<float> > JetAk04Rap_;
   std::unique_ptr<std::vector<float> > JetAk04Phi_;
   std::unique_ptr<std::vector<float> > JetAk04E_;
   std::unique_ptr<std::vector<float> > JetAk04Id_;
   std::unique_ptr<std::vector<int> >   JetAk04PuId_;
+  std::unique_ptr<std::vector<bool> > JetAk04PuIdLoose_;
+  std::unique_ptr<std::vector<bool> > JetAk04PuIdMedium_;
+  std::unique_ptr<std::vector<bool> > JetAk04PuIdTight_;
   std::unique_ptr<std::vector<float> > JetAk04PuMva_;
   std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncUp_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncDwn_;
   std::unique_ptr<std::vector<float> > JetAk04HadFlav_;
+  std::unique_ptr<std::vector<float> > JetAk04PtUncorr_;
+  std::unique_ptr<std::vector<float> > JetAk04EtaUncorr_;
+  std::unique_ptr<std::vector<float> > JetAk04EUncorr_;
 
   //PF Jets - AK8
   std::unique_ptr<std::vector<float> > JetAk08Pt_;
@@ -420,6 +417,11 @@ private:
   std::unique_ptr<std::vector<float> > JetAk08CHSPt_;
   std::unique_ptr<std::vector<float> > JetAk08CHSEta_;
   std::unique_ptr<std::vector<float> > JetAk08CHSPhi_;
+  std::unique_ptr<std::vector<float> > JetAk08JecUncUp_;
+  std::unique_ptr<std::vector<float> > JetAk08JecUncDwn_;
+  std::unique_ptr<std::vector<float> > JetAk08PtUncorr_;
+  std::unique_ptr<std::vector<float> > JetAk08EtaUncorr_;
+  std::unique_ptr<std::vector<float> > JetAk08EUncorr_;
 
   /// EDM Handles for collections ---
   edm::Handle<std::vector<reco::GenParticle> > genParticles;
@@ -431,7 +433,8 @@ private:
   edm::Handle<reco::ConversionCollection> conversions;
   edm::Handle<std::vector<pat::Jet> > jets;
   edm::Handle<std::vector<pat::Jet> > jetsAK8;
-  edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
+  edm::ESHandle<JetCorrectorParametersCollection> JetCorParCollAK4;
+  edm::ESHandle<JetCorrectorParametersCollection> JetCorParCollAK8;
   edm::Handle<std::vector<reco::Vertex> >  vertices;
   double rhoIso;
   edm::Handle<reco::BeamSpot> beamSpotHandle;
@@ -446,8 +449,6 @@ private:
   std::vector<std::string> trigNames_;
 
   bool trigStatValid_;
-  
-  std::string checkOnTheFlyMetFilters_;
 
   //keep track if the input file contained LHE weights:
   bool weightsFromLhe_;
@@ -475,13 +476,11 @@ private:
 };
 
 Tupel::Tupel(const edm::ParameterSet& iConfig):
-  
+  yearToProcess_(iConfig.getUntrackedParameter<std::string>("yearToProcess", "2017")),
   muonToken_(consumes<std::vector<pat::Muon> >(iConfig.getUntrackedParameter<edm::InputTag>("muonSrc"))),
   jetToken_(consumes<std::vector<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("jetSrc"))),
   jetAK8Token_(consumes<std::vector<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("jetAK8Src"))),
-  // recoSw_(iConfig.getUntrackedParameter<std::string>("recoSw", "on")),
   triggerStat_(iConfig.getUntrackedParameter<bool>("triggerStat")),
-  triggerMenu_(iConfig.getUntrackedParameter<std::string>("triggerMenu", "2017")),
   analyzedEventCnt_(0),
   elecIdsListed_(false),
   hltListed_(false),
@@ -517,11 +516,6 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   puToken_ = consumes<std::vector<PileupSummaryInfo> >(iConfig.getUntrackedParameter<edm::InputTag>("puSrc"));
   conversionsToken_ = consumes<reco::ConversionCollection>(edm::InputTag("reducedEgamma","reducedConversions"));
 
-  // std::vector<edm::InputTag> metConfig = iConfig.getParameter<std::vector<edm::InputTag> >("metSrcs");
-  // for (auto& conf : metConfig) {
-  //   metSrcsToken.push_back(consumes<edm::View<pat::MET> >(conf));   
-  // }
-
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
@@ -544,13 +538,12 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 Tupel::~Tupel(){
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// General functions
+
 void Tupel::defineBitFields(){
   
   trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltMuMap_,     TrigHltMu_.get(),     TrigHltMu_prescale_.get()));
-  trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltDiMuMap_,   TrigHltDiMu_.get(),   TrigHltDiMu_prescale_.get()));
-  trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltElMap_,     TrigHltEl_.get(),     TrigHltEl_prescale_.get()));
-  trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltDiElMap_,   TrigHltDiEl_.get(),   TrigHltDiEl_prescale_.get()));
-  trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltElMuMap_,   TrigHltElMu_.get(),   TrigHltElMu_prescale_.get()));
   TrigMETBitMapList_.push_back(TrigHltMapRcd(&TrigMETBitMap_, TrigMETBit_.get(),    TrigMETBit_prescale_.get()));
 
   // andrew - do the placement of these bits need to match how the filters are read in?
@@ -580,12 +573,181 @@ void Tupel::defineBitFields(){
 	DEF_BIT2(TrigMETBit, 22, Flag_trkPOG_logErrorTooManyClusters);
 	DEF_BIT2(TrigMETBit, 23, Flag_METFilters);
 
-  // #include "trigger2016.h"
-  #include "trigger2017.h"
+  if ( yearToProcess_==std::string("2016") ){
+    #include "trigger2016.h"
+  }
+  else if ( yearToProcess_==std::string("2017") ){
+    #include "trigger2017.h"
+  }
+  
+}
 
+void Tupel::allocateTrigMap(int nTrigMax){
+  std::vector<int> row(nTrigMax+2, 0);
+  std::vector<std::vector<int> > newMap(nTrigMax+1, row);
+  std::vector<std::string> newTrigNames(nTrigMax, "");
+  for(unsigned i = 0; i < trigAccept_.size(); ++i){
+    if(i < trigNames_.size()) newTrigNames[i] = trigNames_[i];
+    for(unsigned j = 0; j < trigAccept_[i].size(); ++j){
+      newMap[i][j] = trigAccept_[i][j];
+    }
+  }
+  trigNames_.swap(newTrigNames);
+  trigAccept_.swap(newMap);
+}
+
+void Tupel::writeTriggerStat(){
+  std::ofstream f("trigger_stat.txt");
+  if(!trigStatValid_){
+    f << "Trigger statistics is not available. \n\n"
+      "Events with different trigger index maps were processed. Trigger statistics"
+      "is not supported for such case.\n\n";
+    f << "Column S contains the number of events the trigger indicated in second column of is the only one fired.\n"
+      << "The columns on the right of the column S contain for each combination of two triggers the number of events "
+      "for which both triggers have been fired. The number in the column header refers to the trigger indices "
+      "contained in the first column of the table.\n\n";
+  } else {
+
+    f << "Trigger statistics\n"
+      << "------------------\n\n"
+      << "Total number of processed events: " << analyzedEventCnt_ << "\n\n";
+
+    f  << "#\tTrigger line\tAccept count\tAccept rate\tS";
+    //sort the map per value by inverting key and value:
+    std::vector<int> trigSortedIndex(trigNames_.size());
+    size_t maxTrigForCol = 10;
+    for(unsigned i = 0; i < trigSortedIndex.size(); ++i){
+      trigSortedIndex[i] = i;
+      if(i<maxTrigForCol) f << "\t" << (1+i);
+    }
+    f << "\n";
+    sort(trigSortedIndex.begin(), trigSortedIndex.end(), TrigSorter(this));
+    //    trigSortedIndex.resize(10);
+    f << "0\tNone\t" << trigAccept_[0][0] << "\n";
+    for(unsigned i = 0; i < trigSortedIndex.size(); ++i){
+      unsigned ii = trigSortedIndex[i];
+      f << (i+1) << "\t" << trigNames_[ii] << " (" << ii << ")"
+	<< "\t" << trigAccept_[1+ii][0]
+	<< "\t" << double(trigAccept_[1+ii][0]) / analyzedEventCnt_
+	<< "\t" << trigAccept_[1+ii][1];
+      for(unsigned j = 0; j < std::min(maxTrigForCol, trigSortedIndex.size()); ++j){
+	unsigned jj = trigSortedIndex[j];
+	f << "\t" << trigAccept_[1+ii][2+jj];
+      }
+      f << "\n";
+    }
+  }
+}
+
+bool Tupel::compTrigger(const char* a, const char* bv) const{
+  int i = 0;
+  for(;a[i]!=0 && bv[i]!=0; ++i){
+    if(a[i]!= bv[i]) return false;
+  }
+  if(a[i]) return false;
+  if(bv[i]==0) return true;
+  if(bv[i] != '_') return false;
+  if(bv[++i]!='v') return false;
+  for(;;){
+    if(bv[++i]==0) return true;
+    if(!isdigit(bv[i])) return false;
+  }
+  return true;
+};
+
+ULong64_t Tupel::matchWithTriggerObject(const edm::Event& iEvent, TLorentzVector leptonMomentum, triggerObjectType theType){
+  ULong64_t matchingResult = 0;
+  std::map<std::string, ULong64_t> TrigObjMap;
+  if(theType==triggerObjectType::hltmuons) TrigObjMap = TrigHltMuObjMap_;
+  // else if(theType==triggerObjectType::hltelectrons) TrigObjMap = TrigHltElObjMap_;
+  
+  for(pat::TriggerObjectStandAlone obj : *triggerObjects_) {
+    obj.unpackFilterLabels(iEvent,*HLTResHandle);
+    TString collectionName = obj.collection();
+    // if(analyzedEventCnt_==1){
+    //   std::cout << "obj.collection() = " << obj.collection() << std::endl;
+    // }
+    obj.unpackNamesAndLabels(iEvent,*HLTResHandle);
+    
+    if( (theType==triggerObjectType::hltmuons) && ( !(collectionName.Contains("Muon")||collectionName.Contains("muon")) )) continue;
+    if( (theType==triggerObjectType::hltelectrons) && ( !(collectionName.Contains("Egamma")) )) continue;
+
+    // printf("collectionName = %s\n",collectionName.Data());
+
+    for(std::map<std::string, ULong64_t>::const_iterator it = TrigObjMap.begin(); it != TrigObjMap.end(); ++it){
+      for(unsigned h = 0; h < obj.filterLabels().size(); ++h){
+        if(obj.filterLabels()[h]==it->first.c_str()){
+          TLorentzVector hltCandMomentum(0,0,0,0);
+          hltCandMomentum.SetPtEtaPhiE(obj.pt(), obj.eta(), obj.phi(), obj.energy());
+          float theDeltaR = deltar(leptonMomentum, hltCandMomentum);
+          if(theDeltaR<0.2) matchingResult |= it->second;
+        }
+      }
+    }
+  }
+  return matchingResult;
+}
+
+void Tupel::fillTrig(const std::string& trigname, int triggerPrescalesForThisIndex){
+  for(std::vector<TrigHltMapRcd>::iterator itTrigHltMap = trigHltMapList_.begin(); itTrigHltMap != trigHltMapList_.end(); ++itTrigHltMap){ //loop on the list of all triggers
+    const std::map<std::string, ULong64_t>& trigHltMap = *(itTrigHltMap->pMap);
+    ULong64_t* pTrig = itTrigHltMap->pTrig;
+    std::vector<unsigned>* pPrescale = itTrigHltMap->pPrescale;
+    for(std::map<std::string, ULong64_t>::const_iterator it = trigHltMap.begin(); it != trigHltMap.end(); ++it){ //loop on the map with all trigger of one type (e.g. Photon)
+      if(compTrigger(it->first.c_str(), trigname.c_str())){
+        *pTrig |= it->second; //to this 'all type of a kind of trigger' we have one list with bit fields where we enable some while looking at the value
+        unsigned int bitPosition = log2(it->second);
+        if(pPrescale->size() <= bitPosition) pPrescale->resize(bitPosition+1); 
+        pPrescale->at(bitPosition) = triggerPrescalesForThisIndex; //And at the same position we add the prescale
+      //      std::cout << it->first.c_str() << ", " <<  trigname.c_str() << " -> "
+      //    << (compTrigger(it->first.c_str(), trigname.c_str()) ? "identical" : "different") << "\n";
+      }
+    }
+  }
+}
+
+void Tupel::writeHeader(){
+
+  headTree = fs->make<TTree>("Header", "Header");
+
+  TString checksum_(checksum);
+  headTree->Branch("Tupel_cc_githash", &checksum_);
+
+  TString cmssw_release(edm::getReleaseVersion().c_str());
+  headTree->Branch("CMSSW_RELEASE", &cmssw_release);
+
+  char hostname[256];
+  gethostname(hostname, sizeof(hostname));
+  hostname[sizeof(hostname)-1] = 0;
+  TString hostname_(hostname);
+  headTree->Branch("Hostname", &hostname_);
+
+  edm::TimeOfDay ts;
+  std::stringstream s;
+  s << std::setprecision(0) << ts;
+  TString ts_(s.str().c_str());
+  headTree->Branch("CreationTime", &ts_);
+
+  headTree->Fill();
 }
 
 void Tupel::readEvent(const edm::Event& iEvent){
+
+  if(analyzedEventCnt_==1) {
+    if( yearToProcess_==std::string("2016") ){
+        std::cout << "\nProcessing 2016 data/MC!" << std::endl;
+    }
+    else if ( yearToProcess_==std::string("2017") ){
+        std::cout << "\nProcessing 2017 data/MC!" << std::endl;
+    }
+    else if ( yearToProcess_==std::string("2018") ){
+        std::cout << "\nProcessing 2018 data/MC!" << std::endl;
+    }
+    else {
+        std::cout << "\nPlease pick a correct year!" << std::endl;
+    }
+  }
+
   *EvtNum_        = iEvent.id().event();
   *EvtRunNum_     = iEvent.id().run();
   *EvtLumiNum_    = iEvent.luminosityBlock();
@@ -603,20 +765,21 @@ void Tupel::readEvent(const edm::Event& iEvent){
   const pat::helper::TriggerMatchHelper matchHelper;
 
   // Linking Handles with Tokens to access collections inside analysis functions ---
+  iEvent.getByToken(vertexToken_, vertices);
+  iEvent.getByToken(metToken_, mets);
   iEvent.getByToken(HLTTagToken_, HLTResHandle);
+  iEvent.getByToken(muonToken_, muons);
+  iEvent.getByToken(jetToken_, jets);  
+  iEvent.getByToken(jetAK8Token_, jetsAK8);
+  // some others...
   iEvent.getByToken(triggerPrescalesToken_, triggerPrescales);
   iEvent.getByToken(genParticleToken_, genParticles);
   iEvent.getByToken(lheEventToken_, lheEventProd);
   iEvent.getByToken(generatorToken_, genEventInfoProd);
   iEvent.getByToken(gjetToken_, genjetColl_);
   iEvent.getByToken(HLTtriggerObjectToken_, triggerObjects_);
-  iEvent.getByToken(muonToken_, muons);
   iEvent.getByToken(conversionsToken_, conversions);
-  iEvent.getByToken(jetToken_, jets);  
-  iEvent.getByToken(jetAK8Token_, jetsAK8);
-  iEvent.getByToken(vertexToken_, vertices);
   iEvent.getByToken(mSrcRhoToken_, rho);
-  iEvent.getByToken(metToken_, mets);
   iEvent.getByToken(noiseFilterToken_, metfilters);
   
   rhoIso=-1;
@@ -640,116 +803,89 @@ void Tupel::readEvent(const edm::Event& iEvent){
 
 }
 
-void Tupel::processMET(const edm::Event& iEvent){
+///////////////////////////////////////////////////////////////////////////////
+/// GEN Functions
+/// Done if event gives !iEvent.isRealData()
 
-  // andrew - why are we looping over three different MET collections?
-  // i.e. "slimmedMETs", "slimmedMETsNoHF", "slimmedMETsPuppi"
-  // for(unsigned int imet=0; imet < metSrcsToken.size(); imet++){
-
-  // std::cout << __LINE__ << std::endl;
-
-  // edm::Handle<edm::View<pat::MET> > metH;  
-  // iEvent.getByToken(metSrcsToken[imet], metH);
-
-  if(mets.failedToGet() || !mets.isValid()){
-    printf("processMET, collection failed\n");
-    failedMET++;
+void Tupel::processLHE(const edm::Event& iEvent){
+  if(genEventInfoProd.failedToGet() || !genEventInfoProd.isValid()){
+    printf("processLHE failed at genEventInfoProd\n");
+    failedLHE++;
     return;
   }
   
-  const pat::MET &met = mets->front();
+  EvtWeights_->push_back(genEventInfoProd->weight());   
 
-  METPt_->push_back(met.pt());
-  METPx_->push_back(met.px());
-  METPy_->push_back(met.py());
-  METPz_->push_back(met.pz());
-  METE_->push_back(met.energy());
-  METPhi_->push_back(met.phi());
+  if(EvtWeights_->size() == 0){
+    EvtWeights_->push_back(1.);     
+    if(weightFromGenEventInfo_== NO) weightFromGenEventInfo_ = MIXTURE;     
+    else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = YES;   
+  } else{     
+    if(weightFromGenEventInfo_== YES) weightFromGenEventInfo_ = MIXTURE;     
+    else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = NO;   
+  }   
 
-  if(!*EvtIsRealData_){
-    GMETPt_->push_back(met.genMET()->pt());
-    GMETPx_->push_back(met.genMET()->px());
-    GMETPy_->push_back(met.genMET()->py());
-    GMETPz_->push_back(met.genMET()->pz());
-    GMETE_->push_back(met.genMET()->energy());
-    GMETPhi_->push_back(met.genMET()->phi());
+  if(lheEventProd.failedToGet() || !lheEventProd.isValid()){
+    printf("processLHE failed at lheEventProd\n");
+    failedLHE++;
+    return;
   }
 
-  // }
+  *originalXWGTUP_ = lheEventProd->originalXWGTUP();
+
+  for(unsigned iw = 0; iw < lheEventProd->weights().size(); ++iw){       
+    //printf("lheEventProd->weights()[iw].id = %s,  lheEventProd->weights()[iw].wgt=%F\n",lheEventProd->weights()[iw].id.c_str(),lheEventProd->weights()[iw].wgt);
+    EvtWeights_->push_back(lheEventProd->weights()[iw].wgt);     
+  }
+  
+  *GNup_ = lheEventProd->hepeup().NUP;
+  //*npLO_ = lheEventProd->npLO();
+  *npNLO_ = lheEventProd->npNLO();
+  //Loop over all particles to look for Z or photon coming from two quarks.
+  //printf("lheEventProd->hepeup().NUP=%d\n\n",lheEventProd->hepeup().NUP);
+  for(int iParticle=0; iParticle<lheEventProd->hepeup().NUP; iParticle++ ) {
+    int pdgid = abs(lheEventProd->hepeup().IDUP[iParticle]);
+    int status = lheEventProd->hepeup().ISTUP[iParticle];
+    float px = (lheEventProd->hepeup().PUP[iParticle])[0];
+    float py = (lheEventProd->hepeup().PUP[iParticle])[1];
+    //Check for DY
+    //if( (pdgid==22 || pdgid==23) && mom1id < 7 && mom2id < 7 && mom1id==mom2id){
+    if( (pdgid==22 || pdgid==23) ){
+      //Loop over all particles to find the children.
+      //int nChild=0;
+
+      //printf("pdgid = %d\n",pdgid);
+      //printf("status = %d\n",status);
+      //printf("mom1id = %d\n",mom1id);
+      //printf("mom2id = %d\n\n",mom2id);
+      //LHEZMother1id_->push_back(mom1id);
+      //LHEZMother2id_->push_back(mom2id);
+      LHEZid_->push_back(pdgid);
+      LHEZStatus_->push_back(status);
+      LHEZPx_->push_back(px);
+      LHEZPy_->push_back(py);
+      LHEZPz_->push_back((lheEventProd->hepeup().PUP[iParticle])[2]);
+      LHEZE_->push_back((lheEventProd->hepeup().PUP[iParticle])[3]);
+    }      
+  }// Loop over generator particles
 }
 
-
-bool Tupel::processVtx(const edm::Event& iEvent){
-  if(vertices.failedToGet() || !vertices.isValid()){
-    printf("processVtx failed!!!!!\n");
-    failedVtx++;
-    return false;
+void Tupel::processGenJets(const edm::Event& iEvent){    
+  if(genjetColl_.failedToGet() || !genjetColl_.isValid()){
+    printf("processGenJets failed\n");
+    failedGenJets++;
+    return;
   }
-  if(vertices->empty()){ 
-    printf("vertices->empty()!!!!!\n");
-    failedVtx++;
-    return false;
-  }
-
-  // Getting number of primary vertices for event
-  for (std::vector<reco::Vertex>::const_iterator vtx = vertices->begin(); vtx != vertices->end(); ++vtx){
-    bool isFake = vtx->chi2()==0 && vtx->ndof()==0;
-    if (vtx->isValid() && !isFake) ++(*EvtVtxCnt_);
-  }
-
-  // Find the first vertex in the collection that passes good quality criteria
-  // andrew -- is the first vertex in the collection the "leading vertex"?
-  int index = 0;
-  *firstGoodVertexIdx_ = -1;
-  std::vector<reco::Vertex>::const_iterator firstGoodVertex = vertices->end();
-
-  for (std::vector<reco::Vertex>::const_iterator vtx = vertices->begin(); vtx != vertices->end(); ++vtx){
-    // Replace isFake() for miniAOD because it requires tracks and miniAOD vertices don't have tracks:
-    // Vertex.h: bool isFake() const {return (chi2_==0 && ndof_==0 && tracks_.empty());}
-    bool isFake = vtx->chi2()==0 && vtx->ndof()==0;
-    // Check the goodness
-    if(vtx->isValid() && !isFake
-       && (vtx->ndof() >= 4.0)
-       && (vtx->position().Rho() <= 2.0)
-       && (fabs(vtx->position().Z()) <= 24.0) ){
-      firstGoodVertex = vtx;
-      *firstGoodVertexIdx_ = index;      
-      break;
+  
+  for(unsigned int k=0; k < genjetColl_->size(); ++k){
+    const reco::GenJet & genJet = genjetColl_->at(k);    
+    if(genJet.pt() > 15.0 && fabs(genJet.eta()) < 2.7){
+      GJetAk04Pt_->push_back(genJet.pt());
+      GJetAk04Eta_->push_back(genJet.eta());
+      GJetAk04Phi_->push_back(genJet.phi());
+      GJetAk04E_->push_back(genJet.energy());
     }
-    index++;
-  }
 
-  if(firstGoodVertex==vertices->end()){
-    std::cout << " >>> Event #" << analyzedEventCnt_ << ": No good vertices" << std::endl;
-    return false;
-  } else return true;
-}
-
-void Tupel::processPu(const edm::Event& iEvent){
-  edm::Handle<std::vector< PileupSummaryInfo > >  PupInfo;
-  iEvent.getByToken(puToken_, PupInfo);
-
-  if(!PupInfo.failedToGet()){
-    std::vector<PileupSummaryInfo>::const_iterator PVI;
-    float npT=-1.;
-    float npIT=-1.;
-
-    for(PVI = PupInfo->begin(); PVI != PupInfo->end(); ++PVI) {
-
-      int BX = PVI->getBunchCrossing();
-
-      if(BX == 0) {
-        npT = PVI->getTrueNumInteractions();
-        npIT = PVI->getPU_NumInteractions();
-      }
-    }
-    //////TO CHECK
-    *EvtPuCntTruth_ = npT;
-    *EvtPuCnt_      = npIT;
-  }
-  else {
-    *EvtPuCntTruth_ = -2.;
-    *EvtPuCnt_ = -2.;
   }
 }
 
@@ -838,86 +974,115 @@ void Tupel::processGenParticles(const edm::Event& iEvent){
   } //end gen particle loop
 }
 
-void Tupel::processLHE(const edm::Event& iEvent){
-  if(genEventInfoProd.failedToGet() || !genEventInfoProd.isValid()){
-    printf("processLHE failed at genEventInfoProd\n");
-    failedLHE++;
-    return;
+void Tupel::processPu(const edm::Event& iEvent){
+  edm::Handle<std::vector< PileupSummaryInfo > >  PupInfo;
+  iEvent.getByToken(puToken_, PupInfo);
+
+  if(!PupInfo.failedToGet()){
+    std::vector<PileupSummaryInfo>::const_iterator PVI;
+    float npT=-1.;
+    float npIT=-1.;
+
+    for(PVI = PupInfo->begin(); PVI != PupInfo->end(); ++PVI) {
+
+      int BX = PVI->getBunchCrossing();
+
+      if(BX == 0) {
+        npT = PVI->getTrueNumInteractions();
+        npIT = PVI->getPU_NumInteractions();
+      }
+    }
+    //////TO CHECK
+    *EvtPuCntTruth_ = npT;
+    *EvtPuCnt_      = npIT;
   }
-  
-  EvtWeights_->push_back(genEventInfoProd->weight());   
-
-  if(EvtWeights_->size() == 0){
-    EvtWeights_->push_back(1.);     
-    if(weightFromGenEventInfo_== NO) weightFromGenEventInfo_ = MIXTURE;     
-    else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = YES;   
-  } else{     
-    if(weightFromGenEventInfo_== YES) weightFromGenEventInfo_ = MIXTURE;     
-    else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = NO;   
-  }   
-
-  if(lheEventProd.failedToGet() || !lheEventProd.isValid()){
-    printf("processLHE failed at lheEventProd\n");
-    failedLHE++;
-    return;
+  else {
+    *EvtPuCntTruth_ = -2.;
+    *EvtPuCnt_ = -2.;
   }
-
-  *originalXWGTUP_ = lheEventProd->originalXWGTUP();
-
-  for(unsigned iw = 0; iw < lheEventProd->weights().size(); ++iw){       
-    //printf("lheEventProd->weights()[iw].id = %s,  lheEventProd->weights()[iw].wgt=%F\n",lheEventProd->weights()[iw].id.c_str(),lheEventProd->weights()[iw].wgt);
-    EvtWeights_->push_back(lheEventProd->weights()[iw].wgt);     
-  }
-  
-  *GNup_ = lheEventProd->hepeup().NUP;
-  //*npLO_ = lheEventProd->npLO();
-  *npNLO_ = lheEventProd->npNLO();
-  //Loop over all particles to look for Z or photon coming from two quarks.
-  //printf("lheEventProd->hepeup().NUP=%d\n\n",lheEventProd->hepeup().NUP);
-  for(int iParticle=0; iParticle<lheEventProd->hepeup().NUP; iParticle++ ) {
-    int pdgid = abs(lheEventProd->hepeup().IDUP[iParticle]);
-    int status = lheEventProd->hepeup().ISTUP[iParticle];
-    float px = (lheEventProd->hepeup().PUP[iParticle])[0];
-    float py = (lheEventProd->hepeup().PUP[iParticle])[1];
-    //Check for DY
-    //if( (pdgid==22 || pdgid==23) && mom1id < 7 && mom2id < 7 && mom1id==mom2id){
-    if( (pdgid==22 || pdgid==23) ){
-      //Loop over all particles to find the children.
-      //int nChild=0;
-
-      //printf("pdgid = %d\n",pdgid);
-      //printf("status = %d\n",status);
-      //printf("mom1id = %d\n",mom1id);
-      //printf("mom2id = %d\n\n",mom2id);
-      //LHEZMother1id_->push_back(mom1id);
-      //LHEZMother2id_->push_back(mom2id);
-      LHEZid_->push_back(pdgid);
-      LHEZStatus_->push_back(status);
-      LHEZPx_->push_back(px);
-      LHEZPy_->push_back(py);
-      LHEZPz_->push_back((lheEventProd->hepeup().PUP[iParticle])[2]);
-      LHEZE_->push_back((lheEventProd->hepeup().PUP[iParticle])[3]);
-    }      
-  }// Loop over generator particles
 }
 
-void Tupel::processGenJets(const edm::Event& iEvent){    
-  if(genjetColl_.failedToGet() || !genjetColl_.isValid()){
-    printf("processGenJets failed\n");
-    failedGenJets++;
+///////////////////////////////////////////////////////////////////////////////
+/// RECO Functions
+
+bool Tupel::processVtx(const edm::Event& iEvent){
+  if(vertices.failedToGet() || !vertices.isValid() || vertices->empty()){
+    printf("processVtx failed!!!!!\n");
+    failedVtx++;
+    return false;
+  }
+
+  // Getting number of primary vertices for event
+  for (std::vector<reco::Vertex>::const_iterator vtx = vertices->begin(); vtx != vertices->end(); ++vtx){
+    bool isFake = vtx->chi2()==0 && vtx->ndof()==0;
+    if (vtx->isValid() && !isFake) ++(*EvtVtxCnt_);
+  }
+
+  // Find the first vertex in the collection that passes good quality criteria
+  // Assuming this is the PV that we use for muon TightID, etc.
+  int index = 0;
+  *firstGoodVertexIdx_ = -1;
+  std::vector<reco::Vertex>::const_iterator firstGoodVertex = vertices->end();
+
+  for (std::vector<reco::Vertex>::const_iterator vtx = vertices->begin(); vtx != vertices->end(); ++vtx){
+    // Replace isFake() for miniAOD because it requires tracks and miniAOD vertices don't have tracks:
+    // Vertex.h: bool isFake() const {return (chi2_==0 && ndof_==0 && tracks_.empty());}
+    bool isFake = vtx->chi2()==0 && vtx->ndof()==0;
+    // Check the goodness
+    if(vtx->isValid() && !isFake
+       && (vtx->ndof() >= 4.0)
+       && (vtx->position().Rho() <= 2.0)
+       && (fabs(vtx->position().Z()) <= 24.0) ){
+      firstGoodVertex = vtx;
+      *firstGoodVertexIdx_ = index;      
+      break;
+    }
+    index++;
+  }
+
+  if(firstGoodVertex==vertices->end()){
+    std::cout << " >>> Event #" << analyzedEventCnt_ << ": No good vertices" << std::endl;
+    return false;
+  } else return true;
+
+}
+
+void Tupel::processMET(const edm::Event& iEvent){
+
+  if(mets.failedToGet() || !mets.isValid()){
+    printf("processMET, collection failed\n");
+    failedMET++;
     return;
   }
   
-  for(unsigned int k=0; k < genjetColl_->size(); ++k){
-    const reco::GenJet & genJet = genjetColl_->at(k);    
-    if(genJet.pt() > 15.0 && fabs(genJet.eta()) < 2.7){
-      GJetAk04Pt_->push_back(genJet.pt());
-      GJetAk04Eta_->push_back(genJet.eta());
-      GJetAk04Phi_->push_back(genJet.phi());
-      GJetAk04E_->push_back(genJet.energy());
-    }
+  const pat::MET &met = mets->front();
 
+  // standard methods (pt(), etc.) return the default type1 corrected MET
+  METPt_->push_back(met.pt());
+  METPx_->push_back(met.px());
+  METPy_->push_back(met.py());
+  // METPz_->push_back(met.pz());
+  METE_->push_back(met.energy());
+  METPhi_->push_back(met.phi());
+  // METEta_->push_back(met.eta());
+
+  // can also grab MET shifted up and down for JES uncertainties?
+  // met.shiftedPt(pat::MET::JetEnUp), met.shiftedPt(pat::MET::JetEnDown)
+
+  // also different levels of corrections, like
+  // met.uncorPt() - raw MET
+  // met.corPt(pat::MET::Type1) - Type1 corrected MET
+  // met.corPt(pat::MET::Type1XY) - phi-corrected MET
+
+  if(!*EvtIsRealData_){
+    GMETPt_->push_back(met.genMET()->pt());
+    GMETPx_->push_back(met.genMET()->px());
+    GMETPy_->push_back(met.genMET()->py());
+    // GMETPz_->push_back(met.genMET()->pz());
+    GMETE_->push_back(met.genMET()->energy());
+    GMETPhi_->push_back(met.genMET()->phi());
   }
+
 }
 
 void Tupel::processTrigger(const edm::Event& iEvent){
@@ -936,6 +1101,7 @@ void Tupel::processTrigger(const edm::Event& iEvent){
     }
   }
 
+  // -----------
   int ntrigs;
   if(HLTResHandle.isValid() && !HLTResHandle.failedToGet()){
     // Next lines gets all the HLT trigger paths for the event
@@ -944,7 +1110,8 @@ void Tupel::processTrigger(const edm::Event& iEvent){
 
     // Prints out passed trigger paths
     if(analyzedEventCnt_==1){
-      std::cout << "\n--> Passed Trigger Paths:" << std::endl;
+      std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
+      std::cout << "--> Passed trigger paths:" << std::endl;
       for (int i = 0; i < ntrigs; i++) {
         if (HLTResHandle->accept(i)){
           std::cout << "#" << i << ": " << trigNames->triggerName(i);
@@ -1010,6 +1177,7 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
         if (names.triggerName(i) == BadPFMuonFilter_Selector_) std::cout << "Flag_BadPFMuonFilter is i=" << i << std::endl;
         if (names.triggerName(i) == EEBadScNoiseFilter_Selector_) std::cout << "Flag_eeBadScFilter is i=" << i << std::endl;
       }
+      std::cout << std::endl;
     }
 
     // For 2017 31Mar2018 MiniAOD Real Data
@@ -1028,29 +1196,10 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
         std::cout << "neglect MC for now" << std::endl;
       }
       else{
-        if (metfilters->accept(i)) *TrigMET_ |= 1LL <<i;
+        if (metfilters->accept(i)) *TrigMET_ |= 1LL << i;
       }
     }
 
-  }
-}
-
-
-void Tupel::fillTrig(const std::string& trigname, int triggerPrescalesForThisIndex){
-  for(std::vector<TrigHltMapRcd>::iterator itTrigHltMap = trigHltMapList_.begin(); itTrigHltMap != trigHltMapList_.end(); ++itTrigHltMap){ //loop on the list of all triggers
-    const std::map<std::string, ULong64_t>& trigHltMap = *(itTrigHltMap->pMap);
-    ULong64_t* pTrig = itTrigHltMap->pTrig;
-    std::vector<unsigned>* pPrescale = itTrigHltMap->pPrescale;
-    for(std::map<std::string, ULong64_t>::const_iterator it = trigHltMap.begin(); it != trigHltMap.end(); ++it){ //loop on the map with all trigger of one type (e.g. Photon)
-      if(compTrigger(it->first.c_str(), trigname.c_str())){
-        *pTrig |= it->second; //to this 'all type of a kind of trigger' we have one list with bit fields where we enable some while looking at the value
-        unsigned int bitPosition = log2(it->second);
-        if(pPrescale->size() <= bitPosition) pPrescale->resize(bitPosition+1); 
-        pPrescale->at(bitPosition) = triggerPrescalesForThisIndex; //And at the same position we add the prescale
-      //      std::cout << it->first.c_str() << ", " <<  trigname.c_str() << " -> "
-      //    << (compTrigger(it->first.c_str(), trigname.c_str()) ? "identical" : "different") << "\n";
-      }
-    }
   }
 }
 
@@ -1061,25 +1210,18 @@ void Tupel::processMuons(const edm::Event& iEvent){
     return;
   }
 
-  double MuFill = 0;
-
   for(unsigned int j = 0; j < muons->size(); ++j){
     const pat::Muon & mu = muons->at(j);
 
-    if(mu.pt() > 15.0 && mu.isLooseMuon()){
+    if(mu.pt() > 20.0 && mu.isLooseMuon()){
 
-      // Muon ID
-      unsigned muonTightIds = 0;
-      unsigned bit = 0;
-      for(std::vector<reco::Vertex>::const_iterator vtx = vertices->begin(); vtx != vertices->end(); ++vtx){
-	      if(mu.isTightMuon(*vtx)) muonTightIds |= (1 <<bit);
-	      ++bit;
-	      if(bit > 31) break;    
-      }
+      // Muon ID --------
       bool loose = mu.isLooseMuon();
       bool medium = mu.isMediumMuon();
-      //bool tight = muonTightIds & 1;
-      // could just do mu.isTightMuon(primary vertex) for tight ID
+      bool tight = false;
+      if(*firstGoodVertexIdx_ >= 0){
+        tight = mu.isTightMuon( vertices->at(*firstGoodVertexIdx_) ); // use PV obtained in processVtx function
+      }
 
       TLorentzVector muon4Momentum(0,0,0,0);
       muon4Momentum.SetPtEtaPhiE(mu.pt(), mu.eta(), mu.phi(), mu.energy());
@@ -1088,8 +1230,17 @@ void Tupel::processMuons(const edm::Event& iEvent){
       MuHltMatch_->push_back(muonMatchingResults);
       MuIdLoose_->push_back(loose);
       MuIdMedium_->push_back(medium);
-      MuIdTight_->push_back(muonTightIds);
+      MuIdTight_->push_back(tight);
 
+      // PF Isolation score --------
+      double chargedHadronIso = mu.pfIsolationR04().sumChargedHadronPt;
+      double neutralHadronIso  = mu.pfIsolationR04().sumNeutralHadronEt;
+      double photonIso  = mu.pfIsolationR04().sumPhotonEt;
+      double chargedHadronIsoPU = mu.pfIsolationR04().sumPUPt;
+      float relativeIsolationDBetaCorr = ( chargedHadronIso + std::max(0., neutralHadronIso + photonIso - 0.5*chargedHadronIsoPU) )/mu.pt();
+      MuPfIso_->push_back(relativeIsolationDBetaCorr);
+
+      // Kinematics --------
       MuPt_->push_back(mu.pt());
       MuEta_->push_back(mu.eta());
       MuPhi_->push_back(mu.phi());
@@ -1098,68 +1249,25 @@ void Tupel::processMuons(const edm::Event& iEvent){
       MuVtxZ_->push_back(mu.vz());
       MuDxy_->push_back(mu.dB());
 
-      if(mu.isGlobalMuon()){
-        MuTkNormChi2_->push_back(mu.globalTrack()->normalizedChi2());
-      	MuTkHitCnt_->push_back(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
-      } else {
-      	MuTkNormChi2_->push_back(-1);
-      	MuTkHitCnt_->push_back(-1);
-      }	
-      MuMatchedStationCnt_->push_back(mu.numberOfMatchedStations());
-      MuPixelHitCnt_->push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-      MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());      
-
+      // Other --------
       double dZ = 99.0;
-      if(*firstGoodVertexIdx_ >= 0)
-	    dZ = mu.muonBestTrack()->dz(vertices->at(*firstGoodVertexIdx_).position());
+      if(*firstGoodVertexIdx_ >= 0) dZ = mu.muonBestTrack()->dz( vertices->at(*firstGoodVertexIdx_).position() );
       MuDz_->push_back(dZ);
 
-      // pf Isolation variables
-      double chargedHadronIso = mu.pfIsolationR04().sumChargedHadronPt;
-      double chargedHadronIsoPU = mu.pfIsolationR04().sumPUPt;
-      double neutralHadronIso  = mu.pfIsolationR04().sumNeutralHadronEt;
-      double photonIso  = mu.pfIsolationR04().sumPhotonEt;
-      float RelativeIsolationDBetaCorr = (chargedHadronIso + std::max(photonIso+neutralHadronIso - 0.5*chargedHadronIsoPU,0.0))/std::max(0.5, mu.pt());
-      MuPfIso_->push_back(RelativeIsolationDBetaCorr);
-      MuFill++;
+      // if(mu.isGlobalMuon()){
+      //   MuTkNormChi2_->push_back(mu.globalTrack()->normalizedChi2());
+      // 	MuTkHitCnt_->push_back(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
+      // } else {
+      // 	MuTkNormChi2_->push_back(-1);
+      // 	MuTkHitCnt_->push_back(-1);
+      // }	
+      // MuMatchedStationCnt_->push_back(mu.numberOfMatchedStations());
+      // MuPixelHitCnt_->push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
+      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());      
+
     }
   }
 }
-
-
-ULong64_t Tupel::matchWithTriggerObject(const edm::Event& iEvent, TLorentzVector leptonMomentum, triggerObjectType theType){
-  ULong64_t matchingResult = 0;
-  std::map<std::string, ULong64_t> TrigObjMap;
-  if(theType==triggerObjectType::hltmuons) TrigObjMap = TrigHltMuObjMap_;
-  else if(theType==triggerObjectType::hltelectrons) TrigObjMap = TrigHltElObjMap_;
-  
-  for(pat::TriggerObjectStandAlone obj : *triggerObjects_) {
-    obj.unpackFilterLabels(iEvent,*HLTResHandle);
-    TString collectionName = obj.collection();
-    // if(analyzedEventCnt_==1){
-    //   std::cout << "obj.collection() = " << obj.collection() << std::endl;
-    // }
-    obj.unpackNamesAndLabels(iEvent,*HLTResHandle);
-    
-    if( (theType==triggerObjectType::hltmuons) && ( !(collectionName.Contains("Muon")||collectionName.Contains("muon")) )) continue;
-    if( (theType==triggerObjectType::hltelectrons) && ( !(collectionName.Contains("Egamma")) )) continue;
-
-    // printf("collectionName = %s\n",collectionName.Data());
-
-    for(std::map<std::string, ULong64_t>::const_iterator it = TrigObjMap.begin(); it != TrigObjMap.end(); ++it){
-      for(unsigned h = 0; h < obj.filterLabels().size(); ++h){
-        if(obj.filterLabels()[h]==it->first.c_str()){
-          TLorentzVector hltCandMomentum(0,0,0,0);
-          hltCandMomentum.SetPtEtaPhiE(obj.pt(), obj.eta(), obj.phi(), obj.energy());
-          float theDeltaR = deltar(leptonMomentum, hltCandMomentum);
-          if(theDeltaR<0.2) matchingResult |= it->second;
-        }
-      }
-    }
-  }
-  return matchingResult;
-}
-
 
 void Tupel::processJets(){
   if(jets.failedToGet() || !jets.isValid()){
@@ -1174,43 +1282,34 @@ void Tupel::processJets(){
   double CHF = 0;
   double CMULTI = 0;
   
-    
-  JetCorrectorParameters const & JetCorPar = (*JetCorParColl)["Uncertainty"];
-  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(JetCorPar);
+  // Reading in JES uncertainties w/ associated input GT on the fly
+  JetCorrectorParameters const & JetCorParAK4 = (*JetCorParCollAK4)["Uncertainty"];
+  JetCorrectionUncertainty *jecUncAK4 = new JetCorrectionUncertainty(JetCorParAK4);
   
   for(unsigned int i=0; i<jets->size(); ++i){
     const pat::Jet & jet = jets->at(i);
 
-    if(i==0 && analyzedEventCnt_== 1){
-      std::cout << "\n--> Jet user float list:\n";
-      for(unsigned j = 0; j < jet.userFloatNames().size(); ++j){
-	      std::cout << jet.userFloatNames()[j] << "\n";
-      }
-      std::cout << "\n--> Jet user int list:\n";
-      for(unsigned j = 0; j < jet.userIntNames().size(); ++j){
-	      std::cout << jet.userIntNames()[j] << "\n";
-      }
-      // std::cout << std::endl;
-    }
+    // grabbing associated gen jet in MC?
+    // used for jet matching ???
+    // const reco::GenJet* ref = jet.genJet();
 
-    //print "Passes loose: ", bool(j.userInt("pileupJetId:fullId") & (1 << 2)), "medium: ", bool(j.userInt("pileupJetId:fullId") & (1 << 1)), "tight: ", bool(j.userInt("pileupJetId:fullId") & (1 << 0))
+    // if(i==0 && analyzedEventCnt_== 1){
+    //   std::cout << "\n--> Jet user float list:\n";
+    //   for(unsigned j = 0; j < jet.userFloatNames().size(); ++j){
+	  //     std::cout << jet.userFloatNames()[j] << "\n";
+    //   }
+    //   std::cout << "\n--> Jet user int list:\n";
+    //   for(unsigned j = 0; j < jet.userIntNames().size(); ++j){
+	  //     std::cout << jet.userIntNames()[j] << "\n";
+    //   }
+    // }
 
     //Soft cut on pt and eta to reduce Baobab size
-    if(jet.pt() > 20.0 && fabs(jet.eta()) < 2.7){
+    if(jet.isPFJet() && jet.pt() > 20.0 && fabs(jet.eta()) < 2.7){
 
-
-      // jet PU MVA ID
-      if (jet.hasUserInt("pileupJetId:fullId")){
-        JetAk04PuId_->push_back(jet.userInt("pileupJetId:fullId"));  
-      }
-      else JetAk04PuId_->push_back(0); 
-
-      if(jet.hasUserFloat("pileupJetId:fullDiscriminant")) {
-	      JetAk04PuMva_->push_back(jet.userFloat("pileupJetId:fullDiscriminant"));
-      }
-      else JetAk04PuMva_->push_back(-99.);
-
-      // jet ID
+      // jet ID  --------
+      // the ""...EnergyFraction" functions grab the raw, uncorrected energy fractions
+      // which is what we want when computing jet ID
       NHF = jet.neutralHadronEnergyFraction();
       NEMF = jet.neutralEmEnergyFraction();
       NCONST = jet.chargedMultiplicity() + jet.neutralMultiplicity();
@@ -1220,40 +1319,70 @@ void Tupel::processJets(){
       // 2017 jet ID is by default tight ID
       double tempJetID=0;
       if( abs(jet.eta()) <= 2.4 ){
-        if ( (NHF < 0.90)
-        && (NEMF < 0.90)
-        && (NCONST > 1)
-        && (CHF > 0)
-        && (CMULTI > 0) ){
-          tempJetID=1;
-        }
+        if ( (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ) tempJetID=1;
       }
+
       JetAk04Id_->push_back(tempJetID);
 
-      //JEC uncertainty
-      jecUnc->setJetEta(jet.eta());
-      jecUnc->setJetPt(jet.pt()); // here you must use the CORRECTED jet pt
-      double unc = jecUnc->getUncertainty(true);
-      if(DJALOG_) printf("JEC Unc, Jet %d = %F\n", i, unc);
-      if(DJALOG_) printf("JEC Unc, Up = %F, Down = %F\n",1+unc,1-unc);
-      JetAk04JecUncUp_->push_back(1+unc);
-      JetAk04JecUncDwn_->push_back(1-unc);
+      // jet PU MVA ID --------
+      if (jet.hasUserInt("pileupJetId:fullId")){
+        JetAk04PuId_->push_back(jet.userInt("pileupJetId:fullId"));  
+      }
+      else JetAk04PuId_->push_back(0); 
 
-      //b-tag score, hadron flavor
+      // try this method instead
+      bool jetPuIdLoose = false;
+      bool jetPuIdMedium = false;
+      bool jetPuIdTight = false;
+      if (jet.hasUserInt("pileupJetId:fullId")){
+        jetPuIdLoose = ( jet.userInt("pileupJetId:fullId") & (1 << 2) );
+        jetPuIdMedium = ( jet.userInt("pileupJetId:fullId") & (1 << 1) );
+        jetPuIdTight = ( jet.userInt("pileupJetId:fullId") & (1 << 0) );
+      }
+      JetAk04PuIdLoose_->push_back(jetPuIdLoose); 
+      JetAk04PuIdMedium_->push_back(jetPuIdMedium); 
+      JetAk04PuIdTight_->push_back(jetPuIdTight); 
+
+      // and the full score
+      if(jet.hasUserFloat("pileupJetId:fullDiscriminant")) {
+	      JetAk04PuMva_->push_back(jet.userFloat("pileupJetId:fullDiscriminant"));
+      }
+      else JetAk04PuMva_->push_back(-99.);
+
+      //JEC uncertainty --------
+      jecUncAK4->setJetEta(jet.eta());
+      jecUncAK4->setJetPt(jet.pt()); // here you must use the CORRECTED jet pt
+      double unc = jecUncAK4->getUncertainty(true);
+      // if(DJALOG_) printf("JEC Unc, Jet %d = %F\n", i, unc);
+      // if(DJALOG_) printf("JEC Unc, Up = %F, Down = %F\n",1+unc,1-unc);
+      JetAk04JecUncUp_->push_back(1. + unc);
+      JetAk04JecUncDwn_->push_back(1. - unc);
+
+      //b-tag score, hadron flavor --------
       JetAk04BDiscCisvV2_->push_back(jet.bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags"));
       JetAk04HadFlav_->push_back(jet.hadronFlavour());
 
-      //kinematics
+      //kinematics --------
       JetAk04E_->push_back(jet.energy());
       JetAk04Pt_->push_back(jet.pt());
       JetAk04Eta_->push_back(jet.eta());
+      JetAk04Rap_->push_back(jet.rapidity());
       JetAk04Phi_->push_back(jet.phi());
+
+      //kinematics of uncorrected jet --------
+      reco::Candidate::LorentzVector uncorrJet = jet.correctedP4(0);
+      JetAk04PtUncorr_->push_back(uncorrJet.pt());
+      JetAk04EtaUncorr_->push_back(uncorrJet.eta());
+      JetAk04EUncorr_->push_back(uncorrJet.energy());
+
+      // can also use
+      // j.pt()*j.jecFactor("Uncorrected")
+      // to get raw jet pt
     
     }
   }
-  delete jecUnc;
+  delete jecUncAK4;
 }
-
 
 void Tupel::processJetsAK8(){
   if(jetsAK8.failedToGet() || !jetsAK8.isValid()){
@@ -1269,22 +1398,26 @@ void Tupel::processJetsAK8(){
   double NCONST = 0;
   double CHF = 0;
   double CMULTI = 0;
+
+  JetCorrectorParameters const & JetCorParAK8 = (*JetCorParCollAK8)["Uncertainty"];
+  JetCorrectionUncertainty *jecUncAK8 = new JetCorrectionUncertainty(JetCorParAK8);
   
   for(unsigned int i=0; i<jetsAK8->size(); ++i){
     const pat::Jet & jetAK8 = jetsAK8->at(i);
 
-    if(i==0 && analyzedEventCnt_== 2){
-      std::cout << "\n--> Jet AK8 user float list:\n";
-      for(unsigned j = 0; j < jetAK8.userFloatNames().size(); ++j){
-	      std::cout << jetAK8.userFloatNames()[j] << "\n";
-      }
-      std::cout << std::endl;
-    }
+    // if(i==0 && analyzedEventCnt_== 2){
+    //   std::cout << "\n--> Jet AK8 user float list:\n";
+    //   for(unsigned j = 0; j < jetAK8.userFloatNames().size(); ++j){
+	  //     std::cout << jetAK8.userFloatNames()[j] << "\n";
+    //   }
+    //   std::cout << std::endl;
+    // }
 
-    //PF jets in AK8 collection start at pT of 170 GeV
-    if(jetAK8.pt() > 170.0 && fabs(jetAK8.eta()) < 2.7){
+    // PF jets in AK8 collection start at pT of 200 GeV 
+    // (PF jets start at 170, but should start at 200 GeV if JECs reapplied)
+    if(jetAK8.isPFJet() && jetAK8.pt() > 200.0 && fabs(jetAK8.eta()) < 2.7){
 
-      // jet ID
+      // jet ID --------
       NHF = jetAK8.neutralHadronEnergyFraction();
       NEMF = jetAK8.neutralEmEnergyFraction();
       NCONST = jetAK8.chargedMultiplicity() + jetAK8.neutralMultiplicity();
@@ -1292,26 +1425,34 @@ void Tupel::processJetsAK8(){
       CMULTI = jetAK8.chargedMultiplicity();
       
       // 2017 jet ID is by default tight ID
-      double tempJetID=0;
+      // applying the same for AK8 that exists for AK4
+      double tempJetID = 0;
       if( abs(jetAK8.eta()) <= 2.4 ){
-        if ( (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ){
-          tempJetID=1;
-        }
+        if ( (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ) tempJetID=1;
       }
       JetAk08Id_->push_back(tempJetID);
 
-      // jet flavour
+      //JEC uncertainty - AK8 jets
+      jecUncAK8->setJetEta(jetAK8.eta());
+      jecUncAK8->setJetPt(jetAK8.pt()); // here you must use the CORRECTED jet pt
+      double unc = jecUncAK8->getUncertainty(true);
+      // if(DJALOG_) printf("JEC Unc, Jet %d = %F\n", i, unc);
+      // if(DJALOG_) printf("JEC Unc, Up = %F, Down = %F\n",1+unc,1-unc);
+      JetAk08JecUncUp_->push_back(1 + unc);
+      JetAk08JecUncDwn_->push_back(1 - unc);
+
+      // jet flavour  --------
       JetAk08BDiscCisvV2_->push_back(jetAK8.bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags"));
       JetAk08HadFlav_->push_back(jetAK8.hadronFlavour());
 
-      //kinematics
+      //kinematics --------
       JetAk08E_->push_back(jetAK8.energy());
       JetAk08Pt_->push_back(jetAK8.pt());
       JetAk08Eta_->push_back(jetAK8.eta());
-      JetAk08Rap_->push_back(jetAK8.y());
+      JetAk08Rap_->push_back(jetAK8.rapidity());
       JetAk08Phi_->push_back(jetAK8.phi());
 
-      // grab CHS quantities instead of PUPPI here
+      // grab CHS quantities instead of PUPPI here --------
       if(jetAK8.hasUserFloat("ak8PFJetsCHSValueMap:pt")) {
         float jetAK8CHSpT = jetAK8.userFloat("ak8PFJetsCHSValueMap:pt");
         JetAk08CHSPt_->push_back(jetAK8CHSpT);
@@ -1325,8 +1466,193 @@ void Tupel::processJetsAK8(){
         JetAk08CHSPhi_->push_back(jetAK8CHSphi);
       }
 
+      //kinematics of uncorrected jet --------
+      reco::Candidate::LorentzVector uncorrJetAK8 = jetAK8.correctedP4(0);
+      JetAk08PtUncorr_->push_back(uncorrJetAK8.pt());
+      JetAk08EtaUncorr_->push_back(uncorrJetAK8.eta());
+      JetAk08EUncorr_->push_back(uncorrJetAK8.energy());
+
     }
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// EDAnalyzer Functions
+
+void Tupel::beginJob(){
+  // First setup for the output TTree
+  // Writes "Header" in output TTree in beginJob
+  writeHeader();
+  dataTree = fs->make<TTree>("EventTree", "EventTree");
+  descTree = fs->make<TTree>("Description", "Description");
+  bitTree  = fs->make<TTree>("BitFields", "BitFields");
+  treeHelper_ = new TreeHelper(dataTree, descTree, bitTree);
+
+  // Now, the addition of branches for filling in the analysis code ---
+  //Event
+  ADD_BRANCH_D(EvtIsRealData, "True if real data, false if MC");
+  ADD_BRANCH_D(EvtNum, "Event number");
+  ADD_BRANCH_D(EvtRunNum, "Run number");
+  ADD_BRANCH_D(EvtLumiNum, "Luminosity block number");
+  ADD_BRANCH_D(EvtBxNum, "Bunch crossing number");
+  ADD_BRANCH_D(EvtVtxCnt, "Number of reconstructed primary vertices");
+  ADD_BRANCH_D(EvtPuCnt, "Number of measured pile-up events");
+  ADD_BRANCH_D(EvtPuCntTruth, "True number of pile-up events");
+  ADD_BRANCH(EvtWeights); //description filled in endRun()
+  ADD_BRANCH(originalXWGTUP);
+  ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
+  ADD_BRANCH(firstGoodVertexIdx);
+
+  //Trigger
+  ADD_BRANCH_D(TrigHlt, "HLT triggger bits. See BitField.TrigHlt for bit description."); 
+  ADD_BRANCH_D(TrigHltMu, "HLT Muon triggger bits. See BitField.TrigHltMu for bit description.");
+  ADD_BRANCH_D(TrigHltMu_prescale, "HLT Muon triggger prescales for the corresponding trigger bits. See BitField.TrigHltMu for bit description.");
+
+  ADD_BRANCH(TrigMET);
+  ADD_BRANCH_D(TrigMETBit, "MET filter bits. See BitField.TrigMETBit for bit description.");
+  ADD_BRANCH_D(TrigMETBit_prescale, "MET filter prescales for the corresponding trigger bits. See BitField.TrigHltPhot for bit description.");
+
+  ADD_BRANCH_D(PreFiringWeight,     "L1 Prefire Weight");
+  ADD_BRANCH_D(PreFiringWeightUp,   "L1 Prefire Weight Up");
+  ADD_BRANCH_D(PreFiringWeightDown, "L1 Prefire Weight Down");
+
+  ////////////////// GENERATOR LEVEL
+
+  //Generator level leptons.
+  treeHelper_->addDescription("GLepBare", "Generator-level leptons, status 1 without dressing.");
+  ADD_BRANCH(GLepBarePt);
+  ADD_BRANCH(GLepBareEta);
+  ADD_BRANCH(GLepBarePhi);
+  ADD_BRANCH(GLepBareE);
+  ADD_BRANCH(GLepBareId);
+  ADD_BRANCH(GLepBareSt);
+  ADD_BRANCH(GLepBareMomId);
+  ADD_BRANCH(GLepBarePrompt);
+  ADD_BRANCH(GLepBareTauProd);  
+
+  treeHelper_->addDescription("GLepSt3", "Status 3 generator-level leptons.");
+  ADD_BRANCH(GLepSt3Pt);
+  ADD_BRANCH(GLepSt3Eta);
+  ADD_BRANCH(GLepSt3Phi);
+  ADD_BRANCH(GLepSt3E);
+  ADD_BRANCH(GLepSt3Id);
+  ADD_BRANCH(GLepSt3St);
+  ADD_BRANCH_D(GLepSt3Mother0Id, "Lepton mother PDG Id. Filled only for first mother. Number of mothers can be checked in GLepoSt3MotherCnt.");
+  ADD_BRANCH(GLepSt3MotherCnt);
+
+  //Photons in the vicinity of the leptons
+  treeHelper_->addDescription("GLepClosePhot", "Photons aroud leptons. Selection cone size: R = 0.2");
+  ADD_BRANCH(GLepClosePhotPt);
+  ADD_BRANCH(GLepClosePhotEta);
+  ADD_BRANCH(GLepClosePhotPhi);
+  ADD_BRANCH(GLepClosePhotE);
+  ADD_BRANCH(GLepClosePhotId);
+  ADD_BRANCH_D(GLepClosePhotMother0Id, "Photon mother PDG Id. Filled only for first mother. Number of mothers can be checked in GLepoSt3MotherCnt.");
+  ADD_BRANCH(GLepClosePhotMotherCnt);
+  ADD_BRANCH(GLepClosePhotSt);
+
+  // Generator-level MET
+  ADD_BRANCH(GMETPt);
+  ADD_BRANCH(GMETPx);
+  ADD_BRANCH(GMETPy);
+  // ADD_BRANCH(GMETPz);
+  ADD_BRANCH(GMETE);
+  ADD_BRANCH(GMETPhi);
+
+  //Gen Jets
+  treeHelper_->addDescription("GJetAk04", "Generator-level reconstructed with the anti-kt algorithm with distance parameter R = 0.4");
+  ADD_BRANCH(GJetAk04Pt);
+  ADD_BRANCH(GJetAk04Eta);
+  ADD_BRANCH(GJetAk04Phi);
+  ADD_BRANCH(GJetAk04E);
+
+  //Extra generator information
+  ADD_BRANCH_D(GNup, "Number of particles/partons included in the matrix element.");
+  //ADD_BRANCH_D(npLO, "npLO");
+  ADD_BRANCH_D(npNLO,"npNLO");
+
+  ADD_BRANCH(LHEZid);
+  ADD_BRANCH(LHEZStatus);
+  ADD_BRANCH(LHEZPx);
+  ADD_BRANCH(LHEZPy);
+  ADD_BRANCH(LHEZPz);
+  ADD_BRANCH(LHEZE);
+
+  ////////////////// RECO LEVEL
+
+  //Muons
+  treeHelper_->addDescription("Mu", "PF reconstruced muons.");
+  ADD_BRANCH(MuPt);
+  ADD_BRANCH(MuEta);
+  ADD_BRANCH(MuPhi);
+  ADD_BRANCH(MuE);
+  ADD_BRANCH(MuIdLoose);
+  ADD_BRANCH(MuIdMedium);
+  ADD_BRANCH_D(MuIdTight, "Muon tight id. Bit field, one bit per primary vertex hypothesis. Bit position corresponds to index in EvtVtx");
+  ADD_BRANCH(MuCh);
+  ADD_BRANCH(MuVtxZ);
+  ADD_BRANCH(MuDxy);
+  ADD_BRANCH(MuPfIso);
+  ADD_BRANCH(MuDz);
+  ADD_BRANCH(MuHltMatch);
+  // ADD_BRANCH(MuTkNormChi2);
+  // ADD_BRANCH(MuTkHitCnt);
+  // ADD_BRANCH(MuMatchedStationCnt);
+  // ADD_BRANCH(MuPixelHitCnt);
+  // ADD_BRANCH(MuTkLayerCnt);
+
+  //MET
+  ADD_BRANCH(METPt);
+  ADD_BRANCH(METPx);
+  ADD_BRANCH(METPy);
+  // ADD_BRANCH(METPz);
+  ADD_BRANCH(METE);
+  ADD_BRANCH(METPhi);
+  // ADD_BRANCH(METEta);
+
+  //PF Jets - AK4
+  treeHelper_->addDescription("JetAk04", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.4");
+  ADD_BRANCH(JetAk04Pt);
+  ADD_BRANCH(JetAk04Eta);
+  ADD_BRANCH(JetAk04Rap);
+  ADD_BRANCH(JetAk04Phi);
+  ADD_BRANCH(JetAk04E);
+  ADD_BRANCH_D(JetAk04Id, "Id to reject fake jets from electronic noise");
+  ADD_BRANCH_D(JetAk04PuMva, "MVA based descriminant for PU jets");
+  ADD_BRANCH_D(JetAk04PuId, "MVA based ID for PU jets");
+  ADD_BRANCH(JetAk04PuIdLoose);
+  ADD_BRANCH(JetAk04PuIdMedium);
+  ADD_BRANCH(JetAk04PuIdTight);
+  treeHelper_->addDescription("JetAk04BTag", "B tagging with different algorithms");
+  ADD_BRANCH_D(JetAk04BDiscCisvV2, "pfCombinedInclusiveSecondaryVertexV2BJetTags");
+  ADD_BRANCH_D(JetAk04HadFlav, "Hadron-based jet flavor.");
+  ADD_BRANCH(JetAk04JecUncUp);
+  ADD_BRANCH(JetAk04JecUncDwn);
+  ADD_BRANCH(JetAk04PtUncorr);
+  ADD_BRANCH(JetAk04EtaUncorr);
+  ADD_BRANCH(JetAk04EUncorr);
+
+  //PF Jets - AK8
+  treeHelper_->addDescription("JetAk08", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.8");
+  ADD_BRANCH(JetAk08Pt);
+  ADD_BRANCH(JetAk08Eta);
+  ADD_BRANCH(JetAk08Rap);
+  ADD_BRANCH(JetAk08Phi);
+  ADD_BRANCH(JetAk08E);
+  ADD_BRANCH(JetAk08Id);
+  ADD_BRANCH(JetAk08BDiscCisvV2);
+  ADD_BRANCH(JetAk08HadFlav);
+  ADD_BRANCH(JetAk08CHSPt);
+  ADD_BRANCH(JetAk08CHSEta);
+  ADD_BRANCH(JetAk08CHSPhi);
+  ADD_BRANCH(JetAk08JecUncUp);
+  ADD_BRANCH(JetAk08JecUncDwn);
+  ADD_BRANCH(JetAk08PtUncorr);
+  ADD_BRANCH(JetAk08EtaUncorr);
+  ADD_BRANCH(JetAk08EUncorr);
+
+  // Defining trigger bits
+  defineBitFields();
 }
 
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
@@ -1369,286 +1695,20 @@ void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   if (!muons.failedToGet()) processMuons(iEvent);
 
   if(DJALOG_) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
-  iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParColl); 
+  iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParCollAK4); 
   processJets();
 
   if(DJALOG_) std::cout << "\n ~~~ processJetsAK8() ~~~ "  << std::endl;
-  // iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParColl); 
+  iSetup.get<JetCorrectionsRecord>().get("AK8PFPuppi", JetCorParCollAK8); 
   processJetsAK8();
 
   //Stores the EvtNum in the output tree
   treeHelper_->fill();
 }
 
-void Tupel::writeHeader(){
-
-  headTree = fs->make<TTree>("Header", "Header");
-
-  TString checksum_(checksum);
-  headTree->Branch("Tupel_cc_githash", &checksum_);
-
-  TString cmssw_release(edm::getReleaseVersion().c_str());
-  headTree->Branch("CMSSW_RELEASE", &cmssw_release);
-
-  char hostname[256];
-  gethostname(hostname, sizeof(hostname));
-  hostname[sizeof(hostname)-1] = 0;
-  TString hostname_(hostname);
-  headTree->Branch("Hostname", &hostname_);
-
-  edm::TimeOfDay ts;
-  std::stringstream s;
-  s << std::setprecision(0) << ts;
-  TString ts_(s.str().c_str());
-  headTree->Branch("CreationTime", &ts_);
-
-  headTree->Fill();
-}
-
-/*
-void Tupel::beginRun(edm::Run const& iRun, edm::EventSetup const&){  
-  edm::Handle<LHERunInfoProduct> run; 
-  typedef std::vector<LHERunInfoProduct::Header>::const_iterator headers_const_iterator;
- 
-  iRun.getByLabel( "externalLHEProducer", run );
-  LHERunInfoProduct myLHERunInfoProduct = *(run.product());
- 
-  for (headers_const_iterator iter=myLHERunInfoProduct.headers_begin(); iter!=myLHERunInfoProduct.headers_end(); iter++){
-    std::cout << iter->tag() << std::endl;
-    std::vector<std::string> lines = iter->lines();
-    for (unsigned int iLine = 0; iLine<lines.size(); iLine++) {
-      std::cout << lines.at(iLine);
-    }
-  }
-}
-*/
-
-void Tupel::beginJob(){
-  // First setup for the output TTree
-  // Writes "Header" in output TTree in beginJob
-  writeHeader();
-  dataTree = fs->make<TTree>("EventTree", "EventTree");
-  descTree = fs->make<TTree>("Description", "Description");
-  bitTree  = fs->make<TTree>("BitFields", "BitFields");
-  treeHelper_ = new TreeHelper(dataTree, descTree, bitTree);
-
-  // Now, the addition of branches for filling in the analysis code ---
-  //Event
-  ADD_BRANCH_D(EvtIsRealData, "True if real data, false if MC");
-  ADD_BRANCH_D(EvtNum, "Event number");
-  ADD_BRANCH_D(EvtRunNum, "Run number");
-  ADD_BRANCH_D(EvtLumiNum, "Luminosity block number");
-  ADD_BRANCH_D(EvtBxNum, "Bunch crossing number");
-  ADD_BRANCH_D(EvtVtxCnt, "Number of reconstructed primary vertices");
-  ADD_BRANCH_D(EvtPuCnt, "Number of measured pile-up events");
-  ADD_BRANCH_D(EvtPuCntTruth, "True number of pile-up events");
-  ADD_BRANCH(EvtWeights); //description filled in endRun()
-  ADD_BRANCH(originalXWGTUP);
-  ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
-
-  ADD_BRANCH(TrigMET);
-  ADD_BRANCH_D(TrigMETBit, "MET filter bits. See BitField.TrigMETBit for bit description.");
-  ADD_BRANCH_D(TrigMETBit_prescale, "MET filter prescales for the corresponding trigger bits. See BitField.TrigHltPhot for bit description.");
-
-  ADD_BRANCH_D(PreFiringWeight,     "L1 Prefire Weight");
-  ADD_BRANCH_D(PreFiringWeightUp,   "L1 Prefire Weight Up");
-  ADD_BRANCH_D(PreFiringWeightDown, "L1 Prefire Weight Down");
-  ADD_BRANCH(firstGoodVertexIdx);
-
-  //Trigger
-  ADD_BRANCH_D(TrigHlt, "HLT triggger bits. See BitField.TrigHlt for bit description."); 
-  ADD_BRANCH_D(TrigHltMu, "HLT Muon triggger bits. See BitField.TrigHltMu for bit description.");
-  ADD_BRANCH_D(TrigHltDiMu, "HLT Dimuon triggger bits. See BitField.TrigHltDiMu for bit description.");
-  ADD_BRANCH_D(TrigHltEl, "HLT Electron triggger bits. See BitField.TrigHltEl for bit description.");
-  ADD_BRANCH_D(TrigHltDiEl, "HLT Dielectron triggger bits. See BitField.TrigHltDiEl for bit description.");
-  ADD_BRANCH_D(TrigHltElMu, "HLT Muon + Electron triggger bits. See BitField.TrigHltElMu for bit description.");
-
-  ADD_BRANCH_D(TrigHltMu_prescale, "HLT Muon triggger prescales for the corresponding trigger bits. See BitField.TrigHltMu for bit description.");
-  ADD_BRANCH_D(TrigHltDiMu_prescale, "HLT Dimuon triggger prescales for the corresponding trigger bits. See BitField.TrigHltDiMu for bit description.");
-  ADD_BRANCH_D(TrigHltEl_prescale, "HLT Electron triggger prescales for the corresponding trigger bits. See BitField.TrigHltEl for bit description.");
-  ADD_BRANCH_D(TrigHltDiEl_prescale, "HLT Dielectron triggger prescales for the corresponding trigger bits. See BitField.TrigHltDiEl for bit description.");
-  ADD_BRANCH_D(TrigHltElMu_prescale, "HLT Muon + Electron triggger prescales for the corresponding trigger bits. See BitField.TrigHltElMu for bit description.");
-
-  //Generator level leptons.
-  treeHelper_->addDescription("GLepBare", "Generator-level leptons, status 1 without dressing.");
-  ADD_BRANCH(GLepBarePt);
-  ADD_BRANCH(GLepBareEta);
-  ADD_BRANCH(GLepBarePhi);
-  ADD_BRANCH(GLepBareE);
-  ADD_BRANCH(GLepBareId);
-  ADD_BRANCH(GLepBareSt);
-  ADD_BRANCH(GLepBareMomId);
-  ADD_BRANCH(GLepBarePrompt);
-  ADD_BRANCH(GLepBareTauProd);  
-
-  treeHelper_->addDescription("GLepSt3", "Status 3 generator-level leptons.");
-  ADD_BRANCH(GLepSt3Pt);
-  ADD_BRANCH(GLepSt3Eta);
-  ADD_BRANCH(GLepSt3Phi);
-  ADD_BRANCH(GLepSt3E);
-  ADD_BRANCH(GLepSt3Id);
-  ADD_BRANCH(GLepSt3St);
-  ADD_BRANCH_D(GLepSt3Mother0Id, "Lepton mother PDG Id. Filled only for first mother. Number of mothers can be checked in GLepoSt3MotherCnt.");
-  ADD_BRANCH(GLepSt3MotherCnt);
-
-  //Photons in the vicinity of the leptons
-  treeHelper_->addDescription("GLepClosePhot", "Photons aroud leptons. Selection cone size: R = 0.2");
-  ADD_BRANCH(GLepClosePhotPt);
-  ADD_BRANCH(GLepClosePhotEta);
-  ADD_BRANCH(GLepClosePhotPhi);
-  ADD_BRANCH(GLepClosePhotE);
-  ADD_BRANCH(GLepClosePhotId);
-  ADD_BRANCH_D(GLepClosePhotMother0Id, "Photon mother PDG Id. Filled only for first mother. Number of mothers can be checked in GLepoSt3MotherCnt.");
-  ADD_BRANCH(GLepClosePhotMotherCnt);
-  ADD_BRANCH(GLepClosePhotSt);
-
-  //Gen Jets
-  treeHelper_->addDescription("GJetAk04", "Generator-level reconstructed with the anti-kt algorithm with distance parameter R = 0.4");
-  ADD_BRANCH(GJetAk04Pt);
-  ADD_BRANCH(GJetAk04Eta);
-  ADD_BRANCH(GJetAk04Phi);
-  ADD_BRANCH(GJetAk04E);
-
-  //Extra generator information
-  ADD_BRANCH_D(GNup, "Number of particles/partons included in the matrix element.");
-  //ADD_BRANCH_D(npLO, "npLO");
-  ADD_BRANCH_D(npNLO,"npNLO");
-
-  ADD_BRANCH(LHEZid);
-  ADD_BRANCH(LHEZStatus);
-  ADD_BRANCH(LHEZPx);
-  ADD_BRANCH(LHEZPy);
-  ADD_BRANCH(LHEZPz);
-  ADD_BRANCH(LHEZE);
-
-  //Muons
-  treeHelper_->addDescription("Mu", "PF reconstruced muons.");
-  ADD_BRANCH(MuPt);
-  ADD_BRANCH(MuEta);
-  ADD_BRANCH(MuPhi);
-  ADD_BRANCH(MuE);
-  ADD_BRANCH(MuIdLoose);
-  ADD_BRANCH(MuIdMedium);
-  ADD_BRANCH_D(MuIdTight, "Muon tight id. Bit field, one bit per primary vertex hypothesis. Bit position corresponds to index in EvtVtx");
-  ADD_BRANCH(MuCh);
-  ADD_BRANCH(MuVtxZ);
-  ADD_BRANCH(MuDxy);
-  ADD_BRANCH(MuPfIso);
-  ADD_BRANCH(MuDz);
-  ADD_BRANCH(MuHltMatch);
-  ADD_BRANCH(MuTkNormChi2);
-  ADD_BRANCH(MuTkHitCnt);
-  ADD_BRANCH(MuMatchedStationCnt);
-  ADD_BRANCH(MuPixelHitCnt);
-  ADD_BRANCH(MuTkLayerCnt);
-
-  //MET
-  ADD_BRANCH(METPt);
-  ADD_BRANCH(METPx);
-  ADD_BRANCH(METPy);
-  ADD_BRANCH(METPz);
-  ADD_BRANCH(METE);
-  ADD_BRANCH(METPhi);
-  ADD_BRANCH(GMETPt);
-  ADD_BRANCH(GMETPx);
-  ADD_BRANCH(GMETPy);
-  ADD_BRANCH(GMETPz);
-  ADD_BRANCH(GMETE);
-  ADD_BRANCH(GMETPhi);
-
-  //PF Jets - AK4
-  treeHelper_->addDescription("JetAk04", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.4");
-  ADD_BRANCH(JetAk04Pt);
-  ADD_BRANCH(JetAk04Eta);
-  ADD_BRANCH(JetAk04Phi);
-  ADD_BRANCH(JetAk04E);
-  ADD_BRANCH_D(JetAk04Id, "Id to reject fake jets from electronic noise");
-  ADD_BRANCH_D(JetAk04PuMva, "MVA based descriminant for PU jets");
-  ADD_BRANCH_D(JetAk04PuId, "MVA based ID for PU jets");
-  treeHelper_->addDescription("JetAk04BTag", "B tagging with different algorithms");
-  ADD_BRANCH_D(JetAk04BDiscCisvV2, "pfCombinedInclusiveSecondaryVertexV2BJetTags");
-  ADD_BRANCH_D(JetAk04HadFlav, "Hadron-based jet flavor.");
-  ADD_BRANCH(JetAk04JecUncUp);
-  ADD_BRANCH(JetAk04JecUncDwn);
-
-  //PF Jets - AK8
-  treeHelper_->addDescription("JetAk08", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.8");
-  ADD_BRANCH(JetAk08Pt);
-  ADD_BRANCH(JetAk08Eta);
-  ADD_BRANCH(JetAk08Rap);
-  ADD_BRANCH(JetAk08Phi);
-  ADD_BRANCH(JetAk08E);
-  ADD_BRANCH(JetAk08Id);
-  ADD_BRANCH(JetAk08BDiscCisvV2);
-  ADD_BRANCH(JetAk08HadFlav);
-  ADD_BRANCH(JetAk08CHSPt);
-  ADD_BRANCH(JetAk08CHSEta);
-  ADD_BRANCH(JetAk08CHSPhi);
-
-  // Defining trigger bits
-  defineBitFields();
-}
-
-void Tupel::allocateTrigMap(int nTrigMax){
-  std::vector<int> row(nTrigMax+2, 0);
-  std::vector<std::vector<int> > newMap(nTrigMax+1, row);
-  std::vector<std::string> newTrigNames(nTrigMax, "");
-  for(unsigned i = 0; i < trigAccept_.size(); ++i){
-    if(i < trigNames_.size()) newTrigNames[i] = trigNames_[i];
-    for(unsigned j = 0; j < trigAccept_[i].size(); ++j){
-      newMap[i][j] = trigAccept_[i][j];
-    }
-  }
-  trigNames_.swap(newTrigNames);
-  trigAccept_.swap(newMap);
-}
-
 void Tupel::endJob(){
   treeHelper_->fillDescriptionTree();
   if(triggerStat_) writeTriggerStat();
-}
-
-void Tupel::writeTriggerStat(){
-  std::ofstream f("trigger_stat.txt");
-  if(!trigStatValid_){
-    f << "Trigger statistics is not available. \n\n"
-      "Events with different trigger index maps were processed. Trigger statistics"
-      "is not supported for such case.\n\n";
-    f << "Column S contains the number of events the trigger indicated in second column of is the only one fired.\n"
-      << "The columns on the right of the column S contain for each combination of two triggers the number of events "
-      "for which both triggers have been fired. The number in the column header refers to the trigger indices "
-      "contained in the first column of the table.\n\n";
-  } else {
-
-    f << "Trigger statistics\n"
-      << "------------------\n\n"
-      << "Total number of processed events: " << analyzedEventCnt_ << "\n\n";
-
-    f  << "#\tTrigger line\tAccept count\tAccept rate\tS";
-    //sort the map per value by inverting key and value:
-    std::vector<int> trigSortedIndex(trigNames_.size());
-    size_t maxTrigForCol = 10;
-    for(unsigned i = 0; i < trigSortedIndex.size(); ++i){
-      trigSortedIndex[i] = i;
-      if(i<maxTrigForCol) f << "\t" << (1+i);
-    }
-    f << "\n";
-    sort(trigSortedIndex.begin(), trigSortedIndex.end(), TrigSorter(this));
-    //    trigSortedIndex.resize(10);
-    f << "0\tNone\t" << trigAccept_[0][0] << "\n";
-    for(unsigned i = 0; i < trigSortedIndex.size(); ++i){
-      unsigned ii = trigSortedIndex[i];
-      f << (i+1) << "\t" << trigNames_[ii] << " (" << ii << ")"
-	<< "\t" << trigAccept_[1+ii][0]
-	<< "\t" << double(trigAccept_[1+ii][0]) / analyzedEventCnt_
-	<< "\t" << trigAccept_[1+ii][1];
-      for(unsigned j = 0; j < std::min(maxTrigForCol, trigSortedIndex.size()); ++j){
-	unsigned jj = trigSortedIndex[j];
-	f << "\t" << trigAccept_[1+ii][2+jj];
-      }
-      f << "\n";
-    }
-  }
 }
 
 void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
@@ -1695,22 +1755,5 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   
   printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, Muons=%d, Jets=%d, MET=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedMuons, failedJets, failedMET);
 }
-
-bool Tupel::compTrigger(const char* a, const char* bv) const{
-  int i = 0;
-  for(;a[i]!=0 && bv[i]!=0; ++i){
-    if(a[i]!= bv[i]) return false;
-  }
-  if(a[i]) return false;
-  if(bv[i]==0) return true;
-  if(bv[i] != '_') return false;
-  if(bv[++i]!='v') return false;
-  for(;;){
-    if(bv[++i]==0) return true;
-    if(!isdigit(bv[i])) return false;
-  }
-  return true;
-};
-
 
 DEFINE_FWK_MODULE(Tupel);
