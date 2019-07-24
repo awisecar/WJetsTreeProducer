@@ -42,7 +42,6 @@ protected:
   bool filterGJet(int iGenLep);
 
   // RECO
-  // bool filterEl(int iEl);
   bool filterMu(int iMu);
   bool filterMET(int iMET);
   bool filterJetAk04(int iJetAk04);
@@ -54,7 +53,8 @@ protected:
   double mll(std::vector<float>* lepColPt, std::vector<float>* lepColEta,
 	     std::vector<float>* lepColPhi, std::vector<float>* lepColE,
 	     std::vector<int>* lepColId = 0, int pid = 0);
-  enum { DMu, DMuUnf, DMuMass, DE, DEUnf, DEMass, EMu, SE, SEUnf, SMu, SMuUnf, SLep, SLepUnf, NSubSels};
+  // enum { DMu, DMuUnf, DMuMass, DE, DEUnf, DEMass, EMu, SE, SEUnf, SMu, SMuUnf, SLep, SLepUnf, NSubSels};
+  enum { DMu, DMuUnf, DMuMass, SMu, SMuUnf, SLep, SLepUnf, NSubSels};
 
   static const int kEl = 11;
   static const int kMu = 13;
@@ -67,12 +67,12 @@ void VJetPruner::declareSubSelections(){
   subSelections_[DMu]    = SubSelection("DMu", "Dimuon selection for Z+jet analysis");
   subSelections_[DMuUnf] = SubSelection("DMuUnf", "Dimuon selection for Z+jet analysis with MC selection suitable to fill the detector response matrices for the unfolding.");
   subSelections_[DMuMass] = SubSelection("DMuMass", "Dielectron selection for Z+jet analysis including dilepton mass window");
-  subSelections_[DE]     = SubSelection("DE","Dielectron selection for Z+jet analysis");
-  subSelections_[DEUnf]  = SubSelection("DEUnf", "Dielectron selection for Z+jet analysis with MC selection suitable to fill the detector response matrices for the unfolding.");
-  subSelections_[DEMass] = SubSelection("DEMass", "Dimuon selection for Z+jet analysis including dilepton mass window");
-  subSelections_[EMu]    = SubSelection("EMu", "Electron-muon selection for background control region");
-  subSelections_[SE]     = SubSelection("SE", "Single electron selection for W+jet analysis");
-  subSelections_[SEUnf]  = SubSelection("SEUnf", "Single electron selection for W+jet analysis with MC selection suitable to fill the detector response matrices for the unfolding.");
+  // subSelections_[DE]     = SubSelection("DE","Dielectron selection for Z+jet analysis");
+  // subSelections_[DEUnf]  = SubSelection("DEUnf", "Dielectron selection for Z+jet analysis with MC selection suitable to fill the detector response matrices for the unfolding.");
+  // subSelections_[DEMass] = SubSelection("DEMass", "Dimuon selection for Z+jet analysis including dilepton mass window");
+  // subSelections_[EMu]    = SubSelection("EMu", "Electron-muon selection for background control region");
+  // subSelections_[SE]     = SubSelection("SE", "Single electron selection for W+jet analysis");
+  // subSelections_[SEUnf]  = SubSelection("SEUnf", "Single electron selection for W+jet analysis with MC selection suitable to fill the detector response matrices for the unfolding.");
   subSelections_[SMu]    = SubSelection("SMu", "Single muon selection for W+jet analysis");
   subSelections_[SMuUnf] = SubSelection("SMuUnf", "Single muon selection for W+jet analysis with MC selection suitable to fill the detector response matrices for the unfolding.");
   subSelections_[SLep]    = SubSelection("SLep", "Single lepton for any analysis");
@@ -125,29 +125,6 @@ void VJetPruner::skimCollections(){
   filter(GJetAk04Phi, mask);
   filter(GJetAk04E,   mask);
 
-  // if(DEBUG) printf("makeFilterMask(&VJetPruner::filterEl, mask);\n");
-  // //Reco electron collections:
-  // mask.resize(ElPt->size());
-  // makeFilterMask(&VJetPruner::filterEl, mask);
-  // filter(ElPt, mask);
-  // filter(ElEta, mask);
-  // filter(ElEtaSc, mask);
-  // filter(ElPhi, mask);
-  // filter(ElE, mask);
-  // filter(ElId, mask);
-  // filter(ElCh, mask);
-  // filter(ElD0, mask);
-  // filter(ElDz, mask);
-  // filter(ElPassConvVeto, mask);
-  // filter(ElHltMatch, mask);
-  // filter(ElPfIsoChHad, mask);
-  // filter(ElPfIsoNeutralHad, mask);
-  // filter(ElPfIsoIso, mask);
-  // filter(ElPfIsoPuChHad, mask);
-  // filter(ElPfIsoRaw, mask);
-  // filter(ElPfIsoDbeta, mask);
-  // filter(ElPfIsoRho, mask);
-
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterMu, mask);\n");
   //Reco muon collections:
   mask.resize(MuPt->size());
@@ -165,11 +142,11 @@ void VJetPruner::skimCollections(){
   filter(MuPfIso, mask);
   filter(MuDz, mask);
   filter(MuHltMatch, mask);
-  filter(MuTkNormChi2, mask);
-  filter(MuTkHitCnt, mask);
-  filter(MuMatchedStationCnt, mask);
-  filter(MuPixelHitCnt, mask);
-  filter(MuTkLayerCnt, mask);
+  // filter(MuTkNormChi2, mask);
+  // filter(MuTkHitCnt, mask);
+  // filter(MuMatchedStationCnt, mask);
+  // filter(MuPixelHitCnt, mask);
+  // filter(MuTkLayerCnt, mask);
 
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterMET, mask);\n");
   //Reco MET:
@@ -178,7 +155,7 @@ void VJetPruner::skimCollections(){
   filter(METPt, mask);
   filter(METPx, mask);
   filter(METPy, mask);
-  filter(METPz, mask);
+  // filter(METPz, mask);
   filter(METE, mask);
   filter(METPhi, mask);
   
@@ -191,8 +168,11 @@ void VJetPruner::skimCollections(){
   filter(JetAk04Phi, mask);
   filter(JetAk04E, mask);
   filter(JetAk04Id, mask);
-  filter(JetAk04PuId, mask);
   filter(JetAk04PuMva, mask);
+  filter(JetAk04PuId, mask);
+  filter(JetAk04PuIdLoose, mask);
+  filter(JetAk04PuIdMedium, mask);
+  filter(JetAk04PuIdTight, mask);
   filter(JetAk04BDiscCisvV2, mask);
   filter(JetAk04HadFlav, mask);
   filter(JetAk04JecUncUp, mask);
@@ -204,15 +184,15 @@ void VJetPruner::skimCollections(){
   makeFilterMask(&VJetPruner::filterJetAk08, mask);
   filter(JetAk08Pt, mask);
   filter(JetAk08Eta, mask);
-  filter(JetAk08Rap, mask);
+  // filter(JetAk08Rap, mask);
   filter(JetAk08Phi, mask);
   filter(JetAk08E, mask);
   filter(JetAk08Id, mask);
   filter(JetAk08BDiscCisvV2, mask);
   filter(JetAk08HadFlav, mask);
-  filter(JetAk08CHSPt, mask);
-  filter(JetAk08CHSEta, mask);
-  filter(JetAk08CHSPhi, mask);
+  // filter(JetAk08CHSPt, mask);
+  // filter(JetAk08CHSEta, mask);
+  // filter(JetAk08CHSPhi, mask);
 }
 
 //to be run after skimCollections
@@ -234,27 +214,29 @@ bool VJetPruner::eventSelection(){
   case DMuMass:
     m = mll(MuPt,MuEta,MuPhi,MuE);
     return MuPt->size() > 1 && mll_low < m && m < mll_high;
-  case DE:
-    return ElPt->size() > 1;
-  case DEUnf:
-    return ElPt->size() > 1 || GElCnt > 1;
-  case DEMass:
-    m = mll(ElPt,ElEta,ElPhi,ElE);
-    return ElPt->size() > 1 && mll_low < m && m < mll_high;
-  case EMu:
-    return ElPt->size() > 0 && MuPt->size() > 0;
-  case SE:
-    return ElPt->size() > 0;
-  case SEUnf:
-    return ElPt->size() > 0 || GElCnt > 0;
+  // case DE:
+  //   return ElPt->size() > 1;
+  // case DEUnf:
+  //   return ElPt->size() > 1 || GElCnt > 1;
+  // case DEMass:
+  //   m = mll(ElPt,ElEta,ElPhi,ElE);
+  //   return ElPt->size() > 1 && mll_low < m && m < mll_high;
+  // case EMu:
+  //   return ElPt->size() > 0 && MuPt->size() > 0;
+  // case SE:
+  //   return ElPt->size() > 0;
+  // case SEUnf:
+  //   return ElPt->size() > 0 || GElCnt > 0;
   case SMu:
     return MuPt->size() > 0;
   case SMuUnf:
     return MuPt->size() > 0 || GMuCnt > 0;
   case SLep:
-    return MuPt->size() > 0 || ElPt->size() > 0;
+    // return MuPt->size() > 0 || ElPt->size() > 0;
+    return MuPt->size() > 0;
   case SLepUnf:
-    return MuPt->size() > 0 || ElPt->size() > 0 || GElCnt > 0 || GMuCnt > 0;
+    // return MuPt->size() > 0 || ElPt->size() > 0 || GElCnt > 0 || GMuCnt > 0;
+    return MuPt->size() > 0 || GElCnt > 0 || GMuCnt > 0;
   case NSubSels:
   default:
     return false;

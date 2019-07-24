@@ -6,9 +6,9 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 
 #### I: For Baobab production -----
 To create crab config file:
-simple_grow_boababs DATACARD_FILE.txt  --no-submit --unitsPerJob=500000
+simple_grow_boababs DATACARD_FILE.txt  --no-submit --unitsPerJob=400000
 e.g.
-simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=500000
+simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=400000
 # Make sure to alter grow_baobabs_cfg.py if needed (this is your cmsRun cfg file)
 # To run grow_baobabs_cfg.py for testing you can do, e.g.
 # cmsRun grow_baobabs_cfg.py maxEvents=10000 isMC=0 year=2017
