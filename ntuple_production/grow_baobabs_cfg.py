@@ -11,11 +11,11 @@ opt.register('year', '2017', VarParsing.VarParsing.multiplicity.singleton, VarPa
 opt.parseArguments()
 
 # Print out all options
-print("\n>>>>>>> Options:")
-print("year = "+str(opt.year))
-print("isMC = "+str(opt.isMC))
-print("maxEvents = "+str(opt.maxEvents))
-print("")
+#print("\n>>>>>>> Options:")
+#print("year = "+str(opt.year))
+#print("isMC = "+str(opt.isMC))
+#print("maxEvents = "+str(opt.maxEvents))
+#print("")
 
 ########################################
 

@@ -170,6 +170,7 @@ private:
   void processLHE(const edm::Event& iEvent);
   bool processVtx(const edm::Event& iEvent);
   void processGenJets(const edm::Event& iEvent);
+  void processGenJetsAK8(const edm::Event& iEvent);
   void processGenParticles(const edm::Event& iEvent);
   void processMET(const edm::Event& iEvent);
   void processPu(const edm::Event& iEvent);
@@ -213,14 +214,20 @@ private:
   edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescalesToken_;
   edm::EDGetTokenT<edm::TriggerResults> HLTTagToken_;
   edm::EDGetTokenT<std::vector<pat::TriggerObjectStandAlone> > HLTtriggerObjectToken_;
-  edm::EDGetTokenT<std::vector<reco::GenParticle> > genParticleToken_;
-  edm::EDGetTokenT<std::vector<reco::GenJet> > gjetToken_;
-  // std::vector<edm::EDGetTokenT<edm::View<pat::MET>>> metSrcsToken;
   edm::EDGetTokenT<std::vector<pat::MET> > metToken_;
-  edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
-  edm::EDGetTokenT<GenEventInfoProduct> generatorToken_;
+  
+  
+  // GEN tokens
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
   edm::EDGetTokenT<LHERunInfoProduct> lheRunToken_;
+  edm::EDGetTokenT<GenEventInfoProduct> generatorToken_;
+  edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
+  edm::EDGetTokenT<std::vector<reco::GenParticle> > genParticleToken_;
+  edm::EDGetTokenT<std::vector<reco::GenJet> > gjetToken_;
+  edm::EDGetTokenT<std::vector<reco::GenJet> > gjetAK8Token_;
+
+  
+  
   edm::EDGetTokenT<edm::TriggerResults> noiseFilterToken_;
   // Tags for MET filters
   std::string GoodVtxNoiseFilter_Selector_;
@@ -261,10 +268,10 @@ private:
   std::unique_ptr<int> 	  EvtLumiNum_;
   std::unique_ptr<int> 	  EvtBxNum_;
   std::unique_ptr<int> 	  EvtVtxCnt_;
-  std::unique_ptr<int> 	  EvtPuCnt_;
+  std::unique_ptr<int> 	  EvtPuCntObs_;
   std::unique_ptr<int> 	  EvtPuCntTruth_;
   std::unique_ptr<std::vector<double> > EvtWeights_;
-  std::unique_ptr<double> originalXWGTUP_;
+  // std::unique_ptr<double> originalXWGTUP_;
   std::unique_ptr<float>    EvtFastJetRho_;
   std::unique_ptr<double>    PreFiringWeight_;
   std::unique_ptr<double>    PreFiringWeightUp_;
@@ -322,19 +329,7 @@ private:
   std::unique_ptr<std::vector<float> > 	GLepBareE_;
   std::unique_ptr<std::vector<int> >    GLepBareId_;
   std::unique_ptr<std::vector<int> > 	  GLepBareSt_;
-  std::unique_ptr<std::vector<int> > 	  GLepBareMomId_;
   std::unique_ptr<std::vector<bool> >   GLepBarePrompt_;
-  std::unique_ptr<std::vector<bool> >   GLepBareTauProd_;
-  
-  //Generator level leptons, status 3
-  std::unique_ptr<std::vector<float> > GLepSt3Pt_;
-  std::unique_ptr<std::vector<float> > GLepSt3Eta_;
-  std::unique_ptr<std::vector<float> > GLepSt3Phi_;
-  std::unique_ptr<std::vector<float> > GLepSt3E_;
-  std::unique_ptr<std::vector<int> >   GLepSt3Id_;
-  std::unique_ptr<std::vector<int> >   GLepSt3St_;
-  std::unique_ptr<std::vector<int> >   GLepSt3Mother0Id_;
-  std::unique_ptr<std::vector<int> >   GLepSt3MotherCnt_;
 
   //Photons in the vicinity of the leptons
   std::unique_ptr<std::vector<float> > GLepClosePhotPt_;
@@ -347,23 +342,29 @@ private:
   std::unique_ptr<std::vector<int> >   GLepClosePhotMotherCnt_;
   std::unique_ptr<std::vector<int> >   GLepClosePhotSt_;
 
-  //Gen Jets
+  //Gen Jets, AK4
   std::unique_ptr<std::vector<float> > GJetAk04Pt_;
   std::unique_ptr<std::vector<float> > GJetAk04Eta_;
   std::unique_ptr<std::vector<float> > GJetAk04Phi_;
   std::unique_ptr<std::vector<float> > GJetAk04E_;
+
+  //Gen Jets, AK8
+  std::unique_ptr<std::vector<float> > GJetAk08Pt_;
+  std::unique_ptr<std::vector<float> > GJetAk08Eta_;
+  std::unique_ptr<std::vector<float> > GJetAk08Phi_;
+  std::unique_ptr<std::vector<float> > GJetAk08E_;
 
   //Exta generator information
   std::unique_ptr<int>                 GNup_;
   //std::unique_ptr<int>                   npLO_;
   std::unique_ptr<int>                   npNLO_;
 
-  std::unique_ptr<std::vector<int> >      LHEZid_;
-  std::unique_ptr<std::vector<int> >      LHEZStatus_;
-  std::unique_ptr<std::vector<float> >    LHEZPx_;
-  std::unique_ptr<std::vector<float> >    LHEZPy_;
-  std::unique_ptr<std::vector<float> >    LHEZPz_;
-  std::unique_ptr<std::vector<float> >    LHEZE_;
+  // std::unique_ptr<std::vector<int> >      LHEZid_;
+  // std::unique_ptr<std::vector<int> >      LHEZStatus_;
+  // std::unique_ptr<std::vector<float> >    LHEZPx_;
+  // std::unique_ptr<std::vector<float> >    LHEZPy_;
+  // std::unique_ptr<std::vector<float> >    LHEZPz_;
+  // std::unique_ptr<std::vector<float> >    LHEZE_;
 
   ///Muons
   std::unique_ptr<std::vector<float> > 	MuPt_;
@@ -388,7 +389,7 @@ private:
   //PF Jets - AK4
   std::unique_ptr<std::vector<float> > JetAk04Pt_;
   std::unique_ptr<std::vector<float> > JetAk04Eta_;
-  std::unique_ptr<std::vector<float> > JetAk04Rap_;
+  // std::unique_ptr<std::vector<float> > JetAk04Rap_;
   std::unique_ptr<std::vector<float> > JetAk04Phi_;
   std::unique_ptr<std::vector<float> > JetAk04E_;
   std::unique_ptr<std::vector<float> > JetAk04Id_;
@@ -408,7 +409,7 @@ private:
   //PF Jets - AK8
   std::unique_ptr<std::vector<float> > JetAk08Pt_;
   std::unique_ptr<std::vector<float> > JetAk08Eta_;
-  std::unique_ptr<std::vector<float> > JetAk08Rap_;
+  // std::unique_ptr<std::vector<float> > JetAk08Rap_;
   std::unique_ptr<std::vector<float> > JetAk08Phi_;
   std::unique_ptr<std::vector<float> > JetAk08E_;
   std::unique_ptr<std::vector<float> > JetAk08Id_;
@@ -424,8 +425,6 @@ private:
   std::unique_ptr<std::vector<float> > JetAk08EUncorr_;
 
   /// EDM Handles for collections ---
-  edm::Handle<std::vector<reco::GenParticle> > genParticles;
-  edm::Handle<LHEEventProduct> lheEventProd;
   edm::Handle<GenEventInfoProduct> genEventInfoProd;
   edm::Handle<std::vector<pat::Muon> > muons;
   edm::Handle<std::vector<pat::MET> > mets;
@@ -440,7 +439,14 @@ private:
   edm::Handle<reco::BeamSpot> beamSpotHandle;
   reco::BeamSpot beamSpot;
   edm::Handle<double> rho;
+
+  // GEN Handles
+  edm::Handle<LHEEventProduct> lheEventProd;
+  edm::Handle<std::vector<PileupSummaryInfo> >  PupInfo;
+  edm::Handle<std::vector<reco::GenParticle> > genParticles;
   edm::Handle<reco::GenJetCollection> genjetColl_;
+  edm::Handle<reco::GenJetCollection> genjetAK8Coll_;
+
   edm::Handle<std::vector<pat::TriggerObjectStandAlone> > triggerObjects_;
   edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
   edm::Handle<edm::TriggerResults> HLTResHandle;
@@ -453,7 +459,7 @@ private:
   //keep track if the input file contained LHE weights:
   bool weightsFromLhe_;
   //keep track if GenRunInfoProduct weights which were found:
-  enum {UNKNOWN, YES, NO, MIXTURE} weightFromGenEventInfo_ = UNKNOWN;
+  // enum {UNKNOWN, YES, NO, MIXTURE} weightFromGenEventInfo_ = UNKNOWN;
 
   struct TrigSorter{
     TrigSorter(Tupel* t): tupel_(t){}
@@ -469,6 +475,7 @@ private:
   int failedGen;
   int failedLHE;
   int failedGenJets;
+  int failedGenJetsAK8;
   int failedMuons;
   int failedJets;
   int failedJetsAK8;
@@ -485,7 +492,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   elecIdsListed_(false),
   hltListed_(false),
   trigStatValid_(true),
-  weightsFromLhe_(false)
+  weightsFromLhe_(true)
 {
 
   DJALOG_ = iConfig.getUntrackedParameter<bool>("DJALOG");  
@@ -494,26 +501,27 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   failedGen = 0;
   failedLHE = 0;
   failedGenJets = 0;
+  failedGenJetsAK8 = 0;
   failedMuons = 0;
   failedJets = 0;
   failedJetsAK8 = 0;
   failedMET = 0;
 
-  genParticleToken_ = consumes<std::vector<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("genSrc"));
-  gjetToken_ = consumes<std::vector<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("gjetSrc"));
-  generatorToken_ = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
+  // RECO tokens
+  vertexToken_ = consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"));
+
+  // GEN tokens
   lheEventToken_ = consumes<LHEEventProduct>(iConfig.getUntrackedParameter<edm::InputTag>("lheSrc"));
   lheRunToken_ = consumes<LHERunInfoProduct, edm::InRun>(iConfig.getUntrackedParameter<edm::InputTag>("lheSrc"));
-  vertexToken_ = consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"));
-  mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho" ));
-  beamSpotToken_ = consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
-  triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(edm::InputTag("patTrigger"));
+  generatorToken_ = consumes<GenEventInfoProduct>(iConfig.getUntrackedParameter<edm::InputTag>("genInfoSrc"));
+  puToken_ = consumes<std::vector<PileupSummaryInfo> >(iConfig.getUntrackedParameter<edm::InputTag>("puSrc"));
+  genParticleToken_ = consumes<std::vector<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("genSrc"));
+  gjetToken_ = consumes<std::vector<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("gjetSrc"));
+  gjetAK8Token_ = consumes<std::vector<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("gjetAK8Src"));
 
   // HLT trigger bits
   HLTTagToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerSrc"));
-
   HLTtriggerObjectToken_ = consumes<std::vector<pat::TriggerObjectStandAlone> >(iConfig.getUntrackedParameter<edm::InputTag>("triggerObjectTag"));
-  puToken_ = consumes<std::vector<PileupSummaryInfo> >(iConfig.getUntrackedParameter<edm::InputTag>("puSrc"));
   conversionsToken_ = consumes<reco::ConversionCollection>(edm::InputTag("reducedEgamma","reducedConversions"));
 
   // MET
@@ -532,6 +540,11 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   // prefweight_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProb"));
   // prefweightup_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProbUp"));
   // prefweightdown_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProbDown"));
+
+  // Other
+  mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho" ));
+  beamSpotToken_ = consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
+  triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(edm::InputTag("patTrigger"));
 
 }
 
@@ -771,16 +784,20 @@ void Tupel::readEvent(const edm::Event& iEvent){
   iEvent.getByToken(muonToken_, muons);
   iEvent.getByToken(jetToken_, jets);  
   iEvent.getByToken(jetAK8Token_, jetsAK8);
+  // GEN collections
+  iEvent.getByToken(lheEventToken_, lheEventProd);
+  iEvent.getByToken(puToken_, PupInfo);
+  iEvent.getByToken(genParticleToken_, genParticles);
+  iEvent.getByToken(gjetToken_, genjetColl_);
+  iEvent.getByToken(gjetAK8Token_, genjetAK8Coll_);
   // some others...
   iEvent.getByToken(triggerPrescalesToken_, triggerPrescales);
-  iEvent.getByToken(genParticleToken_, genParticles);
-  iEvent.getByToken(lheEventToken_, lheEventProd);
   iEvent.getByToken(generatorToken_, genEventInfoProd);
-  iEvent.getByToken(gjetToken_, genjetColl_);
   iEvent.getByToken(HLTtriggerObjectToken_, triggerObjects_);
   iEvent.getByToken(conversionsToken_, conversions);
   iEvent.getByToken(mSrcRhoToken_, rho);
   iEvent.getByToken(noiseFilterToken_, metfilters);
+
   
   rhoIso=-1;
   if(!rho.failedToGet()) rhoIso = *rho;
@@ -813,17 +830,21 @@ void Tupel::processLHE(const edm::Event& iEvent){
     failedLHE++;
     return;
   }
-  
+
+  // Main weight we use to normalize MC
+  // The weight() method returns the value which is a result 
+  // of multiplication of all elements in the weights container
   EvtWeights_->push_back(genEventInfoProd->weight());   
 
   if(EvtWeights_->size() == 0){
     EvtWeights_->push_back(1.);     
-    if(weightFromGenEventInfo_== NO) weightFromGenEventInfo_ = MIXTURE;     
-    else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = YES;   
-  } else{     
-    if(weightFromGenEventInfo_== YES) weightFromGenEventInfo_ = MIXTURE;     
-    else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = NO;   
-  }   
+    // if(weightFromGenEventInfo_== NO) weightFromGenEventInfo_ = MIXTURE;     
+    // else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = YES;   
+  } 
+  // else{     
+  //   if(weightFromGenEventInfo_== YES) weightFromGenEventInfo_ = MIXTURE;     
+  //   else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = NO;   
+  // }   
 
   if(lheEventProd.failedToGet() || !lheEventProd.isValid()){
     printf("processLHE failed at lheEventProd\n");
@@ -831,43 +852,42 @@ void Tupel::processLHE(const edm::Event& iEvent){
     return;
   }
 
-  *originalXWGTUP_ = lheEventProd->originalXWGTUP();
+  // *originalXWGTUP_ = lheEventProd->originalXWGTUP();
 
+  // Weights from LHEEventProduct used for things like PDF, scale variations
   for(unsigned iw = 0; iw < lheEventProd->weights().size(); ++iw){       
     //printf("lheEventProd->weights()[iw].id = %s,  lheEventProd->weights()[iw].wgt=%F\n",lheEventProd->weights()[iw].id.c_str(),lheEventProd->weights()[iw].wgt);
     EvtWeights_->push_back(lheEventProd->weights()[iw].wgt);     
   }
-  
+
   *GNup_ = lheEventProd->hepeup().NUP;
+
+  // Number of partons at LO and NLO (?)
   //*npLO_ = lheEventProd->npLO();
   *npNLO_ = lheEventProd->npNLO();
-  //Loop over all particles to look for Z or photon coming from two quarks.
-  //printf("lheEventProd->hepeup().NUP=%d\n\n",lheEventProd->hepeup().NUP);
-  for(int iParticle=0; iParticle<lheEventProd->hepeup().NUP; iParticle++ ) {
-    int pdgid = abs(lheEventProd->hepeup().IDUP[iParticle]);
-    int status = lheEventProd->hepeup().ISTUP[iParticle];
-    float px = (lheEventProd->hepeup().PUP[iParticle])[0];
-    float py = (lheEventProd->hepeup().PUP[iParticle])[1];
-    //Check for DY
-    //if( (pdgid==22 || pdgid==23) && mom1id < 7 && mom2id < 7 && mom1id==mom2id){
-    if( (pdgid==22 || pdgid==23) ){
-      //Loop over all particles to find the children.
-      //int nChild=0;
 
-      //printf("pdgid = %d\n",pdgid);
-      //printf("status = %d\n",status);
-      //printf("mom1id = %d\n",mom1id);
-      //printf("mom2id = %d\n\n",mom2id);
-      //LHEZMother1id_->push_back(mom1id);
-      //LHEZMother2id_->push_back(mom2id);
-      LHEZid_->push_back(pdgid);
-      LHEZStatus_->push_back(status);
-      LHEZPx_->push_back(px);
-      LHEZPy_->push_back(py);
-      LHEZPz_->push_back((lheEventProd->hepeup().PUP[iParticle])[2]);
-      LHEZE_->push_back((lheEventProd->hepeup().PUP[iParticle])[3]);
-    }      
-  }// Loop over generator particles
+  // //Loop over all particles to look for Z or photon coming from two quarks.
+  // //printf("lheEventProd->hepeup().NUP=%d\n\n",lheEventProd->hepeup().NUP);
+  // for(int iParticle=0; iParticle<lheEventProd->hepeup().NUP; iParticle++ ) {
+  //   int pdgid = abs(lheEventProd->hepeup().IDUP[iParticle]);
+  //   int status = lheEventProd->hepeup().ISTUP[iParticle];
+  //   float px = (lheEventProd->hepeup().PUP[iParticle])[0];
+  //   float py = (lheEventProd->hepeup().PUP[iParticle])[1];
+  //   //Check for DY
+  //   //if( (pdgid==22 || pdgid==23) && mom1id < 7 && mom2id < 7 && mom1id==mom2id){
+  //   if( (pdgid==22 || pdgid==23) ){
+  //     //Loop over all particles to find the children.
+  //     //int nChild=0;
+
+  //     LHEZid_->push_back(pdgid);
+  //     LHEZStatus_->push_back(status);
+  //     LHEZPx_->push_back(px);
+  //     LHEZPy_->push_back(py);
+  //     LHEZPz_->push_back((lheEventProd->hepeup().PUP[iParticle])[2]);
+  //     LHEZE_->push_back((lheEventProd->hepeup().PUP[iParticle])[3]);
+  //   }      
+  // } // Loop over generator particles
+
 }
 
 void Tupel::processGenJets(const edm::Event& iEvent){    
@@ -879,14 +899,35 @@ void Tupel::processGenJets(const edm::Event& iEvent){
   
   for(unsigned int k=0; k < genjetColl_->size(); ++k){
     const reco::GenJet & genJet = genjetColl_->at(k);    
-    if(genJet.pt() > 15.0 && fabs(genJet.eta()) < 2.7){
+    if(genJet.pt() > 20.0 && fabs(genJet.eta()) < 2.7){
+
       GJetAk04Pt_->push_back(genJet.pt());
       GJetAk04Eta_->push_back(genJet.eta());
       GJetAk04Phi_->push_back(genJet.phi());
       GJetAk04E_->push_back(genJet.energy());
-    }
 
+    }
   }
+
+}
+
+void Tupel::processGenJetsAK8(const edm::Event& iEvent){  
+  if(genjetAK8Coll_.failedToGet() || !genjetAK8Coll_.isValid()){
+    printf("processGenJetsAK8 failed\n");
+    failedGenJetsAK8++;
+    return;
+  }
+
+  for(unsigned int k=0; k < genjetAK8Coll_->size(); ++k){
+    const reco::GenJet & genJetAK8 = genjetAK8Coll_->at(k);    
+    if(genJetAK8.pt() > 200.0 && fabs(genJetAK8.eta()) < 2.7){
+      GJetAk08Pt_->push_back(genJetAK8.pt());
+      GJetAk08Eta_->push_back(genJetAK8.eta());
+      GJetAk08Phi_->push_back(genJetAK8.phi());
+      GJetAk08E_->push_back(genJetAK8.energy());
+    }
+  }
+
 }
 
 void Tupel::processGenParticles(const edm::Event& iEvent){
@@ -896,109 +937,90 @@ void Tupel::processGenParticles(const edm::Event& iEvent){
     return;
   }
   
-  for(size_t i=0; i<genParticles->size(); ++i){
+  for(size_t i=0; i < genParticles->size(); ++i){
     const reco::GenParticle & gen = genParticles->at(i);
-    TLorentzVector genR1DressLep1(0,0,0,0);
-    int st = gen.status();
+
     int id = gen.pdgId();
-
-    //Need the lepst3 for the Taus (not only st3, but intermediate particles etc)
-    //DJALOG
-    //&& GLepSt3St->at(i) == 23
-    //if (11 <= abs(id) && abs(id) <= 18 //lepton or neutrino
-    //	&& (abs(st)==23 || abs(st)==22 || 
-    //	    abs(st)==21 || abs(st)==61 || abs(st)==3 || abs(st)==2)){
-
-    //Tau ID = 15
-    if(abs(id) == 15){
-
-      GLepSt3Pt_->push_back(gen.pt());
-      GLepSt3Eta_->push_back(gen.eta());
-      GLepSt3Phi_->push_back(gen.phi());
-      GLepSt3E_->push_back(gen.energy());
-      GLepSt3Mother0Id_->push_back(gen.numberOfMothers() ? gen.mother()->pdgId() : -1);
-      GLepSt3MotherCnt_->push_back(gen.numberOfMothers());
-      GLepSt3Id_->push_back(id);
-      GLepSt3St_->push_back(st);
-    }
-
-    int momId = gen.numberOfMothers() ? gen.mother()->pdgId() : -1 ;
+    // Stable particles have status() = 1 (it's a Pythia8 thing)
+    int st = gen.status(); 
+    //isPromptFinalState() = is particle prompt (not from hadron, muon, or tau decay) and final state
+    bool isPrompt = gen.isPromptFinalState(); 
       
-    //DJALOG Putting a soft pt cut on leptons to reduce size of ntuple
-    if(st==1 && (abs(id)==11 || abs(id)==13 || abs(id)==15
-		 || abs(id)==12|| abs(id)==14|| abs(id)==16) 
-       && gen.pt() > 15.0
-       && fabs(gen.eta()) < 2.7){
+    //Putting a soft pt cut on leptons to reduce size of ntuple
+    if( st==1 
+       && ( abs(id)==13 || abs(id)==14 )  // either a muon or muon neutrino
+       && gen.pt() > 20.0
+       && fabs(gen.eta()) < 2.7 ){
       
       TLorentzVector genLep1(0,0,0,0);
       genLep1.SetPtEtaPhiE(gen.pt(),gen.eta(),gen.phi(),gen.energy());
 
-      //LOOP over photons for electrons and muons//
-      if(st==1 && (abs(id)==13||abs(id)==11)){
-	for(size_t j=0; j<genParticles->size(); ++j){
+      // For muons, find photons within dR cone of 0.1 (used for dressing muons)
+      if( st==1 && abs(id)==13 ){
+	      for(size_t j=0; j < genParticles->size(); ++j){
           const reco::GenParticle & gen2 = genParticles->at(j);
-	  if(gen2.numberOfMothers()){
-	    //Skip non-photons
-	    if(gen2.status()!=1 || gen2.pdgId()!=22 || gen2.energy()<0.000001 /*|| fabs(MomId2)!=fabs(id)*/) continue;
-	    TLorentzVector thisPho1(0,0,0,0);
-	    thisPho1.SetPtEtaPhiE(gen2.pt(),gen2.eta(),gen2.phi(),gen2.energy());
-	    double dR = deltar(genLep1,thisPho1);
 
-	    if(dR<0.1){
-	      GLepClosePhotPt_->push_back(thisPho1.Pt());
-	      GLepClosePhotEta_->push_back(thisPho1.Eta());
-	      GLepClosePhotPhi_->push_back(thisPho1.Phi());
-	      GLepClosePhotE_->push_back(thisPho1.Energy());
-	      GLepClosePhotId_->push_back(gen2.pdgId());
-	      GLepClosePhotMother0Id_->push_back(fabs(gen2.mother()->pdgId()));
-	      GLepClosePhotMotherCnt_->push_back(gen2.numberOfMothers());
-	      GLepClosePhotSt_->push_back(gen2.status());
-	    }
-	  }
-	}
+          // Look at particles (e.g. radiated photons) with an associated mother particle
+          // prunedGenParticles collection should keep link to first ancestor
+	        if(gen2.numberOfMothers()){
+	          //Skip non-photons, all photons above 10 GeV should be kept (?)
+	          if( gen2.status()!=1 || gen2.pdgId()!=22 || gen2.energy()<0.000001 ) continue;
+
+            TLorentzVector thisPho1(0,0,0,0);
+            thisPho1.SetPtEtaPhiE(gen2.pt(),gen2.eta(),gen2.phi(),gen2.energy());
+            double dR = deltar(genLep1,thisPho1);
+
+            if(dR <= 0.1){
+              GLepClosePhotPt_->push_back(thisPho1.Pt());
+              GLepClosePhotEta_->push_back(thisPho1.Eta());
+              GLepClosePhotPhi_->push_back(thisPho1.Phi());
+              GLepClosePhotE_->push_back(thisPho1.Energy());
+              GLepClosePhotId_->push_back(gen2.pdgId());
+              GLepClosePhotMother0Id_->push_back(fabs(gen2.mother()->pdgId())); //not being accessed correctly?
+              GLepClosePhotMotherCnt_->push_back(gen2.numberOfMothers());
+              GLepClosePhotSt_->push_back(gen2.status());
+            }
+          }
+	      }
       }//end photon loop
-
-      bool isPrompt = gen.isPromptFinalState();
-      bool tauProd  = gen.isDirectPromptTauDecayProductFinalState();
 	
       GLepBarePt_->push_back(genLep1.Pt());
       GLepBareEta_->push_back(genLep1.Eta());
       GLepBarePhi_->push_back(genLep1.Phi());
       GLepBareE_->push_back(genLep1.Energy());
       GLepBareId_->push_back(id);
-      GLepBareMomId_->push_back(momId);
       GLepBareSt_->push_back(st);
       GLepBarePrompt_->push_back(isPrompt);
-      GLepBareTauProd_->push_back(tauProd);
+
     } //end status lepton or neutrino
   } //end gen particle loop
 }
 
 void Tupel::processPu(const edm::Event& iEvent){
-  edm::Handle<std::vector< PileupSummaryInfo > >  PupInfo;
-  iEvent.getByToken(puToken_, PupInfo);
-
   if(!PupInfo.failedToGet()){
-    std::vector<PileupSummaryInfo>::const_iterator PVI;
+    
     float npT=-1.;
     float npIT=-1.;
 
+    std::vector<PileupSummaryInfo>::const_iterator PVI;
     for(PVI = PupInfo->begin(); PVI != PupInfo->end(); ++PVI) {
-
       int BX = PVI->getBunchCrossing();
-
+      // central bunch crossing
       if(BX == 0) {
-        npT = PVI->getTrueNumInteractions();
+        // getTrueNumInteractions() = "true" average number of PU vertices selected for the event
+        npT = PVI->getTrueNumInteractions(); 
+        // getPU_NumInteractions() = number of PU vertices selected from Poisson distribution with mean
+        // selected from that of "true" pileup distribution --> the "observed" number of PU vertices
+        // considers both in-time and out-of-time PU vertices (?)
         npIT = PVI->getPU_NumInteractions();
       }
     }
-    //////TO CHECK
     *EvtPuCntTruth_ = npT;
-    *EvtPuCnt_      = npIT;
+    *EvtPuCntObs_   = npIT;
   }
   else {
-    *EvtPuCntTruth_ = -2.;
-    *EvtPuCnt_ = -2.;
+    *EvtPuCntTruth_ = -99.;
+    *EvtPuCntObs_ = -99.;
   }
 }
 
@@ -1180,7 +1202,7 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
       std::cout << std::endl;
     }
 
-    // For 2017 31Mar2018 MiniAOD Real Data
+    // For 2017 data/MC
     // Using "TriggerResults", PAT
     // Flag_HBHENoiseFilter is i=0
     // Flag_HBHENoiseIsoFilter is i=1
@@ -1193,7 +1215,9 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
     //neglect MC for now
     for (unsigned int i = 0, n = metfilters->size(); i < n; ++i) {
       if(!*EvtIsRealData_){
-        std::cout << "neglect MC for now" << std::endl;
+        if(analyzedEventCnt_==1) {
+          std::cout << "neglect MC MET filters for now" << std::endl;
+        }
       }
       else{
         if (metfilters->accept(i)) *TrigMET_ |= 1LL << i;
@@ -1366,7 +1390,7 @@ void Tupel::processJets(){
       JetAk04E_->push_back(jet.energy());
       JetAk04Pt_->push_back(jet.pt());
       JetAk04Eta_->push_back(jet.eta());
-      JetAk04Rap_->push_back(jet.rapidity());
+      // JetAk04Rap_->push_back(jet.rapidity());
       JetAk04Phi_->push_back(jet.phi());
 
       //kinematics of uncorrected jet --------
@@ -1449,7 +1473,7 @@ void Tupel::processJetsAK8(){
       JetAk08E_->push_back(jetAK8.energy());
       JetAk08Pt_->push_back(jetAK8.pt());
       JetAk08Eta_->push_back(jetAK8.eta());
-      JetAk08Rap_->push_back(jetAK8.rapidity());
+      // JetAk08Rap_->push_back(jetAK8.rapidity());
       JetAk08Phi_->push_back(jetAK8.phi());
 
       // grab CHS quantities instead of PUPPI here --------
@@ -1496,10 +1520,10 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(EvtLumiNum, "Luminosity block number");
   ADD_BRANCH_D(EvtBxNum, "Bunch crossing number");
   ADD_BRANCH_D(EvtVtxCnt, "Number of reconstructed primary vertices");
-  ADD_BRANCH_D(EvtPuCnt, "Number of measured pile-up events");
+  ADD_BRANCH_D(EvtPuCntObs, "Number of observed/measured pile-up events");
   ADD_BRANCH_D(EvtPuCntTruth, "True number of pile-up events");
   ADD_BRANCH(EvtWeights); //description filled in endRun()
-  ADD_BRANCH(originalXWGTUP);
+  // ADD_BRANCH(originalXWGTUP);
   ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
   ADD_BRANCH(firstGoodVertexIdx);
 
@@ -1526,19 +1550,7 @@ void Tupel::beginJob(){
   ADD_BRANCH(GLepBareE);
   ADD_BRANCH(GLepBareId);
   ADD_BRANCH(GLepBareSt);
-  ADD_BRANCH(GLepBareMomId);
   ADD_BRANCH(GLepBarePrompt);
-  ADD_BRANCH(GLepBareTauProd);  
-
-  treeHelper_->addDescription("GLepSt3", "Status 3 generator-level leptons.");
-  ADD_BRANCH(GLepSt3Pt);
-  ADD_BRANCH(GLepSt3Eta);
-  ADD_BRANCH(GLepSt3Phi);
-  ADD_BRANCH(GLepSt3E);
-  ADD_BRANCH(GLepSt3Id);
-  ADD_BRANCH(GLepSt3St);
-  ADD_BRANCH_D(GLepSt3Mother0Id, "Lepton mother PDG Id. Filled only for first mother. Number of mothers can be checked in GLepoSt3MotherCnt.");
-  ADD_BRANCH(GLepSt3MotherCnt);
 
   //Photons in the vicinity of the leptons
   treeHelper_->addDescription("GLepClosePhot", "Photons aroud leptons. Selection cone size: R = 0.2");
@@ -1559,24 +1571,31 @@ void Tupel::beginJob(){
   ADD_BRANCH(GMETE);
   ADD_BRANCH(GMETPhi);
 
-  //Gen Jets
+  //Gen Jets, AK4
   treeHelper_->addDescription("GJetAk04", "Generator-level reconstructed with the anti-kt algorithm with distance parameter R = 0.4");
   ADD_BRANCH(GJetAk04Pt);
   ADD_BRANCH(GJetAk04Eta);
   ADD_BRANCH(GJetAk04Phi);
   ADD_BRANCH(GJetAk04E);
 
+  //Gen Jets, AK8
+  treeHelper_->addDescription("GJetAk08", "Generator-level reconstructed with the anti-kt algorithm with distance parameter R = 0.8");
+  ADD_BRANCH(GJetAk08Pt);
+  ADD_BRANCH(GJetAk08Eta);
+  ADD_BRANCH(GJetAk08Phi);
+  ADD_BRANCH(GJetAk08E);
+
   //Extra generator information
   ADD_BRANCH_D(GNup, "Number of particles/partons included in the matrix element.");
   //ADD_BRANCH_D(npLO, "npLO");
   ADD_BRANCH_D(npNLO,"npNLO");
 
-  ADD_BRANCH(LHEZid);
-  ADD_BRANCH(LHEZStatus);
-  ADD_BRANCH(LHEZPx);
-  ADD_BRANCH(LHEZPy);
-  ADD_BRANCH(LHEZPz);
-  ADD_BRANCH(LHEZE);
+  // ADD_BRANCH(LHEZid);
+  // ADD_BRANCH(LHEZStatus);
+  // ADD_BRANCH(LHEZPx);
+  // ADD_BRANCH(LHEZPy);
+  // ADD_BRANCH(LHEZPz);
+  // ADD_BRANCH(LHEZE);
 
   ////////////////// RECO LEVEL
 
@@ -1614,7 +1633,7 @@ void Tupel::beginJob(){
   treeHelper_->addDescription("JetAk04", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.4");
   ADD_BRANCH(JetAk04Pt);
   ADD_BRANCH(JetAk04Eta);
-  ADD_BRANCH(JetAk04Rap);
+  // ADD_BRANCH(JetAk04Rap);
   ADD_BRANCH(JetAk04Phi);
   ADD_BRANCH(JetAk04E);
   ADD_BRANCH_D(JetAk04Id, "Id to reject fake jets from electronic noise");
@@ -1636,7 +1655,7 @@ void Tupel::beginJob(){
   treeHelper_->addDescription("JetAk08", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.8");
   ADD_BRANCH(JetAk08Pt);
   ADD_BRANCH(JetAk08Eta);
-  ADD_BRANCH(JetAk08Rap);
+  // ADD_BRANCH(JetAk08Rap);
   ADD_BRANCH(JetAk08Phi);
   ADD_BRANCH(JetAk08E);
   ADD_BRANCH(JetAk08Id);
@@ -1673,6 +1692,8 @@ void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   if(!*EvtIsRealData_){
     if(DJALOG_) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
     processGenJets(iEvent);
+    if(DJALOG_) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
+    processGenJetsAK8(iEvent);
     if(DJALOG_) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
     processGenParticles(iEvent);
   }
@@ -1714,46 +1735,29 @@ void Tupel::endJob(){
 void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
 
   std::string desc = "List of MC event weights. Use the first one by default.";
-  if(weightFromGenEventInfo_ == YES){
-    desc += " The first element contains the GenInfoProduct weight.";
-  } else if(weightFromGenEventInfo_ == NO){
-    desc += " GenInfoProduct weight was not found and the first element was set to 1.";
-  } else if(weightFromGenEventInfo_ == MIXTURE){
-    desc += " GenInfoProduct weight was missing from some event(s). The first element was set to this weight when found and to 1 otherwise.";
-  }
-
+  desc += " The first element contains the GenInfoProduct weight, or it was not found and set to 1.";
   if(weightsFromLhe_){
     desc += "Elements starting from index 1 contains the weights from LHEEventProduct.";
   }
 
-  edm::Handle<LHERunInfoProduct> lheRun;
-  iRun.getByToken(lheRunToken_, lheRun );
+  // Get information about LHE weights --
+  // edm::Handle<LHERunInfoProduct> lheRun;
+  // iRun.getByToken(lheRunToken_, lheRun );
+  // if(!lheRun.failedToGet()){
+  //   const LHERunInfoProduct& myLHERunInfoProduct = *(lheRun.product());
+  //   for (std::vector<LHERunInfoProduct::Header>::const_iterator iter = myLHERunInfoProduct.headers_begin(); iter != myLHERunInfoProduct.headers_end(); iter++){
+  //     std::cout << iter->tag() << std::endl;
+  //     std::vector<std::string> lines = iter->lines();
+  //     for (unsigned int iLine = 0; iLine<lines.size(); iLine++) {
+  //       std::cout << lines.at(iLine);
+  //     }
+  //   }
+  // }
 
-  if(!lheRun.failedToGet ()){
-    const LHERunInfoProduct& myLHERunInfoProduct = *(lheRun.product());
-    for (std::vector<LHERunInfoProduct::Header>::const_iterator iter = myLHERunInfoProduct.headers_begin(); iter != myLHERunInfoProduct.headers_end(); iter++){
-      if(iter == myLHERunInfoProduct.headers_begin()){
-	      desc += "\n --> A description of the LHE weights in the order they appears in the vector is given below.\n";
-      }
-      if(iter->tag() == "initrwgt" && iter->size() > 0){
-	      desc += "\n";
-	      for(std::vector<std::string>::const_iterator it = iter->begin(); it != iter->end(); ++it){
-	        desc += *it;
-	      }
-	      break;
-      }
-    }
-  }
-
-  //Suppresses spurious last line with "<" produced with CMSSW_7_4_1:
-  if(desc.size() > 2 && desc[desc.size()-1] == '<'){
-    std::string::size_type p = desc.find_last_not_of(" \n", desc.size()-2);
-    if(p != std::string::npos) desc.erase(p + 1);
-  }
-
+  // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, Muons=%d, Jets=%d, MET=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedMuons, failedJets, failedMET);
+  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Muons=%d, Jets=%d, MET=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedMuons, failedJets, failedMET);
 }
 
 DEFINE_FWK_MODULE(Tupel);
