@@ -29,28 +29,32 @@ process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 
-if (options.isData == 1):
-  if (options.year == "2016"):
-    print(">>>>>>> Using 2016 real data sample")
-    # 2016 03Feb2017 reMiniAOD, SingleMuon dataset
-    inputFilename = "/store/data/Run2016D/SingleMuon/MINIAOD/03Feb2017-v1/80000/FE050076-2FEB-E611-8E4A-0025905C5476.root"
-  elif (options.year == "2017"):
-    print(">>>>>>> Using 2017 real data sample")
-    # 2017 31Mar2018 reMiniAOD, SingleMuon dataset
-    inputFilename = "root://xrootd-cms.infn.it//store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root"
-else:
-  if (options.year == "2017"):
-    print(">>>>>>> Using 2017 W+Jets MC sample")
-    # RunIIFall17MiniAODv2 campaign, WJets MLM sample
-    inputFilename = "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root"
+# inputFilename = ''
 
+# if (options.isData == 1):
+#   if (options.year == "2016"):
+#     print(">>>>>>> Using 2016 real data sample")
+#     # 2016 03Feb2017 reMiniAOD, SingleMuon dataset
+#     inputFilename = '/store/data/Run2016D/SingleMuon/MINIAOD/03Feb2017-v1/80000/FE050076-2FEB-E611-8E4A-0025905C5476.root'
+#   elif (options.year == "2017"):
+#     print(">>>>>>> Using 2017 real data sample")
+#     # 2017 31Mar2018 reMiniAOD, SingleMuon dataset
+#     inputFilename = 'root://xrootd-cms.infn.it//store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root'
+# elif (options.isData == 0):
+#   if (options.year == "2017"):
+#     print(">>>>>>> Using 2017 W+Jets MC sample")
+#     # RunIIFall17MiniAODv2 campaign, WJets MLM sample
+#     inputFilename = '/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root'
+
+inputFilename = 'root://xrootd-cms.infn.it//store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root'
 
 process.source = cms.Source("PoolSource",
   fileNames = cms.untracked.vstring(inputFilename)
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(30000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -152,6 +156,8 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ##### Vertex information, HLT Trigger Bits
   vertexSrc        = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'), 
   triggerSrc       = cms.InputTag("TriggerResults", "", "HLT"),
+  triggerObjectTag = cms.untracked.InputTag("slimmedPatTrigger"),
+  triggerPrescalesTag = cms.untracked.InputTag("patTrigger"),
   ##### Muons, Jets, MET
   muonSrc      = cms.untracked.InputTag("slimmedMuons"),
   # jetSrc       = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
@@ -179,7 +185,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
 
   ##### Other stuff
   mSrcRho      = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
-  triggerObjectTag = cms.untracked.InputTag("slimmedPatTrigger"),
+  
   triggerStat  = cms.untracked.bool(False), #more information on trigger statistics (?)
   ##### Extra printout statements
   DJALOG       = cms.untracked.bool(False)

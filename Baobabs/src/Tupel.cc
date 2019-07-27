@@ -204,18 +204,26 @@ private:
  
   // Collections/parameters grabbed from cfg file ---
   // std::string recoSw_;
-  edm::EDGetTokenT<std::vector<pat::Muon> > muonToken_;
-  edm::EDGetTokenT<reco::ConversionCollection> conversionsToken_;
-  edm::EDGetTokenT<std::vector<pat::Jet> > jetToken_;
-  edm::EDGetTokenT<std::vector<pat::Jet> > jetAK8Token_;
+
+  // RECO tokens
   edm::EDGetTokenT<std::vector<reco::Vertex> > vertexToken_;
-  edm::EDGetTokenT<double> mSrcRhoToken_;
-  edm::EDGetTokenT<reco::BeamSpot> beamSpotToken_;
-  edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescalesToken_;
   edm::EDGetTokenT<edm::TriggerResults> HLTTagToken_;
   edm::EDGetTokenT<std::vector<pat::TriggerObjectStandAlone> > HLTtriggerObjectToken_;
+  edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescalesToken_;
+  edm::EDGetTokenT<std::vector<pat::Muon> > muonToken_;
+  edm::EDGetTokenT<std::vector<pat::Jet> > jetToken_;
+  edm::EDGetTokenT<std::vector<pat::Jet> > jetAK8Token_;
   edm::EDGetTokenT<std::vector<pat::MET> > metToken_;
-  
+  edm::EDGetTokenT<edm::TriggerResults> noiseFilterToken_;
+
+  // Tags for MET filters
+  std::string GoodVtxNoiseFilter_Selector_;
+  std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
+  std::string HBHENoiseFilter_Selector_;
+  std::string HBHENoiseIsoFilter_Selector_;
+  std::string EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_;
+  std::string BadPFMuonFilter_Selector_;
+  std::string EEBadScNoiseFilter_Selector_;
   
   // GEN tokens
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
@@ -226,17 +234,7 @@ private:
   edm::EDGetTokenT<std::vector<reco::GenJet> > gjetToken_;
   edm::EDGetTokenT<std::vector<reco::GenJet> > gjetAK8Token_;
 
-  
-  
-  edm::EDGetTokenT<edm::TriggerResults> noiseFilterToken_;
-  // Tags for MET filters
-  std::string GoodVtxNoiseFilter_Selector_;
-  std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
-  std::string HBHENoiseFilter_Selector_;
-  std::string HBHENoiseIsoFilter_Selector_;
-  std::string EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_;
-  std::string BadPFMuonFilter_Selector_;
-  std::string EEBadScNoiseFilter_Selector_;
+  edm::EDGetTokenT<double> mSrcRhoToken_;
 
   bool triggerStat_;
     
@@ -380,11 +378,8 @@ private:
   std::unique_ptr<std::vector<float> > 	MuPfIso_;
   std::unique_ptr<std::vector<float> > 	MuDz_;
   std::unique_ptr<std::vector<unsigned> > MuHltMatch_;
-  // std::unique_ptr<std::vector<float> > MuTkNormChi2_;
-  // std::unique_ptr<std::vector<int> > MuTkHitCnt_;
-  // std::unique_ptr<std::vector<int> > MuMatchedStationCnt_;
-  // std::unique_ptr<std::vector<int> > MuPixelHitCnt_;
-  // std::unique_ptr<std::vector<int> > MuTkLayerCnt_;
+  std::unique_ptr<std::vector<bool> > MuHltTrgPath1_;
+  std::unique_ptr<std::vector<bool> > MuHltTrgPath2_;
 
   //PF Jets - AK4
   std::unique_ptr<std::vector<float> > JetAk04Pt_;
@@ -425,49 +420,42 @@ private:
   std::unique_ptr<std::vector<float> > JetAk08EUncorr_;
 
   /// EDM Handles for collections ---
-  edm::Handle<GenEventInfoProduct> genEventInfoProd;
+  // RECO handles
+  edm::Handle<std::vector<reco::Vertex> >  vertices;
+  edm::Handle<edm::TriggerResults> HLTResHandle;
+  edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
+  edm::Handle<std::vector<pat::TriggerObjectStandAlone> > triggerObjects_;
   edm::Handle<std::vector<pat::Muon> > muons;
   edm::Handle<std::vector<pat::MET> > mets;
   edm::Handle<edm::TriggerResults> metfilters;
-  edm::Handle<reco::ConversionCollection> conversions;
   edm::Handle<std::vector<pat::Jet> > jets;
   edm::Handle<std::vector<pat::Jet> > jetsAK8;
   edm::ESHandle<JetCorrectorParametersCollection> JetCorParCollAK4;
   edm::ESHandle<JetCorrectorParametersCollection> JetCorParCollAK8;
-  edm::Handle<std::vector<reco::Vertex> >  vertices;
-  double rhoIso;
-  edm::Handle<reco::BeamSpot> beamSpotHandle;
-  reco::BeamSpot beamSpot;
-  edm::Handle<double> rho;
-
   // GEN Handles
+  edm::Handle<GenEventInfoProduct> genEventInfoProd;
   edm::Handle<LHEEventProduct> lheEventProd;
   edm::Handle<std::vector<PileupSummaryInfo> >  PupInfo;
   edm::Handle<std::vector<reco::GenParticle> > genParticles;
   edm::Handle<reco::GenJetCollection> genjetColl_;
   edm::Handle<reco::GenJetCollection> genjetAK8Coll_;
-
-  edm::Handle<std::vector<pat::TriggerObjectStandAlone> > triggerObjects_;
-  edm::Handle<pat::PackedTriggerPrescales> triggerPrescales;
-  edm::Handle<edm::TriggerResults> HLTResHandle;
-
+  // Other
+  double rhoIso;
+  edm::Handle<double> rho;
+  
   std::vector<std::vector<int> > trigAccept_;
   std::vector<std::string> trigNames_;
 
   bool trigStatValid_;
-
-  //keep track if the input file contained LHE weights:
   bool weightsFromLhe_;
-  //keep track if GenRunInfoProduct weights which were found:
-  // enum {UNKNOWN, YES, NO, MIXTURE} weightFromGenEventInfo_ = UNKNOWN;
 
-  struct TrigSorter{
-    TrigSorter(Tupel* t): tupel_(t){}
-    bool operator()(int i, int j) const{
-      return tupel_->trigAccept_[1+i][0] > tupel_->trigAccept_[1+j][0];
-    }
-    Tupel* tupel_;
-  };
+  // struct TrigSorter{
+  //   TrigSorter(Tupel* t): tupel_(t){}
+  //   bool operator()(int i, int j) const{
+  //     return tupel_->trigAccept_[1+i][0] > tupel_->trigAccept_[1+j][0];
+  //   }
+  //   Tupel* tupel_;
+  // };
 
   // EffectiveAreas effectiveAreas_;
   bool DJALOG_;
@@ -476,6 +464,7 @@ private:
   int failedLHE;
   int failedGenJets;
   int failedGenJetsAK8;
+  int failedTriggers;
   int failedMuons;
   int failedJets;
   int failedJetsAK8;
@@ -484,9 +473,6 @@ private:
 
 Tupel::Tupel(const edm::ParameterSet& iConfig):
   yearToProcess_(iConfig.getUntrackedParameter<std::string>("yearToProcess", "2017")),
-  muonToken_(consumes<std::vector<pat::Muon> >(iConfig.getUntrackedParameter<edm::InputTag>("muonSrc"))),
-  jetToken_(consumes<std::vector<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("jetSrc"))),
-  jetAK8Token_(consumes<std::vector<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("jetAK8Src"))),
   triggerStat_(iConfig.getUntrackedParameter<bool>("triggerStat")),
   analyzedEventCnt_(0),
   elecIdsListed_(false),
@@ -502,6 +488,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   failedLHE = 0;
   failedGenJets = 0;
   failedGenJetsAK8 = 0;
+  failedTriggers = 0;
   failedMuons = 0;
   failedJets = 0;
   failedJetsAK8 = 0;
@@ -509,7 +496,9 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 
   // RECO tokens
   vertexToken_ = consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"));
-
+  muonToken_ = consumes<std::vector<pat::Muon> >(iConfig.getUntrackedParameter<edm::InputTag>("muonSrc"));
+  jetToken_ = consumes<std::vector<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("jetSrc"));
+  jetAK8Token_ = consumes<std::vector<pat::Jet> >(iConfig.getUntrackedParameter<edm::InputTag>("jetAK8Src"));
   // GEN tokens
   lheEventToken_ = consumes<LHEEventProduct>(iConfig.getUntrackedParameter<edm::InputTag>("lheSrc"));
   lheRunToken_ = consumes<LHERunInfoProduct, edm::InRun>(iConfig.getUntrackedParameter<edm::InputTag>("lheSrc"));
@@ -518,12 +507,10 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   genParticleToken_ = consumes<std::vector<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("genSrc"));
   gjetToken_ = consumes<std::vector<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("gjetSrc"));
   gjetAK8Token_ = consumes<std::vector<reco::GenJet> >(iConfig.getUntrackedParameter<edm::InputTag>("gjetAK8Src"));
-
   // HLT trigger bits
   HLTTagToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerSrc"));
   HLTtriggerObjectToken_ = consumes<std::vector<pat::TriggerObjectStandAlone> >(iConfig.getUntrackedParameter<edm::InputTag>("triggerObjectTag"));
-  conversionsToken_ = consumes<reco::ConversionCollection>(edm::InputTag("reducedEgamma","reducedConversions"));
-
+  triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("triggerPrescalesTag"));
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
@@ -543,9 +530,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 
   // Other
   mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho" ));
-  beamSpotToken_ = consumes<reco::BeamSpot>(edm::InputTag("offlineBeamSpot"));
-  triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(edm::InputTag("patTrigger"));
-
+  
 }
 
 Tupel::~Tupel(){
@@ -586,137 +571,13 @@ void Tupel::defineBitFields(){
 	DEF_BIT2(TrigMETBit, 22, Flag_trkPOG_logErrorTooManyClusters);
 	DEF_BIT2(TrigMETBit, 23, Flag_METFilters);
 
-  if ( yearToProcess_==std::string("2016") ){
-    #include "trigger2016.h"
-  }
-  else if ( yearToProcess_==std::string("2017") ){
-    #include "trigger2017.h"
-  }
+  // if ( yearToProcess_==std::string("2016") ){
+  //   #include "trigger2016.h"
+  // }
+  // else if ( yearToProcess_==std::string("2017") ){
+  //   #include "trigger2017.h"
+  // }
   
-}
-
-void Tupel::allocateTrigMap(int nTrigMax){
-  std::vector<int> row(nTrigMax+2, 0);
-  std::vector<std::vector<int> > newMap(nTrigMax+1, row);
-  std::vector<std::string> newTrigNames(nTrigMax, "");
-  for(unsigned i = 0; i < trigAccept_.size(); ++i){
-    if(i < trigNames_.size()) newTrigNames[i] = trigNames_[i];
-    for(unsigned j = 0; j < trigAccept_[i].size(); ++j){
-      newMap[i][j] = trigAccept_[i][j];
-    }
-  }
-  trigNames_.swap(newTrigNames);
-  trigAccept_.swap(newMap);
-}
-
-void Tupel::writeTriggerStat(){
-  std::ofstream f("trigger_stat.txt");
-  if(!trigStatValid_){
-    f << "Trigger statistics is not available. \n\n"
-      "Events with different trigger index maps were processed. Trigger statistics"
-      "is not supported for such case.\n\n";
-    f << "Column S contains the number of events the trigger indicated in second column of is the only one fired.\n"
-      << "The columns on the right of the column S contain for each combination of two triggers the number of events "
-      "for which both triggers have been fired. The number in the column header refers to the trigger indices "
-      "contained in the first column of the table.\n\n";
-  } else {
-
-    f << "Trigger statistics\n"
-      << "------------------\n\n"
-      << "Total number of processed events: " << analyzedEventCnt_ << "\n\n";
-
-    f  << "#\tTrigger line\tAccept count\tAccept rate\tS";
-    //sort the map per value by inverting key and value:
-    std::vector<int> trigSortedIndex(trigNames_.size());
-    size_t maxTrigForCol = 10;
-    for(unsigned i = 0; i < trigSortedIndex.size(); ++i){
-      trigSortedIndex[i] = i;
-      if(i<maxTrigForCol) f << "\t" << (1+i);
-    }
-    f << "\n";
-    sort(trigSortedIndex.begin(), trigSortedIndex.end(), TrigSorter(this));
-    //    trigSortedIndex.resize(10);
-    f << "0\tNone\t" << trigAccept_[0][0] << "\n";
-    for(unsigned i = 0; i < trigSortedIndex.size(); ++i){
-      unsigned ii = trigSortedIndex[i];
-      f << (i+1) << "\t" << trigNames_[ii] << " (" << ii << ")"
-	<< "\t" << trigAccept_[1+ii][0]
-	<< "\t" << double(trigAccept_[1+ii][0]) / analyzedEventCnt_
-	<< "\t" << trigAccept_[1+ii][1];
-      for(unsigned j = 0; j < std::min(maxTrigForCol, trigSortedIndex.size()); ++j){
-	unsigned jj = trigSortedIndex[j];
-	f << "\t" << trigAccept_[1+ii][2+jj];
-      }
-      f << "\n";
-    }
-  }
-}
-
-bool Tupel::compTrigger(const char* a, const char* bv) const{
-  int i = 0;
-  for(;a[i]!=0 && bv[i]!=0; ++i){
-    if(a[i]!= bv[i]) return false;
-  }
-  if(a[i]) return false;
-  if(bv[i]==0) return true;
-  if(bv[i] != '_') return false;
-  if(bv[++i]!='v') return false;
-  for(;;){
-    if(bv[++i]==0) return true;
-    if(!isdigit(bv[i])) return false;
-  }
-  return true;
-};
-
-ULong64_t Tupel::matchWithTriggerObject(const edm::Event& iEvent, TLorentzVector leptonMomentum, triggerObjectType theType){
-  ULong64_t matchingResult = 0;
-  std::map<std::string, ULong64_t> TrigObjMap;
-  if(theType==triggerObjectType::hltmuons) TrigObjMap = TrigHltMuObjMap_;
-  // else if(theType==triggerObjectType::hltelectrons) TrigObjMap = TrigHltElObjMap_;
-  
-  for(pat::TriggerObjectStandAlone obj : *triggerObjects_) {
-    obj.unpackFilterLabels(iEvent,*HLTResHandle);
-    TString collectionName = obj.collection();
-    // if(analyzedEventCnt_==1){
-    //   std::cout << "obj.collection() = " << obj.collection() << std::endl;
-    // }
-    obj.unpackNamesAndLabels(iEvent,*HLTResHandle);
-    
-    if( (theType==triggerObjectType::hltmuons) && ( !(collectionName.Contains("Muon")||collectionName.Contains("muon")) )) continue;
-    if( (theType==triggerObjectType::hltelectrons) && ( !(collectionName.Contains("Egamma")) )) continue;
-
-    // printf("collectionName = %s\n",collectionName.Data());
-
-    for(std::map<std::string, ULong64_t>::const_iterator it = TrigObjMap.begin(); it != TrigObjMap.end(); ++it){
-      for(unsigned h = 0; h < obj.filterLabels().size(); ++h){
-        if(obj.filterLabels()[h]==it->first.c_str()){
-          TLorentzVector hltCandMomentum(0,0,0,0);
-          hltCandMomentum.SetPtEtaPhiE(obj.pt(), obj.eta(), obj.phi(), obj.energy());
-          float theDeltaR = deltar(leptonMomentum, hltCandMomentum);
-          if(theDeltaR<0.2) matchingResult |= it->second;
-        }
-      }
-    }
-  }
-  return matchingResult;
-}
-
-void Tupel::fillTrig(const std::string& trigname, int triggerPrescalesForThisIndex){
-  for(std::vector<TrigHltMapRcd>::iterator itTrigHltMap = trigHltMapList_.begin(); itTrigHltMap != trigHltMapList_.end(); ++itTrigHltMap){ //loop on the list of all triggers
-    const std::map<std::string, ULong64_t>& trigHltMap = *(itTrigHltMap->pMap);
-    ULong64_t* pTrig = itTrigHltMap->pTrig;
-    std::vector<unsigned>* pPrescale = itTrigHltMap->pPrescale;
-    for(std::map<std::string, ULong64_t>::const_iterator it = trigHltMap.begin(); it != trigHltMap.end(); ++it){ //loop on the map with all trigger of one type (e.g. Photon)
-      if(compTrigger(it->first.c_str(), trigname.c_str())){
-        *pTrig |= it->second; //to this 'all type of a kind of trigger' we have one list with bit fields where we enable some while looking at the value
-        unsigned int bitPosition = log2(it->second);
-        if(pPrescale->size() <= bitPosition) pPrescale->resize(bitPosition+1); 
-        pPrescale->at(bitPosition) = triggerPrescalesForThisIndex; //And at the same position we add the prescale
-      //      std::cout << it->first.c_str() << ", " <<  trigname.c_str() << " -> "
-      //    << (compTrigger(it->first.c_str(), trigname.c_str()) ? "identical" : "different") << "\n";
-      }
-    }
-  }
 }
 
 void Tupel::writeHeader(){
@@ -778,32 +639,32 @@ void Tupel::readEvent(const edm::Event& iEvent){
   const pat::helper::TriggerMatchHelper matchHelper;
 
   // Linking Handles with Tokens to access collections inside analysis functions ---
+
+  // RECO collections
   iEvent.getByToken(vertexToken_, vertices);
-  iEvent.getByToken(metToken_, mets);
   iEvent.getByToken(HLTTagToken_, HLTResHandle);
+  iEvent.getByToken(HLTtriggerObjectToken_, triggerObjects_);
+  iEvent.getByToken(triggerPrescalesToken_, triggerPrescales);
   iEvent.getByToken(muonToken_, muons);
+  iEvent.getByToken(metToken_, mets);
+  iEvent.getByToken(noiseFilterToken_, metfilters);
   iEvent.getByToken(jetToken_, jets);  
   iEvent.getByToken(jetAK8Token_, jetsAK8);
+
   // GEN collections
+  iEvent.getByToken(generatorToken_, genEventInfoProd);
   iEvent.getByToken(lheEventToken_, lheEventProd);
   iEvent.getByToken(puToken_, PupInfo);
   iEvent.getByToken(genParticleToken_, genParticles);
   iEvent.getByToken(gjetToken_, genjetColl_);
   iEvent.getByToken(gjetAK8Token_, genjetAK8Coll_);
-  // some others...
-  iEvent.getByToken(triggerPrescalesToken_, triggerPrescales);
-  iEvent.getByToken(generatorToken_, genEventInfoProd);
-  iEvent.getByToken(HLTtriggerObjectToken_, triggerObjects_);
-  iEvent.getByToken(conversionsToken_, conversions);
-  iEvent.getByToken(mSrcRhoToken_, rho);
-  iEvent.getByToken(noiseFilterToken_, metfilters);
 
-  
+  // some others...
+  iEvent.getByToken(mSrcRhoToken_, rho);
   rhoIso=-1;
   if(!rho.failedToGet()) rhoIso = *rho;
   *EvtFastJetRho_ =  rhoIso;
 
-  iEvent.getByToken(beamSpotToken_, beamSpotHandle);
   
   // edm::Handle< double > theprefweight;
   // iEvent.getByToken(prefweight_token, theprefweight ) ;
@@ -831,9 +692,9 @@ void Tupel::processLHE(const edm::Event& iEvent){
     return;
   }
 
-  // Main weight we use to normalize MC
+  // Main weight we use to normalize MC, fill histograms
   // The weight() method returns the value which is a result 
-  // of multiplication of all elements in the weights container
+  // of multiplication of all elements in the "weights" container
   EvtWeights_->push_back(genEventInfoProd->weight());   
 
   if(EvtWeights_->size() == 0){
@@ -941,7 +802,8 @@ void Tupel::processGenParticles(const edm::Event& iEvent){
     const reco::GenParticle & gen = genParticles->at(i);
 
     int id = gen.pdgId();
-    // Stable particles have status() = 1 (it's a Pythia8 thing)
+    // Stable particles have status() = 1 (a Pythia8 code)
+    // I.e. a final-state particle, i.e.  a particle that is not decayed further by thegenerator
     int st = gen.status(); 
     //isPromptFinalState() = is particle prompt (not from hadron, muon, or tau decay) and final state
     bool isPrompt = gen.isPromptFinalState(); 
@@ -1108,77 +970,42 @@ void Tupel::processMET(const edm::Event& iEvent){
 }
 
 void Tupel::processTrigger(const edm::Event& iEvent){
-  bool trigNameFilled = trigNames_.size();
+  if(HLTResHandle.failedToGet() || !HLTResHandle.isValid()){
+    printf("processTrigger failed\n");
+    failedTriggers++;
+    return;
+  }
   
-  std::vector<int> trigIndexList;
-  if(triggerStat_) trigIndexList.reserve(30);
-
-  // Saving record of triggers in output file
-  std::ofstream f;
-  if(analyzedEventCnt_==1){
-    if (triggerStat_) {
-      f.open("trigger_list.txt");
-      f << "List of triggers extracted from event " << iEvent.id().event()
-        << " of run " << iEvent.id().run() << "\n\n";
-    }
-  }
-
-  // -----------
   int ntrigs;
-  if(HLTResHandle.isValid() && !HLTResHandle.failedToGet()){
-    // Next lines gets all the HLT trigger paths for the event
-    edm::RefProd<edm::TriggerNames> trigNames( &(iEvent.triggerNames(*HLTResHandle)) );
-    ntrigs = (int)trigNames->size();
+  edm::RefProd<edm::TriggerNames> trigNames( &(iEvent.triggerNames(*HLTResHandle)) );
+  ntrigs = (int)trigNames->size();
 
-    // Prints out passed trigger paths
-    if(analyzedEventCnt_==1){
-      std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
-      std::cout << "--> Passed trigger paths:" << std::endl;
-      for (int i = 0; i < ntrigs; i++) {
-        if (HLTResHandle->accept(i)){
-          std::cout << "#" << i << ": " << trigNames->triggerName(i);
-          std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << std::endl;
-        }
-      }
-    }
-
-    if(triggerStat_) allocateTrigMap(ntrigs);
-
+  if(analyzedEventCnt_==1){
+    std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
+    std::cout << "--> Passed trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
-      // Prints all found triggers in output file
-      if(analyzedEventCnt_==1) {
-        if (triggerStat_){
-          f << trigNames->triggerName(i) << "\n";
-        }
-      }
-
-      if(triggerStat_){
-        if(!trigNameFilled) trigNames_[i] = trigNames->triggerName(i);
-        else if(trigNames_[i] != trigNames->triggerName(i)) trigStatValid_ = false;
-      }
-
-      //insert trigger name in the acceptance map if not yet in:
       if (HLTResHandle->accept(i)){
-        if(triggerStat_) trigIndexList.push_back(i);
-        //andrew - main analysis line?
-        std::string thisTrigger = trigNames->triggerName(i);
-        fillTrig(std::string(trigNames->triggerName(i)), triggerPrescales->getPrescaleForIndex(i));
-      }
-
-    }
-
-    if(triggerStat_){
-      if(trigIndexList.size()==0) trigAccept_[0][0] += 1;
-      for(std::vector<int>::iterator it1 = trigIndexList.begin(); it1 != trigIndexList.end(); ++it1){
-        trigAccept_[1 + *it1][0] += 1;
-        if(trigIndexList.size()==1) trigAccept_[1+*it1][1] += 1;
-        for(std::vector<int>::iterator it2 = trigIndexList.begin(); it2 != trigIndexList.end(); ++it2){
-          trigAccept_[1 + *it1][2 + *it2] += 1;
-        }
+        std::cout << "Index " << i << ": " << trigNames->triggerName(i);
+        std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << ", has prescale " << triggerPrescales->getPrescaleForIndex(i) << std::endl;
       }
     }
-
   }
+
+  bool trigDecision1 = false;
+  bool trigDecision2 = false;
+  if(yearToProcess_==std::string("2017")){
+    for (int i = 0; i < ntrigs; i++) {
+      if (trigNames->triggerName(i) == "HLT_IsoMu24_v6") {
+        if (HLTResHandle->accept(i)) trigDecision1 = true;
+      }
+      if (trigNames->triggerName(i) == "HLT_IsoMu27_v9") {
+        if (HLTResHandle->accept(i)) trigDecision2 = true;
+      }
+    }
+  }
+  MuHltTrgPath1_->push_back(trigDecision1);
+  MuHltTrgPath2_->push_back(trigDecision2);
+
 }
 
 void Tupel::processMETFilter(const edm::Event& iEvent){
@@ -1249,7 +1076,8 @@ void Tupel::processMuons(const edm::Event& iEvent){
 
       TLorentzVector muon4Momentum(0,0,0,0);
       muon4Momentum.SetPtEtaPhiE(mu.pt(), mu.eta(), mu.phi(), mu.energy());
-      Long64_t muonMatchingResults = matchWithTriggerObject(iEvent, muon4Momentum, triggerObjectType::hltmuons);
+      // Long64_t muonMatchingResults = matchWithTriggerObject(iEvent, muon4Momentum, triggerObjectType::hltmuons);
+      Long64_t muonMatchingResults = 0; //not including this hlt-reco muon matching right now
 
       MuHltMatch_->push_back(muonMatchingResults);
       MuIdLoose_->push_back(loose);
@@ -1317,16 +1145,16 @@ void Tupel::processJets(){
     // used for jet matching ???
     // const reco::GenJet* ref = jet.genJet();
 
-    // if(i==0 && analyzedEventCnt_== 1){
-    //   std::cout << "\n--> Jet user float list:\n";
-    //   for(unsigned j = 0; j < jet.userFloatNames().size(); ++j){
-	  //     std::cout << jet.userFloatNames()[j] << "\n";
-    //   }
-    //   std::cout << "\n--> Jet user int list:\n";
-    //   for(unsigned j = 0; j < jet.userIntNames().size(); ++j){
-	  //     std::cout << jet.userIntNames()[j] << "\n";
-    //   }
-    // }
+    if(i==0 && analyzedEventCnt_== 1){
+      std::cout << "\n--> Jet user float list:\n";
+      for(unsigned j = 0; j < jet.userFloatNames().size(); ++j){
+	      std::cout << jet.userFloatNames()[j] << "\n";
+      }
+      std::cout << "\n--> Jet user int list:\n";
+      for(unsigned j = 0; j < jet.userIntNames().size(); ++j){
+	      std::cout << jet.userIntNames()[j] << "\n";
+      }
+    }
 
     //Soft cut on pt and eta to reduce Baobab size
     if(jet.isPFJet() && jet.pt() > 20.0 && fabs(jet.eta()) < 2.7){
@@ -1429,13 +1257,13 @@ void Tupel::processJetsAK8(){
   for(unsigned int i=0; i<jetsAK8->size(); ++i){
     const pat::Jet & jetAK8 = jetsAK8->at(i);
 
-    // if(i==0 && analyzedEventCnt_== 2){
-    //   std::cout << "\n--> Jet AK8 user float list:\n";
-    //   for(unsigned j = 0; j < jetAK8.userFloatNames().size(); ++j){
-	  //     std::cout << jetAK8.userFloatNames()[j] << "\n";
-    //   }
-    //   std::cout << std::endl;
-    // }
+    if(i==0 && analyzedEventCnt_== 2){
+      std::cout << "\n--> Jet AK8 user float list:\n";
+      for(unsigned j = 0; j < jetAK8.userFloatNames().size(); ++j){
+	      std::cout << jetAK8.userFloatNames()[j] << "\n";
+      }
+      std::cout << std::endl;
+    }
 
     // PF jets in AK8 collection start at pT of 200 GeV 
     // (PF jets start at 170, but should start at 200 GeV if JECs reapplied)
@@ -1614,11 +1442,9 @@ void Tupel::beginJob(){
   ADD_BRANCH(MuPfIso);
   ADD_BRANCH(MuDz);
   ADD_BRANCH(MuHltMatch);
-  // ADD_BRANCH(MuTkNormChi2);
-  // ADD_BRANCH(MuTkHitCnt);
-  // ADD_BRANCH(MuMatchedStationCnt);
-  // ADD_BRANCH(MuPixelHitCnt);
-  // ADD_BRANCH(MuTkLayerCnt);
+  // Adding branches to save trigger decisions as booleans for HLT paths of interest
+  ADD_BRANCH(MuHltTrgPath1);
+  ADD_BRANCH(MuHltTrgPath2);
 
   //MET
   ADD_BRANCH(METPt);
@@ -1729,7 +1555,7 @@ void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 
 void Tupel::endJob(){
   treeHelper_->fillDescriptionTree();
-  if(triggerStat_) writeTriggerStat();
+  // if(triggerStat_) writeTriggerStat();
 }
 
 void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
@@ -1757,7 +1583,7 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Muons=%d, Jets=%d, MET=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedMuons, failedJets, failedMET);
+  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET);
 }
 
 DEFINE_FWK_MODULE(Tupel);
