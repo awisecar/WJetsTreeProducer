@@ -215,7 +215,9 @@ private:
   edm::EDGetTokenT<std::vector<pat::Jet> > jetAK8Token_;
   edm::EDGetTokenT<std::vector<pat::MET> > metToken_;
   edm::EDGetTokenT<edm::TriggerResults> noiseFilterToken_;
-
+  // Tags for HLT paths (set in cfg file per year)
+  std::string muonHLTTriggerPath1_;
+  std::string muonHLTTriggerPath2_;
   // Tags for MET filters
   std::string GoodVtxNoiseFilter_Selector_;
   std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
@@ -304,22 +306,6 @@ private:
   std::vector<TrigHltMapRcd> trigHltMapList_; //list of trigger maps.
   std::vector<TrigHltMapRcd> TrigMETBitMapList_;
 
-  //Missing energy
-  std::unique_ptr<std::vector<float> > METPt_;
-  std::unique_ptr<std::vector<float> > METPx_;
-  std::unique_ptr<std::vector<float> > METPy_;
-  // std::unique_ptr<std::vector<float> > METPz_;
-  std::unique_ptr<std::vector<float> > METE_;
-  std::unique_ptr<std::vector<float> > METPhi_;
-  // std::unique_ptr<std::vector<float> > METEta_;
-
-  std::unique_ptr<std::vector<float> > GMETPt_;
-  std::unique_ptr<std::vector<float> > GMETPx_;
-  std::unique_ptr<std::vector<float> > GMETPy_;
-  // std::unique_ptr<std::vector<float> > GMETPz_;
-  std::unique_ptr<std::vector<float> > GMETE_;
-  std::unique_ptr<std::vector<float> > GMETPhi_;
-
   //Generator level leptons, not-dressed
   std::unique_ptr<std::vector<float> > 	GLepBarePt_;
   std::unique_ptr<std::vector<float> > 	GLepBareEta_;
@@ -339,6 +325,14 @@ private:
   std::unique_ptr<std::vector<int> >   GLepClosePhotMother0Id_;
   std::unique_ptr<std::vector<int> >   GLepClosePhotMotherCnt_;
   std::unique_ptr<std::vector<int> >   GLepClosePhotSt_;
+
+  // GEN-level MET
+  std::unique_ptr<std::vector<float> > GMETPt_;
+  std::unique_ptr<std::vector<float> > GMETPx_;
+  std::unique_ptr<std::vector<float> > GMETPy_;
+  // std::unique_ptr<std::vector<float> > GMETPz_;
+  std::unique_ptr<std::vector<float> > GMETE_;
+  std::unique_ptr<std::vector<float> > GMETPhi_;
 
   //Gen Jets, AK4
   std::unique_ptr<std::vector<float> > GJetAk04Pt_;
@@ -380,6 +374,24 @@ private:
   std::unique_ptr<std::vector<unsigned> > MuHltMatch_;
   std::unique_ptr<std::vector<bool> > MuHltTrgPath1_;
   std::unique_ptr<std::vector<bool> > MuHltTrgPath2_;
+
+   //MET
+  std::unique_ptr<std::vector<float> > METPt_;
+  std::unique_ptr<std::vector<float> > METPx_;
+  std::unique_ptr<std::vector<float> > METPy_;
+  // std::unique_ptr<std::vector<float> > METPz_;
+  std::unique_ptr<std::vector<float> > METE_;
+  std::unique_ptr<std::vector<float> > METPhi_;
+  // std::unique_ptr<std::vector<float> > METEta_;
+
+  // MET Filters
+  std::unique_ptr<std::vector<bool> > METFilterPath1_;
+  std::unique_ptr<std::vector<bool> > METFilterPath2_;
+  std::unique_ptr<std::vector<bool> > METFilterPath3_;
+  std::unique_ptr<std::vector<bool> > METFilterPath4_;
+  std::unique_ptr<std::vector<bool> > METFilterPath5_;
+  std::unique_ptr<std::vector<bool> > METFilterPath6_;
+  std::unique_ptr<std::vector<bool> > METFilterPath7_;
 
   //PF Jets - AK4
   std::unique_ptr<std::vector<float> > JetAk04Pt_;
@@ -469,6 +481,7 @@ private:
   int failedJets;
   int failedJetsAK8;
   int failedMET;
+  int failedMetFilters;
 };
 
 Tupel::Tupel(const edm::ParameterSet& iConfig):
@@ -493,6 +506,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   failedJets = 0;
   failedJetsAK8 = 0;
   failedMET = 0;
+  failedMetFilters = 0;
 
   // RECO tokens
   vertexToken_ = consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertexSrc"));
@@ -510,18 +524,21 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   // HLT trigger bits
   HLTTagToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("triggerSrc"));
   HLTtriggerObjectToken_ = consumes<std::vector<pat::TriggerObjectStandAlone> >(iConfig.getUntrackedParameter<edm::InputTag>("triggerObjectTag"));
-  triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("triggerPrescalesTag"));
+  triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(iConfig.getUntrackedParameter<edm::InputTag>("triggerPrescalesTag"));
+  // HLT paths (set in cfg file per year)
+  muonHLTTriggerPath1_ =  iConfig.getParameter<std::string>("muonHLTTriggerPath1");
+  muonHLTTriggerPath2_ =  iConfig.getParameter<std::string>("muonHLTTriggerPath2");
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
   // MET filters
-  GoodVtxNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GoodVtxNoiseFilter_Selector_");
-  GlobalSuperTightHalo2016NoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GlobalSuperTightHalo2016NoiseFilter_Selector_");
-  HBHENoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseFilter_Selector_");
-  HBHENoiseIsoFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseIsoFilter_Selector_");
-  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_");
-  BadPFMuonFilter_Selector_ =  iConfig.getParameter<std::string> ("BadPFMuonFilter_Selector_");
-  EEBadScNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EEBadScNoiseFilter_Selector_");
+  GoodVtxNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GoodVtxNoiseFilter_Selector");
+  GlobalSuperTightHalo2016NoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GlobalSuperTightHalo2016NoiseFilter_Selector");
+  HBHENoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseFilter_Selector");
+  HBHENoiseIsoFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseIsoFilter_Selector");
+  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EcalDeadCellTriggerPrimitiveNoiseFilter_Selector");
+  BadPFMuonFilter_Selector_ =  iConfig.getParameter<std::string> ("BadPFMuonFilter_Selector");
+  EEBadScNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EEBadScNoiseFilter_Selector");
 
   // //L1 Prefire
   // prefweight_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProb"));
@@ -544,32 +561,30 @@ void Tupel::defineBitFields(){
   trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltMuMap_,     TrigHltMu_.get(),     TrigHltMu_prescale_.get()));
   TrigMETBitMapList_.push_back(TrigHltMapRcd(&TrigMETBitMap_, TrigMETBit_.get(),    TrigMETBit_prescale_.get()));
 
-  // andrew - do the placement of these bits need to match how the filters are read in?
-  // shifted off by three..?
-	DEF_BIT2(TrigMETBit,  0, Flag_duplicateMuons);
-	DEF_BIT2(TrigMETBit,  1, Flag_badMuons);
-	DEF_BIT2(TrigMETBit,  2, Flag_noBadMuons);
-	DEF_BIT2(TrigMETBit,  3, Flag_HBHENoiseFilter);
-	DEF_BIT2(TrigMETBit,  4, Flag_HBHENoiseIsoFilter);
-	DEF_BIT2(TrigMETBit,  5, Flag_CSCTightHaloFilter);
-	DEF_BIT2(TrigMETBit,  6, Flag_CSCTightHaloTrkMuUnvetoFilter);
-	DEF_BIT2(TrigMETBit,  7, Flag_CSCTightHalo2015Filter);
-	DEF_BIT2(TrigMETBit,  8, Flag_globalTightHalo2016Filter);
-	DEF_BIT2(TrigMETBit,  9, Flag_globalSuperTightHalo2016Filter);
-	DEF_BIT2(TrigMETBit, 10, Flag_HcalStripHaloFilter);
-	DEF_BIT2(TrigMETBit, 11, Flag_hcalLaserEventFilter);
-	DEF_BIT2(TrigMETBit, 12, Flag_EcalDeadCellTriggerPrimitiveFilter);
-	DEF_BIT2(TrigMETBit, 13, Flag_EcalDeadCellBoundaryEnergyFilter);
-	DEF_BIT2(TrigMETBit, 14, Flag_goodVertices);
-	DEF_BIT2(TrigMETBit, 15, Flag_eeBadScFilter);
-	DEF_BIT2(TrigMETBit, 16, Flag_ecalLaserCorrFilter);
-	DEF_BIT2(TrigMETBit, 17, Flag_trkPOGFilters);
-	DEF_BIT2(TrigMETBit, 18, Flag_chargedHadronTrackResolutionFilter);
-	DEF_BIT2(TrigMETBit, 19, Flag_muonBadTrackFilter);
-	DEF_BIT2(TrigMETBit, 20, Flag_trkPOG_manystripclus53X);
-	DEF_BIT2(TrigMETBit, 21, Flag_trkPOG_toomanystripclus53X);
-	DEF_BIT2(TrigMETBit, 22, Flag_trkPOG_logErrorTooManyClusters);
-	DEF_BIT2(TrigMETBit, 23, Flag_METFilters);
+	// DEF_BIT2(TrigMETBit,  0, Flag_duplicateMuons);
+	// DEF_BIT2(TrigMETBit,  1, Flag_badMuons);
+	// DEF_BIT2(TrigMETBit,  2, Flag_noBadMuons);
+	// DEF_BIT2(TrigMETBit,  3, Flag_HBHENoiseFilter);
+	// DEF_BIT2(TrigMETBit,  4, Flag_HBHENoiseIsoFilter);
+	// DEF_BIT2(TrigMETBit,  5, Flag_CSCTightHaloFilter);
+	// DEF_BIT2(TrigMETBit,  6, Flag_CSCTightHaloTrkMuUnvetoFilter);
+	// DEF_BIT2(TrigMETBit,  7, Flag_CSCTightHalo2015Filter);
+	// DEF_BIT2(TrigMETBit,  8, Flag_globalTightHalo2016Filter);
+	// DEF_BIT2(TrigMETBit,  9, Flag_globalSuperTightHalo2016Filter);
+	// DEF_BIT2(TrigMETBit, 10, Flag_HcalStripHaloFilter);
+	// DEF_BIT2(TrigMETBit, 11, Flag_hcalLaserEventFilter);
+	// DEF_BIT2(TrigMETBit, 12, Flag_EcalDeadCellTriggerPrimitiveFilter);
+	// DEF_BIT2(TrigMETBit, 13, Flag_EcalDeadCellBoundaryEnergyFilter);
+	// DEF_BIT2(TrigMETBit, 14, Flag_goodVertices);
+	// DEF_BIT2(TrigMETBit, 15, Flag_eeBadScFilter);
+	// DEF_BIT2(TrigMETBit, 16, Flag_ecalLaserCorrFilter);
+	// DEF_BIT2(TrigMETBit, 17, Flag_trkPOGFilters);
+	// DEF_BIT2(TrigMETBit, 18, Flag_chargedHadronTrackResolutionFilter);
+	// DEF_BIT2(TrigMETBit, 19, Flag_muonBadTrackFilter);
+	// DEF_BIT2(TrigMETBit, 20, Flag_trkPOG_manystripclus53X);
+	// DEF_BIT2(TrigMETBit, 21, Flag_trkPOG_toomanystripclus53X);
+	// DEF_BIT2(TrigMETBit, 22, Flag_trkPOG_logErrorTooManyClusters);
+	// DEF_BIT2(TrigMETBit, 23, Flag_METFilters);
 
   // if ( yearToProcess_==std::string("2016") ){
   //   #include "trigger2016.h"
@@ -982,8 +997,14 @@ void Tupel::processTrigger(const edm::Event& iEvent){
 
   if(analyzedEventCnt_==1){
     std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
-    std::cout << "--> Passed trigger paths:" << std::endl;
+    std::cout << "\n--> All trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
+      std::cout << "Index " << i << ": " << trigNames->triggerName(i);
+      std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << ", has prescale " << triggerPrescales->getPrescaleForIndex(i) << std::endl;
+    }
+    std::cout << "\n--> Passed trigger paths:" << std::endl;
+    for (int i = 0; i < ntrigs; i++) {
+      // Passed triggers with index i have HLTResHandle->accept(i) give true value
       if (HLTResHandle->accept(i)){
         std::cout << "Index " << i << ": " << trigNames->triggerName(i);
         std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << ", has prescale " << triggerPrescales->getPrescaleForIndex(i) << std::endl;
@@ -991,67 +1012,81 @@ void Tupel::processTrigger(const edm::Event& iEvent){
     }
   }
 
-  bool trigDecision1 = false;
-  bool trigDecision2 = false;
-  if(yearToProcess_==std::string("2017")){
-    for (int i = 0; i < ntrigs; i++) {
-      if (trigNames->triggerName(i) == "HLT_IsoMu24_v6") {
-        if (HLTResHandle->accept(i)) trigDecision1 = true;
-      }
-      if (trigNames->triggerName(i) == "HLT_IsoMu27_v9") {
-        if (HLTResHandle->accept(i)) trigDecision2 = true;
-      }
+  // Determine if HLT paths are passed or not
+  for (int i = 0; i < ntrigs; i++) {
+    if (trigNames->triggerName(i) == muonHLTTriggerPath1_) {
+      MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
+    }
+    if (trigNames->triggerName(i) == muonHLTTriggerPath2_) {
+      MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
     }
   }
-  MuHltTrgPath1_->push_back(trigDecision1);
-  MuHltTrgPath2_->push_back(trigDecision2);
 
 }
 
 void Tupel::processMETFilter(const edm::Event& iEvent){
-  *TrigMET_ = 0;
-
-  if (metfilters.isValid() && !metfilters.failedToGet()){
-    const edm::TriggerNames &names = iEvent.triggerNames(*metfilters);
-
-    if(analyzedEventCnt_==1) {
-      std::cout << "\n--> MET Filters" << std::endl;
-      for (unsigned int i = 0, n = metfilters->size(); i < n; ++i) {
-        // std::cout << names.triggerName(i) << std::endl;
-        if (names.triggerName(i) == GoodVtxNoiseFilter_Selector_) std::cout << "Flag_goodVertices is i=" << i << std::endl;
-        if (names.triggerName(i) == GlobalSuperTightHalo2016NoiseFilter_Selector_) std::cout << "Flag_globalSuperTightHalo2016Filter is i=" << i << std::endl;
-        if (names.triggerName(i) == HBHENoiseFilter_Selector_) std::cout << "Flag_HBHENoiseFilter is i=" << i << std::endl;
-        if (names.triggerName(i) == HBHENoiseIsoFilter_Selector_) std::cout << "Flag_HBHENoiseIsoFilter is i=" << i << std::endl;
-        if (names.triggerName(i) == EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_) std::cout << "Flag_EcalDeadCellTriggerPrimitiveFilter is i=" << i << std::endl;
-        if (names.triggerName(i) == BadPFMuonFilter_Selector_) std::cout << "Flag_BadPFMuonFilter is i=" << i << std::endl;
-        if (names.triggerName(i) == EEBadScNoiseFilter_Selector_) std::cout << "Flag_eeBadScFilter is i=" << i << std::endl;
-      }
-      std::cout << std::endl;
-    }
-
-    // For 2017 data/MC
-    // Using "TriggerResults", PAT
-    // Flag_HBHENoiseFilter is i=0
-    // Flag_HBHENoiseIsoFilter is i=1
-    // Flag_globalSuperTightHalo2016Filter is i=6
-    // Flag_EcalDeadCellTriggerPrimitiveFilter is i=9
-    // Flag_goodVertices is i=12
-    // Flag_eeBadScFilter is i=13
-    // Flag_BadPFMuonFilter is i=19
-
-    //neglect MC for now
-    for (unsigned int i = 0, n = metfilters->size(); i < n; ++i) {
-      if(!*EvtIsRealData_){
-        if(analyzedEventCnt_==1) {
-          std::cout << "neglect MC MET filters for now" << std::endl;
-        }
-      }
-      else{
-        if (metfilters->accept(i)) *TrigMET_ |= 1LL << i;
-      }
-    }
-
+  if(metfilters.failedToGet() || !metfilters.isValid()){
+    printf("processMetFilter failed\n");
+    failedMetFilters++;
+    return;
   }
+
+  int nfilters;
+  // const edm::TriggerNames &filterNames = iEvent.triggerNames(*metfilters);
+  edm::RefProd<edm::TriggerNames> filterNames( &(iEvent.triggerNames(*metfilters)) );
+  nfilters = (int)filterNames->size();
+
+  if(analyzedEventCnt_==1) {
+    std::cout << "\n--> Total PAT trigger paths: " << nfilters << std::endl;
+    std::cout << "\n--> All PAT trigger paths:" << std::endl;
+    for (int i = 0; i < nfilters; i++) {
+      std::cout << "Index " << i << ": " << filterNames->triggerName(i);
+      std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+    }
+    std::cout << "\n--> Passed PAT trigger paths:" << std::endl;
+    for (int i = 0; i < nfilters; i++) {
+      if (metfilters->accept(i)){
+        std::cout << "Index " << i << ": " << filterNames->triggerName(i);
+        std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      }
+    }
+    std::cout << "\n--> MET Filters: " << std::endl;
+    for (int i = 0; i < nfilters; i++) {
+      if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << std::endl;
+      if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << std::endl; 
+      if (filterNames->triggerName(i) == GlobalSuperTightHalo2016NoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_globalSuperTightHalo2016Filter" << std::endl; 
+      if (filterNames->triggerName(i) == EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_EcalDeadCellTriggerPrimitiveFilter" << std::endl; 
+      if (filterNames->triggerName(i) == GoodVtxNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_goodVertices" << std::endl;
+      if (filterNames->triggerName(i) == EEBadScNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_eeBadScFilter" << std::endl; 
+      if (filterNames->triggerName(i) == BadPFMuonFilter_Selector_) std::cout << "Index " << i << ": Flag_BadPFMuonFilter" << std::endl;
+    }
+  }
+
+  // Determine if MET filters are passed or not
+  for (int i = 0; i < nfilters; i++) {
+    if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) {
+      METFilterPath1_->push_back(metfilters->accept(i));
+    }
+    if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) {
+      METFilterPath2_->push_back(metfilters->accept(i));
+    }
+    if (filterNames->triggerName(i) == GlobalSuperTightHalo2016NoiseFilter_Selector_) {
+      METFilterPath3_->push_back(metfilters->accept(i));
+    }
+    if (filterNames->triggerName(i) == EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_) {
+      METFilterPath4_->push_back(metfilters->accept(i));
+    }
+    if (filterNames->triggerName(i) == GoodVtxNoiseFilter_Selector_) {
+      METFilterPath5_->push_back(metfilters->accept(i));
+    }
+    if (filterNames->triggerName(i) == EEBadScNoiseFilter_Selector_) {
+      METFilterPath6_->push_back(metfilters->accept(i));
+    }
+    if (filterNames->triggerName(i) == BadPFMuonFilter_Selector_) {
+      METFilterPath7_->push_back(metfilters->accept(i));
+    }
+  }
+
 }
 
 void Tupel::processMuons(const edm::Event& iEvent){
@@ -1455,6 +1490,15 @@ void Tupel::beginJob(){
   ADD_BRANCH(METPhi);
   // ADD_BRANCH(METEta);
 
+  // MET Filters
+  ADD_BRANCH(METFilterPath1);
+  ADD_BRANCH(METFilterPath2);
+  ADD_BRANCH(METFilterPath3);
+  ADD_BRANCH(METFilterPath4);
+  ADD_BRANCH(METFilterPath5);
+  ADD_BRANCH(METFilterPath6);
+  ADD_BRANCH(METFilterPath7);
+
   //PF Jets - AK4
   treeHelper_->addDescription("JetAk04", "Reconstricuted jets clustered with the anti-ket algorithm with distance parameter R = 0.4");
   ADD_BRANCH(JetAk04Pt);
@@ -1583,7 +1627,7 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET);
+  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
 }
 
 DEFINE_FWK_MODULE(Tupel);

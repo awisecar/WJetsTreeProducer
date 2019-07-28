@@ -53,8 +53,8 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -158,6 +158,9 @@ process.tupel = cms.EDAnalyzer("Tupel",
   triggerSrc       = cms.InputTag("TriggerResults", "", "HLT"),
   triggerObjectTag = cms.untracked.InputTag("slimmedPatTrigger"),
   triggerPrescalesTag = cms.untracked.InputTag("patTrigger"),
+  ## HLT paths (need to be set by year; currently 2017)
+  muonHLTTriggerPath1 = cms.string("HLT_IsoMu24_v6"),
+  muonHLTTriggerPath2 = cms.string("HLT_IsoMu27_v9"),
   ##### Muons, Jets, MET
   muonSrc      = cms.untracked.InputTag("slimmedMuons"),
   # jetSrc       = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
@@ -168,13 +171,13 @@ process.tupel = cms.EDAnalyzer("Tupel",
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
   ##### MET Filters
   noiseFilterTag = cms.InputTag("TriggerResults","","PAT"),
-  GoodVtxNoiseFilter_Selector_ = cms.string("Flag_goodVertices"),
-  GlobalSuperTightHalo2016NoiseFilter_Selector_ = cms.string("Flag_globalSuperTightHalo2016Filter"),
-  HBHENoiseFilter_Selector_ = cms.string("Flag_HBHENoiseFilter"),
-  HBHENoiseIsoFilter_Selector_ = cms.string("Flag_HBHENoiseIsoFilter"),
-  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_ = cms.string("Flag_EcalDeadCellTriggerPrimitiveFilter"),
-  BadPFMuonFilter_Selector_ = cms.string("Flag_BadPFMuonFilter"),
-  EEBadScNoiseFilter_Selector_ = cms.string("Flag_eeBadScFilter"),
+  GoodVtxNoiseFilter_Selector = cms.string("Flag_goodVertices"),
+  GlobalSuperTightHalo2016NoiseFilter_Selector = cms.string("Flag_globalSuperTightHalo2016Filter"),
+  HBHENoiseFilter_Selector = cms.string("Flag_HBHENoiseFilter"),
+  HBHENoiseIsoFilter_Selector = cms.string("Flag_HBHENoiseIsoFilter"),
+  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector = cms.string("Flag_EcalDeadCellTriggerPrimitiveFilter"),
+  BadPFMuonFilter_Selector = cms.string("Flag_BadPFMuonFilter"),
+  EEBadScNoiseFilter_Selector = cms.string("Flag_eeBadScFilter"),
   ##### GEN objects, MC truth pileup information
   genInfoSrc       = cms.untracked.InputTag('generator'),
   lheSrc       = cms.untracked.InputTag('externalLHEProducer'),
