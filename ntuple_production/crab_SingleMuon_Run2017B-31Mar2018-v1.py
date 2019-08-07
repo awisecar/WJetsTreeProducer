@@ -12,7 +12,7 @@ config.JobType.maxMemoryMB = 2500
 config.section_('Data')
 config.Data.inputDataset = '/SingleMuon/Run2017B-31Mar2018-v1/MINIAOD'
 config.Data.publication = False
-config.Data.unitsPerJob = 80000
+config.Data.unitsPerJob = 60000
 config.Data.splitting = 'EventAwareLumiBased'
 config.Data.lumiMask = '/afs/cern.ch/work/a/awisecar/WJetsNtuple16/CMSSW_9_4_10/src/shears/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt'
 config.Data.outLFNDirBase = '/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/DATA/v2'

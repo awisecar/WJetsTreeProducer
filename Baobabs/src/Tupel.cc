@@ -219,13 +219,13 @@ private:
   std::string muonHLTTriggerPath1_;
   std::string muonHLTTriggerPath2_;
   // Tags for MET filters
-  std::string GoodVtxNoiseFilter_Selector_;
-  std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
-  std::string HBHENoiseFilter_Selector_;
-  std::string HBHENoiseIsoFilter_Selector_;
-  std::string EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_;
-  std::string BadPFMuonFilter_Selector_;
-  std::string EEBadScNoiseFilter_Selector_;
+ // std::string GoodVtxNoiseFilter_Selector_;
+ // std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
+ // std::string HBHENoiseFilter_Selector_;
+ // std::string HBHENoiseIsoFilter_Selector_;
+ // std::string EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_;
+ // std::string BadPFMuonFilter_Selector_;
+ // std::string EEBadScNoiseFilter_Selector_;
   
   // GEN tokens
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
@@ -238,8 +238,6 @@ private:
 
   edm::EDGetTokenT<double> mSrcRhoToken_;
 
-  bool triggerStat_;
-    
   //2016 L1 Prefire
   edm::EDGetTokenT< double > prefweight_token;
   edm::EDGetTokenT< double > prefweightup_token;
@@ -250,8 +248,6 @@ private:
   Long64_t analyzedEventCnt_;
 
   bool photonIdsListed_;
-  bool elecIdsListed_;
-  bool hltListed_;
 
   // ----------member data ---------------------------
   TTree *headTree;
@@ -458,8 +454,6 @@ private:
   std::vector<std::vector<int> > trigAccept_;
   std::vector<std::string> trigNames_;
 
-  bool trigStatValid_;
-  bool weightsFromLhe_;
 
   // struct TrigSorter{
   //   TrigSorter(Tupel* t): tupel_(t){}
@@ -486,12 +480,7 @@ private:
 
 Tupel::Tupel(const edm::ParameterSet& iConfig):
   yearToProcess_(iConfig.getUntrackedParameter<std::string>("yearToProcess", "2017")),
-  triggerStat_(iConfig.getUntrackedParameter<bool>("triggerStat")),
-  analyzedEventCnt_(0),
-  elecIdsListed_(false),
-  hltListed_(false),
-  trigStatValid_(true),
-  weightsFromLhe_(true)
+  analyzedEventCnt_(0)
 {
 
   DJALOG_ = iConfig.getUntrackedParameter<bool>("DJALOG");  
@@ -526,19 +515,19 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   HLTtriggerObjectToken_ = consumes<std::vector<pat::TriggerObjectStandAlone> >(iConfig.getUntrackedParameter<edm::InputTag>("triggerObjectTag"));
   triggerPrescalesToken_ = consumes<pat::PackedTriggerPrescales>(iConfig.getUntrackedParameter<edm::InputTag>("triggerPrescalesTag"));
   // HLT paths (set in cfg file per year)
-  muonHLTTriggerPath1_ =  iConfig.getParameter<std::string>("muonHLTTriggerPath1");
-  muonHLTTriggerPath2_ =  iConfig.getParameter<std::string>("muonHLTTriggerPath2");
+  muonHLTTriggerPath1_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath1");
+  muonHLTTriggerPath2_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath2");
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
   // MET filters
-  GoodVtxNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GoodVtxNoiseFilter_Selector");
-  GlobalSuperTightHalo2016NoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GlobalSuperTightHalo2016NoiseFilter_Selector");
-  HBHENoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseFilter_Selector");
-  HBHENoiseIsoFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseIsoFilter_Selector");
-  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EcalDeadCellTriggerPrimitiveNoiseFilter_Selector");
-  BadPFMuonFilter_Selector_ =  iConfig.getParameter<std::string> ("BadPFMuonFilter_Selector");
-  EEBadScNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EEBadScNoiseFilter_Selector");
+//  GoodVtxNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GoodVtxNoiseFilter_Selector");
+//  GlobalSuperTightHalo2016NoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GlobalSuperTightHalo2016NoiseFilter_Selector");
+//  HBHENoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseFilter_Selector");
+//  HBHENoiseIsoFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseIsoFilter_Selector");
+//  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EcalDeadCellTriggerPrimitiveNoiseFilter_Selector");
+//  BadPFMuonFilter_Selector_ =  iConfig.getParameter<std::string> ("BadPFMuonFilter_Selector");
+//  EEBadScNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EEBadScNoiseFilter_Selector");
 
   // //L1 Prefire
   // prefweight_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProb"));
@@ -643,13 +632,13 @@ void Tupel::readEvent(const edm::Event& iEvent){
   *EvtBxNum_      = iEvent.bunchCrossing();
   *EvtIsRealData_ = iEvent.isRealData();
 
-  if(DJALOG_) {
-    std::cout << "*EvtNum_ = "        << iEvent.id().event() << std::endl;
-    std::cout << "*EvtRunNum_ = "     << iEvent.id().run() << std::endl;
-    std::cout << "*EvtLumiNum_ = "    << iEvent.luminosityBlock() << std::endl;
-    std::cout << "*EvtBxNum_ = "      << iEvent.bunchCrossing() << std::endl;
-    std::cout << "*EvtIsRealData_ = " << iEvent.isRealData() << std::endl;
-  }
+  //if(DJALOG_) {
+  //  std::cout << "*EvtNum_ = "        << iEvent.id().event() << std::endl;
+  //  std::cout << "*EvtRunNum_ = "     << iEvent.id().run() << std::endl;
+  //  std::cout << "*EvtLumiNum_ = "    << iEvent.luminosityBlock() << std::endl;
+  //  std::cout << "*EvtBxNum_ = "      << iEvent.bunchCrossing() << std::endl;
+  //  std::cout << "*EvtIsRealData_ = " << iEvent.isRealData() << std::endl;
+  //}
 
   const pat::helper::TriggerMatchHelper matchHelper;
 
@@ -995,7 +984,7 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   edm::RefProd<edm::TriggerNames> trigNames( &(iEvent.triggerNames(*HLTResHandle)) );
   ntrigs = (int)trigNames->size();
 
-  if(analyzedEventCnt_==1){
+  if(DJALOG_ && analyzedEventCnt_==1){
     std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
     std::cout << "\n--> All trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
@@ -1036,53 +1025,60 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
   edm::RefProd<edm::TriggerNames> filterNames( &(iEvent.triggerNames(*metfilters)) );
   nfilters = (int)filterNames->size();
 
-  if(analyzedEventCnt_==1) {
+  if(DJALOG_ && analyzedEventCnt_==1) {
     std::cout << "\n--> Total PAT trigger paths: " << nfilters << std::endl;
     std::cout << "\n--> All PAT trigger paths:" << std::endl;
     for (int i = 0; i < nfilters; i++) {
       std::cout << "Index " << i << ": " << filterNames->triggerName(i);
       std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     }
-    std::cout << "\n--> Passed PAT trigger paths:" << std::endl;
-    for (int i = 0; i < nfilters; i++) {
-      if (metfilters->accept(i)){
-        std::cout << "Index " << i << ": " << filterNames->triggerName(i);
-        std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
-      }
-    }
+    // std::cout << "\n--> Passed PAT trigger paths:" << std::endl;
+    // for (int i = 0; i < nfilters; i++) {
+    //   if (metfilters->accept(i)){
+    //     std::cout << "Index " << i << ": " << filterNames->triggerName(i);
+    //     std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+    //   }
+    // }
     std::cout << "\n--> MET Filters: " << std::endl;
     for (int i = 0; i < nfilters; i++) {
-      if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << std::endl;
-      if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << std::endl; 
-      if (filterNames->triggerName(i) == GlobalSuperTightHalo2016NoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_globalSuperTightHalo2016Filter" << std::endl; 
-      if (filterNames->triggerName(i) == EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_EcalDeadCellTriggerPrimitiveFilter" << std::endl; 
-      if (filterNames->triggerName(i) == GoodVtxNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_goodVertices" << std::endl;
-      if (filterNames->triggerName(i) == EEBadScNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_eeBadScFilter" << std::endl; 
-      if (filterNames->triggerName(i) == BadPFMuonFilter_Selector_) std::cout << "Index " << i << ": Flag_BadPFMuonFilter" << std::endl;
+      //if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      //if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      //if (filterNames->triggerName(i) == GlobalSuperTightHalo2016NoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_globalSuperTightHalo2016Filter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl; 
+      //if (filterNames->triggerName(i) == EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_EcalDeadCellTriggerPrimitiveFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      //if (filterNames->triggerName(i) == GoodVtxNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_goodVertices" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      //if (filterNames->triggerName(i) == EEBadScNoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_eeBadScFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      //if (filterNames->triggerName(i) == BadPFMuonFilter_Selector_) std::cout << "Index " << i << ": Flag_BadPFMuonFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      if (filterNames->triggerName(i) == "Flag_HBHENoiseFilter") std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      if (filterNames->triggerName(i) == "Flag_HBHENoiseIsoFilter") std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      if (filterNames->triggerName(i) == "Flag_globalSuperTightHalo2016Filter") std::cout << "Index " << i << ": Flag_globalSuperTightHalo2016Filter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl; 
+      if (filterNames->triggerName(i) == "Flag_EcalDeadCellTriggerPrimitiveFilter") std::cout << "Index " << i << ": Flag_EcalDeadCellTriggerPrimitiveFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      if (filterNames->triggerName(i) == "Flag_goodVertices") std::cout << "Index " << i << ": Flag_goodVertices" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      if (filterNames->triggerName(i) == "Flag_eeBadScFilter") std::cout << "Index " << i << ": Flag_eeBadScFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
+      if (filterNames->triggerName(i) == "Flag_BadPFMuonFilter") std::cout << "Index " << i << ": Flag_BadPFMuonFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     }
   }
 
   // Determine if MET filters are passed or not
   for (int i = 0; i < nfilters; i++) {
-    if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_HBHENoiseFilter") {
       METFilterPath1_->push_back(metfilters->accept(i));
     }
-    if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_HBHENoiseIsoFilter") {
       METFilterPath2_->push_back(metfilters->accept(i));
     }
-    if (filterNames->triggerName(i) == GlobalSuperTightHalo2016NoiseFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_globalSuperTightHalo2016Filter") {
       METFilterPath3_->push_back(metfilters->accept(i));
     }
-    if (filterNames->triggerName(i) == EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_EcalDeadCellTriggerPrimitiveFilter") {
       METFilterPath4_->push_back(metfilters->accept(i));
     }
-    if (filterNames->triggerName(i) == GoodVtxNoiseFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_goodVertices") {
       METFilterPath5_->push_back(metfilters->accept(i));
     }
-    if (filterNames->triggerName(i) == EEBadScNoiseFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_eeBadScFilter") {
       METFilterPath6_->push_back(metfilters->accept(i));
     }
-    if (filterNames->triggerName(i) == BadPFMuonFilter_Selector_) {
+    if (filterNames->triggerName(i) == "Flag_BadPFMuonFilter") {
       METFilterPath7_->push_back(metfilters->accept(i));
     }
   }
@@ -1180,7 +1176,7 @@ void Tupel::processJets(){
     // used for jet matching ???
     // const reco::GenJet* ref = jet.genJet();
 
-    if(i==0 && analyzedEventCnt_== 1){
+    if(DJALOG_ && i==0 && analyzedEventCnt_== 1){
       std::cout << "\n--> Jet user float list:\n";
       for(unsigned j = 0; j < jet.userFloatNames().size(); ++j){
 	      std::cout << jet.userFloatNames()[j] << "\n";
@@ -1292,7 +1288,7 @@ void Tupel::processJetsAK8(){
   for(unsigned int i=0; i<jetsAK8->size(); ++i){
     const pat::Jet & jetAK8 = jetsAK8->at(i);
 
-    if(i==0 && analyzedEventCnt_== 2){
+    if(DJALOG_ && i==0 && analyzedEventCnt_== 2){
       std::cout << "\n--> Jet AK8 user float list:\n";
       for(unsigned j = 0; j < jetAK8.userFloatNames().size(); ++j){
 	      std::cout << jetAK8.userFloatNames()[j] << "\n";
@@ -1547,49 +1543,49 @@ void Tupel::beginJob(){
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   ++analyzedEventCnt_;
 
-  if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  //if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
   readEvent(iEvent);
 
   //Get the event weights for MC
   if(!*EvtIsRealData_){
-    if(DJALOG_) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
+    //if(DJALOG_) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
     processLHE(iEvent);
   }
 
-  if(DJALOG_) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
   processVtx(iEvent);
   
   if(!*EvtIsRealData_){
-    if(DJALOG_) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
+    //if(DJALOG_) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
     processGenJets(iEvent);
-    if(DJALOG_) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
+    //if(DJALOG_) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
     processGenJetsAK8(iEvent);
-    if(DJALOG_) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
+    //if(DJALOG_) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
     processGenParticles(iEvent);
   }
   
-  if(DJALOG_) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
   if (!mets.failedToGet()) processMET(iEvent);
   
   if (!*EvtIsRealData_) {
-    if(DJALOG_) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
+    //if(DJALOG_) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
     processPu(iEvent);  
   }     
 
-  if(DJALOG_) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
   processTrigger(iEvent);
 
-  if(DJALOG_) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
   if (!metfilters.failedToGet()) processMETFilter(iEvent);
 
-  if(DJALOG_) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
   if (!muons.failedToGet()) processMuons(iEvent);
 
-  if(DJALOG_) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParCollAK4); 
   processJets();
 
-  if(DJALOG_) std::cout << "\n ~~~ processJetsAK8() ~~~ "  << std::endl;
+  //if(DJALOG_) std::cout << "\n ~~~ processJetsAK8() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK8PFPuppi", JetCorParCollAK8); 
   processJetsAK8();
 
@@ -1599,16 +1595,13 @@ void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
 
 void Tupel::endJob(){
   treeHelper_->fillDescriptionTree();
-  // if(triggerStat_) writeTriggerStat();
 }
 
 void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
 
   std::string desc = "List of MC event weights. Use the first one by default.";
   desc += " The first element contains the GenInfoProduct weight, or it was not found and set to 1.";
-  if(weightsFromLhe_){
-    desc += "Elements starting from index 1 contains the weights from LHEEventProduct.";
-  }
+  desc += "Elements starting from index 1 contains the weights from LHEEventProduct.";
 
   // Get information about LHE weights --
   // edm::Handle<LHERunInfoProduct> lheRun;

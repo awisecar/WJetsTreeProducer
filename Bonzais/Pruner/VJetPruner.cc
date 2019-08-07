@@ -16,17 +16,14 @@ void EventTree::Loop(){} //To make the compiler/linker happy.
 #define DEBUG 0
 
 /** Selection parameters **/
-static float minGJetPt = 15;
-static float minLepPt = 15;
+static float minLepPt = 20.;
 static float minMET = 0.;
-static float minJetAk04Pt = 15;
-static float minJetAk08Pt = 15;
+static float minJetAk04Pt = 20.;
+static float minJetAk08Pt = 20.;
+static float minGLepClosePhotPt = 0.;
+
 static float mll_low = 66;
 static float mll_high = 126;
-static const unsigned elIdMask = 0x1f;
-
-//For data v11
-//static const unsigned elIdMask = (1 <<20);
 
 /**************************/
 
@@ -38,8 +35,10 @@ protected:
   
   // GEN
   bool filterGLepBare(int iGenLep);
-  // bool filterGLepSt3(int iGenLep);
-  bool filterGJet(int iGenLep);
+  bool filterGLepClosePhot(int iGenLepClosePhot);
+  bool filterGMET(int iGenMET);
+  bool filterGJetAk04(int iGenJetAk04);
+  bool filterGJetAk08(int iGenJetAk08);
 
   // RECO
   bool filterMu(int iMu);
@@ -112,18 +111,47 @@ void VJetPruner::skimCollections(){
   filter(GLepBareE,   mask);
   filter(GLepBareId,  mask);
   filter(GLepBareSt,  mask);
-  filter(GLepBareMomId, mask);
   filter(GLepBarePrompt, mask);
-  filter(GLepBareTauProd, mask);
 
-  if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGJet, mask);\n");
-  //Gen jet collections --------------------
+  if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGLepClosePhot, mask);\n");
+  //FSR gen photon collections --------------------
+  mask.resize(GLepClosePhotPt->size());
+  makeFilterMask(&VJetPruner::filterGLepClosePhot, mask);
+  filter(GLepClosePhotPt,  mask);
+  filter(GLepClosePhotEta,  mask);
+  filter(GLepClosePhotPhi,  mask);
+  filter(GLepClosePhotE,  mask);
+  filter(GLepClosePhotId,  mask);
+  filter(GLepClosePhotMother0Id,  mask);
+  filter(GLepClosePhotMotherCnt,  mask);
+  filter(GLepClosePhotSt,  mask);
+
+  if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGMET, mask);\n");
+  mask.resize(GMETPt->size());
+  makeFilterMask(&VJetPruner::filterGMET, mask);
+  filter(GMETPt, mask);
+  filter(GMETPx, mask);
+  filter(GMETPy, mask);
+  filter(GMETE, mask);
+  filter(GMETPhi, mask);
+
+  if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGJetAk04, mask);\n");
+  //Gen jet AK4 collections --------------------
   mask.resize(GJetAk04Pt->size());
-  makeFilterMask(&VJetPruner::filterGJet, mask);
+  makeFilterMask(&VJetPruner::filterGJetAk04, mask);
   filter(GJetAk04Pt,  mask);
   filter(GJetAk04Eta, mask);
   filter(GJetAk04Phi, mask);
   filter(GJetAk04E,   mask);
+
+  if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGJetAk08, mask);\n");
+  //Gen jet AK8 collections --------------------
+  mask.resize(GJetAk08Pt->size());
+  makeFilterMask(&VJetPruner::filterGJetAk08, mask);
+  filter(GJetAk08Pt,  mask);
+  filter(GJetAk08Eta, mask);
+  filter(GJetAk08Phi, mask);
+  filter(GJetAk08E,   mask);
 
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterMu, mask);\n");
   //Reco muon collections:
@@ -142,11 +170,8 @@ void VJetPruner::skimCollections(){
   filter(MuPfIso, mask);
   filter(MuDz, mask);
   filter(MuHltMatch, mask);
-  // filter(MuTkNormChi2, mask);
-  // filter(MuTkHitCnt, mask);
-  // filter(MuMatchedStationCnt, mask);
-  // filter(MuPixelHitCnt, mask);
-  // filter(MuTkLayerCnt, mask);
+  filter(MuHltTrgPath1, mask);
+  filter(MuHltTrgPath2, mask);
 
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterMET, mask);\n");
   //Reco MET:
@@ -155,9 +180,15 @@ void VJetPruner::skimCollections(){
   filter(METPt, mask);
   filter(METPx, mask);
   filter(METPy, mask);
-  // filter(METPz, mask);
   filter(METE, mask);
   filter(METPhi, mask);
+  filter(METFilterPath1, mask);
+  filter(METFilterPath2, mask);
+  filter(METFilterPath3, mask);
+  filter(METFilterPath4, mask);
+  filter(METFilterPath5, mask);
+  filter(METFilterPath6, mask);
+  filter(METFilterPath7, mask);
   
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterJetAk04, mask);\n");
   //AK4 reco jet collections:
@@ -184,15 +215,13 @@ void VJetPruner::skimCollections(){
   makeFilterMask(&VJetPruner::filterJetAk08, mask);
   filter(JetAk08Pt, mask);
   filter(JetAk08Eta, mask);
-  // filter(JetAk08Rap, mask);
   filter(JetAk08Phi, mask);
   filter(JetAk08E, mask);
   filter(JetAk08Id, mask);
   filter(JetAk08BDiscCisvV2, mask);
   filter(JetAk08HadFlav, mask);
-  // filter(JetAk08CHSPt, mask);
-  // filter(JetAk08CHSEta, mask);
-  // filter(JetAk08CHSPhi, mask);
+  filter(JetAk08JecUncUp, mask);
+  filter(JetAk08JecUncDwn, mask);
 }
 
 //to be run after skimCollections
@@ -273,18 +302,21 @@ bool VJetPruner::filterGLepBare(int iGenLep){
   return ((*GLepBarePt)[iGenLep] > minLepPt);
 }
 
-// bool VJetPruner::filterGLepSt3(int iGenLep){
-//   return ((*GLepSt3Pt)[iGenLep] > minLepPt);
-// }
-
-bool VJetPruner::filterGJet(int iGenJ){
-  return (*GJetAk04Pt)[iGenJ] > minGJetPt;
+bool VJetPruner::filterGLepClosePhot(int iGenLepClosePhot){
+  return ((*GLepClosePhotPt)[iGenLepClosePhot] > minGLepClosePhotPt);
 }
 
-// bool VJetPruner::filterEl(int iEl){
-//   //return ((*ElPt)[iEl] > minLepPt) && ((*ElId)[iEl] & elIdMask);
-//   return ((*ElPt)[iEl] > minLepPt);
-// }
+bool VJetPruner::filterGMET(int iGenMET){
+  return ((*GMETPt)[iGenMET] > minMET);
+}
+
+bool VJetPruner::filterGJetAk04(int iGenJetAk04){
+  return (*GJetAk04Pt)[iGenJetAk04] > minJetAk04Pt;
+}
+
+bool VJetPruner::filterGJetAk08(int iGenJetAk08){
+  return (*GJetAk08Pt)[iGenJetAk08] > minJetAk08Pt;
+}
 
 bool VJetPruner::filterMu(int iMu){
   return ((*MuPt)[iMu] > minLepPt);
@@ -301,4 +333,5 @@ bool VJetPruner::filterJetAk04(int iJetAk04){
 bool VJetPruner::filterJetAk08(int iJetAk08){
   return (*JetAk08Pt)[iJetAk08] > minJetAk08Pt;
 }
+
 
