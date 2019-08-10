@@ -613,16 +613,16 @@ void Tupel::readEvent(const edm::Event& iEvent){
 
   if(analyzedEventCnt_==1) {
     if( yearToProcess_==std::string("2016") ){
-        std::cout << "\nProcessing 2016 data/MC!" << std::endl;
+        std::cout << "\nProcessing 2016 data/MC!\n" << std::endl;
     }
     else if ( yearToProcess_==std::string("2017") ){
-        std::cout << "\nProcessing 2017 data/MC!" << std::endl;
+        std::cout << "\nProcessing 2017 data/MC!\n" << std::endl;
     }
     else if ( yearToProcess_==std::string("2018") ){
-        std::cout << "\nProcessing 2018 data/MC!" << std::endl;
+        std::cout << "\nProcessing 2018 data/MC!\n" << std::endl;
     }
     else {
-        std::cout << "\nPlease pick a correct year!" << std::endl;
+        std::cout << "\nPlease pick a correct year!\n" << std::endl;
     }
   }
 
@@ -1002,11 +1002,12 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   }
 
   // Determine if HLT paths are passed or not
+  // Paths of interest defined in cmsRun cfg file
   for (int i = 0; i < ntrigs; i++) {
-    if (trigNames->triggerName(i) == muonHLTTriggerPath1_) {
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) {
       MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
     }
-    if (trigNames->triggerName(i) == muonHLTTriggerPath2_) {
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) {
       MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
     }
   }
@@ -1357,12 +1358,14 @@ void Tupel::processJetsAK8(){
 
     }
   }
+  delete jecUncAK8;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 /// EDAnalyzer Functions
 
 void Tupel::beginJob(){
+  std::cout << "Begin job!" << std::endl;
   // First setup for the output TTree
   // Writes "Header" in output TTree in beginJob
   writeHeader();
@@ -1593,10 +1596,6 @@ void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   treeHelper_->fill();
 }
 
-void Tupel::endJob(){
-  treeHelper_->fillDescriptionTree();
-}
-
 void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
 
   std::string desc = "List of MC event weights. Use the first one by default.";
@@ -1620,7 +1619,15 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d\n\n", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
+  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
+
+  std::cout << "\nRun ending!\n" << std::endl;
+}
+
+void Tupel::endJob(){
+  treeHelper_->fillDescriptionTree();
+  delete treeHelper_;
+  std::cout << "\nJob ending!" << std::endl;
 }
 
 DEFINE_FWK_MODULE(Tupel);

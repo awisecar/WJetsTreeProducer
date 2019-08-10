@@ -102,8 +102,6 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
 
 # CMSS Configuration file
     config.JobType.psetName = 'grow_baobabs_cfg.py'
-    # config.JobType.psetName = 'simple_run_cfg.py'
-#    config.JobType.psetName = 'pset.py'
 
 #Need to add the L1PreFire root file
     #inputs = []
@@ -262,6 +260,7 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
     print "\ncat_dir_path=%s" % cat_dir_path
 
     # Find out the ntuple subdirectory here
+    # can use this to make catalogs for different data-taking eras?
     #ntuple_subdir = GetNTupleSubDirectories(cat_dir_path)
     #ntuple_dir_path += "/" + ntuple_subdir
 
@@ -317,7 +316,7 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
 # task lumi: %s /pb\n
 '''     % (task_id, date, reco_dataset, nevents, nfiles, str(lumi)))
  
-    
+    # looks for all files within the subfolder of primary dataset (doesn't discriminate among eras currently)
     files = glob.glob(ntuple_dir_path +"/"+ prim_dataset+"/*/*/*/ntupleOut_*.root")
     print "Number of root files = %s" % len(files)
     for ntf in files:

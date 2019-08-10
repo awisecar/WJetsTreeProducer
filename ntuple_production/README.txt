@@ -85,7 +85,10 @@ crab_SingleMuon_Run2017B-31Mar2018-v1/results/processedLumis.json
 export PATH=$HOME/.local/bin:/afs/cern.ch/cms/lumi/brilconda-1.1.7/bin:$PATH
 # 2) install (only do if you're installing for first time)
 pip install --install-option="--prefix=$HOME/.local" brilws
+# 2b) if something goes wrong, try updating brilcalc
+pip install --user --upgrade brilws
 # "brilcalc lumi" command taken from these pages: 
+https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
 https://cms-service-lumi.web.cern.ch/cms-service-lumi/brilwsdoc.html#brilcalclumi
 https://twiki.cern.ch/twiki/bin/view/CMSPublic/LumiPublicResults#Technical_details
 # To get int lumi in pb^-1, do (normtag works for at least 2017) --

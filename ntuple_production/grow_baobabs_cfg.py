@@ -33,7 +33,8 @@ elif (opt.year == "2017"):
   inputFilename = "/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root"
 
 process.source = cms.Source("PoolSource",
-  fileNames = cms.untracked.vstring(inputFilename)
+  #fileNames = cms.untracked.vstring(inputFilename)
+  fileNames = cms.untracked.vstring(opt.inputFiles)
 )
 
 # opt.maxEvents set as -1 in the corresponding CRAB cfg file
@@ -70,8 +71,8 @@ process.tupel = cms.EDAnalyzer("Tupel",
   triggerObjectTag = cms.untracked.InputTag("slimmedPatTrigger"),
   triggerPrescalesTag = cms.untracked.InputTag("patTrigger"),
   ## HLT paths (need to be set by year; currently 2017)
-  muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v6"),
-  muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v9"),
+  muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v"),
+  muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v"),
   ##### Muons, Jets, MET
   muonSrc      = cms.untracked.InputTag("slimmedMuons"),
   jetSrc       = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
@@ -87,8 +88,8 @@ process.tupel = cms.EDAnalyzer("Tupel",
   genSrc       = cms.untracked.InputTag("prunedGenParticles"),
   gjetSrc      = cms.untracked.InputTag('slimmedGenJets'),
   gjetAK8Src      = cms.untracked.InputTag('slimmedGenJetsAK8'),
-  ##### Other stuff
-  DJALOG       = cms.untracked.bool(False)
+  ##### Verbosity of output
+  DJALOG       = cms.untracked.bool(True)
 )
 
 ########################################
