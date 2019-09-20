@@ -1,6 +1,0 @@
-* base directory: /eos/cms/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/DATA/Catalogs/v2
-* output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/Bonzai/v2/Data
-
-# Catalog files                Selection  Subselection Number of files per job
-Baobabs-SingleMuon-EraD.txt    VJetPruner   SMu         50
-

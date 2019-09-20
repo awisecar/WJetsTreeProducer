@@ -10,6 +10,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TTree.h"
+#include "TRandom3.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -74,6 +75,7 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "TreeHelper.h"
+#include "RoccoR.h"
 
 const double pi = 4*atan(1.);
 
@@ -159,7 +161,7 @@ private:
   }
 
   void allocateTrigMap(int ntrigMax);
-  void defineBitFields();
+  // void defineBitFields();
     
   //Write Job information tree in the output. The tree
   //contains one event, with general information
@@ -243,6 +245,10 @@ private:
   edm::EDGetTokenT< double > prefweightup_token;
   edm::EDGetTokenT< double > prefweightdown_token;
 
+  // Rochester corrections
+  RoccoR rc; 
+  TRandom3 randomNum;
+
   /** Total number of events analyzed so far
    */
   Long64_t analyzedEventCnt_;
@@ -275,18 +281,18 @@ private:
   std::unique_ptr<int> firstGoodVertexIdx_;
 
   // MET Filter
-  std::unique_ptr<ULong64_t>              TrigMET_;
-  std::unique_ptr<ULong64_t>              TrigMETBit_;
-  std::unique_ptr<std::vector<unsigned> > TrigMETBit_prescale_;
-  std::map<std::string, ULong64_t>        TrigMETBitMap_; //bit assignment
+  // std::unique_ptr<ULong64_t>              TrigMET_;
+  // std::unique_ptr<ULong64_t>              TrigMETBit_;
+  // std::unique_ptr<std::vector<unsigned> > TrigMETBit_prescale_;
+  // std::map<std::string, ULong64_t>        TrigMETBitMap_; //bit assignment
 
   //Trigger
-  std::unique_ptr<unsigned>               TrigHlt_;
-  std::map<std::string, unsigned>         TrigHltMap_; //bit assignment
-  std::unique_ptr<ULong64_t>              TrigHltMu_;
-  std::unique_ptr<std::vector<unsigned> > TrigHltMu_prescale_;
-  std::map<std::string, ULong64_t>        TrigHltMuMap_; //bit assignment
-  std::map<std::string, ULong64_t>        TrigHltMuObjMap_;//bit assignment
+  // std::unique_ptr<unsigned>               TrigHlt_;
+  // std::map<std::string, unsigned>         TrigHltMap_; //bit assignment
+  // std::unique_ptr<ULong64_t>              TrigHltMu_;
+  // std::unique_ptr<std::vector<unsigned> > TrigHltMu_prescale_;
+  // std::map<std::string, ULong64_t>        TrigHltMuMap_; //bit assignment
+  // std::map<std::string, ULong64_t>        TrigHltMuObjMap_;//bit assignment
 
   struct  TrigHltMapRcd {
     TrigHltMapRcd(): pMap(0), pTrig(0), pPrescale(0) {}
@@ -359,6 +365,10 @@ private:
   std::unique_ptr<std::vector<float> > 	MuEta_;
   std::unique_ptr<std::vector<float> > 	MuPhi_;
   std::unique_ptr<std::vector<float> > 	MuE_;
+  std::unique_ptr<std::vector<float> > 	MuPtRoch_;
+  std::unique_ptr<std::vector<float> > 	MuEtaRoch_;
+  std::unique_ptr<std::vector<float> > 	MuPhiRoch_;
+  std::unique_ptr<std::vector<float> > 	MuERoch_;
   std::unique_ptr<std::vector<bool> > MuIdLoose_;
   std::unique_ptr<std::vector<bool> > MuIdMedium_;
   std::unique_ptr<std::vector<bool> > MuIdTight_;
@@ -536,6 +546,10 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 
   // Other
   mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho" ));
+
+  // Rochester corrections
+  rc.init(edm::FileInPath("shears/Baobabs/src/rochesterCorr/RoccoR2017.txt").fullPath()); 
+  randomNum.SetSeed(1234);
   
 }
 
@@ -545,44 +559,12 @@ Tupel::~Tupel(){
 ///////////////////////////////////////////////////////////////////////////////
 // General functions
 
-void Tupel::defineBitFields(){
+// void Tupel::defineBitFields(){
   
-  trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltMuMap_,     TrigHltMu_.get(),     TrigHltMu_prescale_.get()));
-  TrigMETBitMapList_.push_back(TrigHltMapRcd(&TrigMETBitMap_, TrigMETBit_.get(),    TrigMETBit_prescale_.get()));
-
-	// DEF_BIT2(TrigMETBit,  0, Flag_duplicateMuons);
-	// DEF_BIT2(TrigMETBit,  1, Flag_badMuons);
-	// DEF_BIT2(TrigMETBit,  2, Flag_noBadMuons);
-	// DEF_BIT2(TrigMETBit,  3, Flag_HBHENoiseFilter);
-	// DEF_BIT2(TrigMETBit,  4, Flag_HBHENoiseIsoFilter);
-	// DEF_BIT2(TrigMETBit,  5, Flag_CSCTightHaloFilter);
-	// DEF_BIT2(TrigMETBit,  6, Flag_CSCTightHaloTrkMuUnvetoFilter);
-	// DEF_BIT2(TrigMETBit,  7, Flag_CSCTightHalo2015Filter);
-	// DEF_BIT2(TrigMETBit,  8, Flag_globalTightHalo2016Filter);
-	// DEF_BIT2(TrigMETBit,  9, Flag_globalSuperTightHalo2016Filter);
-	// DEF_BIT2(TrigMETBit, 10, Flag_HcalStripHaloFilter);
-	// DEF_BIT2(TrigMETBit, 11, Flag_hcalLaserEventFilter);
-	// DEF_BIT2(TrigMETBit, 12, Flag_EcalDeadCellTriggerPrimitiveFilter);
-	// DEF_BIT2(TrigMETBit, 13, Flag_EcalDeadCellBoundaryEnergyFilter);
-	// DEF_BIT2(TrigMETBit, 14, Flag_goodVertices);
-	// DEF_BIT2(TrigMETBit, 15, Flag_eeBadScFilter);
-	// DEF_BIT2(TrigMETBit, 16, Flag_ecalLaserCorrFilter);
-	// DEF_BIT2(TrigMETBit, 17, Flag_trkPOGFilters);
-	// DEF_BIT2(TrigMETBit, 18, Flag_chargedHadronTrackResolutionFilter);
-	// DEF_BIT2(TrigMETBit, 19, Flag_muonBadTrackFilter);
-	// DEF_BIT2(TrigMETBit, 20, Flag_trkPOG_manystripclus53X);
-	// DEF_BIT2(TrigMETBit, 21, Flag_trkPOG_toomanystripclus53X);
-	// DEF_BIT2(TrigMETBit, 22, Flag_trkPOG_logErrorTooManyClusters);
-	// DEF_BIT2(TrigMETBit, 23, Flag_METFilters);
-
-  // if ( yearToProcess_==std::string("2016") ){
-  //   #include "trigger2016.h"
-  // }
-  // else if ( yearToProcess_==std::string("2017") ){
-  //   #include "trigger2017.h"
-  // }
+//   // trigHltMapList_.push_back(TrigHltMapRcd(&TrigHltMuMap_,     TrigHltMu_.get(),     TrigHltMu_prescale_.get()));
+//   // TrigMETBitMapList_.push_back(TrigHltMapRcd(&TrigMETBitMap_, TrigMETBit_.get(),    TrigMETBit_prescale_.get()));
   
-}
+// }
 
 void Tupel::writeHeader(){
 
@@ -1147,7 +1129,32 @@ void Tupel::processMuons(const edm::Event& iEvent){
       // }	
       // MuMatchedStationCnt_->push_back(mu.numberOfMatchedStations());
       // MuPixelHitCnt_->push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());      
+      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());     
+
+      // Rochester corrections --------
+      double rochSF(0.);
+
+      // IF DATA --
+      if (*EvtIsRealData_) rochSF = rc.kScaleDT(mu.charge(), mu.pt(), mu.eta(), mu.phi());
+      // IF MC --
+      else{
+        // IF GEN PARTICLE MATCH
+        if (mu.genParticle()) {
+          std::cout << "genParticle match!" << std::endl;
+          rochSF = rc.kSpreadMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.genParticle()->pt());
+        }
+        // IF NOT
+        else {
+          std::cout << "No match..." << std::endl;
+          rochSF = rc.kSmearMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.innerTrack()->hitPattern().trackerLayersWithMeasurement(), randomNum.Rndm());
+        }
+      }
+
+      // Now get corrected kinematics
+      MuPtRoch_->push_back((mu.p4()*rochSF).pt());
+      MuEtaRoch_->push_back((mu.p4()*rochSF).eta());
+      MuPhiRoch_->push_back((mu.p4()*rochSF).phi());
+      MuERoch_->push_back((mu.p4()*rochSF).energy());
 
     }
   }
@@ -1390,13 +1397,13 @@ void Tupel::beginJob(){
   ADD_BRANCH(firstGoodVertexIdx);
 
   //Trigger
-  ADD_BRANCH_D(TrigHlt, "HLT triggger bits. See BitField.TrigHlt for bit description."); 
-  ADD_BRANCH_D(TrigHltMu, "HLT Muon triggger bits. See BitField.TrigHltMu for bit description.");
-  ADD_BRANCH_D(TrigHltMu_prescale, "HLT Muon triggger prescales for the corresponding trigger bits. See BitField.TrigHltMu for bit description.");
+  // ADD_BRANCH_D(TrigHlt, "HLT triggger bits. See BitField.TrigHlt for bit description."); 
+  // ADD_BRANCH_D(TrigHltMu, "HLT Muon triggger bits. See BitField.TrigHltMu for bit description.");
+  // ADD_BRANCH_D(TrigHltMu_prescale, "HLT Muon triggger prescales for the corresponding trigger bits. See BitField.TrigHltMu for bit description.");
 
-  ADD_BRANCH(TrigMET);
-  ADD_BRANCH_D(TrigMETBit, "MET filter bits. See BitField.TrigMETBit for bit description.");
-  ADD_BRANCH_D(TrigMETBit_prescale, "MET filter prescales for the corresponding trigger bits. See BitField.TrigHltPhot for bit description.");
+  // ADD_BRANCH(TrigMET);
+  // ADD_BRANCH_D(TrigMETBit, "MET filter bits. See BitField.TrigMETBit for bit description.");
+  // ADD_BRANCH_D(TrigMETBit_prescale, "MET filter prescales for the corresponding trigger bits. See BitField.TrigHltPhot for bit description.");
 
   ADD_BRANCH_D(PreFiringWeight,     "L1 Prefire Weight");
   ADD_BRANCH_D(PreFiringWeightUp,   "L1 Prefire Weight Up");
@@ -1467,6 +1474,10 @@ void Tupel::beginJob(){
   ADD_BRANCH(MuEta);
   ADD_BRANCH(MuPhi);
   ADD_BRANCH(MuE);
+  ADD_BRANCH(MuPtRoch);
+  ADD_BRANCH(MuEtaRoch);
+  ADD_BRANCH(MuPhiRoch);
+  ADD_BRANCH(MuERoch);
   ADD_BRANCH(MuIdLoose);
   ADD_BRANCH(MuIdMedium);
   ADD_BRANCH_D(MuIdTight, "Muon tight id. Bit field, one bit per primary vertex hypothesis. Bit position corresponds to index in EvtVtx");
@@ -1540,7 +1551,7 @@ void Tupel::beginJob(){
   ADD_BRANCH(JetAk08EUncorr);
 
   // Defining trigger bits
-  defineBitFields();
+  // defineBitFields();
 }
 
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){

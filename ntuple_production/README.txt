@@ -7,14 +7,18 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 # To run the test cfg:
 # cmsRun simple_run_cfg.py year=2017 isData=1
 
+
+
 #### I: For Baobab production -----
 To create crab config file:
-simple_grow_boababs DATACARD_FILE.txt  --no-submit --unitsPerJob=60000
+simple_grow_boababs DATACARD_REAL_DATA_FILE.txt  --no-submit --unitsPerJob=80000
+simple_grow_boababs DATACARD_MC_FILE.txt  --no-submit --unitsPerJob=5
 e.g.
-simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=60000
+simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=80000
+simple_grow_boababs Baobabs_MC_2017_dataset.txt --no-submit --unitsPerJob=5
 # Make sure to alter grow_baobabs_cfg.py if needed (this is your cmsRun cfg file)
 # To run grow_baobabs_cfg.py for testing you can do, e.g.
-# cmsRun grow_baobabs_cfg.py maxEvents=10000 isMC=0 year=2017
+cmsRun grow_baobabs_cfg.py maxEvents=10000 isMC=0 year=2017
 # meaning 2017, real data, 10000 events
 
 To submit:
@@ -36,7 +40,10 @@ Jobs will go here (listed in input datasets.txt file) --
 Make catalog files, which list the Baobab output files for Bonzai input --
 simple_grow_boababs DATACARD_FILE.txt --make-catalogs
 e.g.
-simple_grow_boababs Baobabs_DATA_2017_ERA_B_dataset.txt --make-catalogs
+simple_grow_boababs Baobabs_DATA_2017_dataset.txt --make-catalogs
+simple_grow_boababs Baobabs_MC_2017_dataset.txt --make-catalogs
+(simple_grow_baobabs does not discriminate among Eras, so all Eras go in one file)
+
 
 
 #### II: For Bonzai production -----
@@ -57,7 +64,8 @@ Can also use the option:
 
 This Pruner utility is run within the "grow_bonzais" program -----
 To generate the CRAB cfg file first:
-grow_bonzais --task-list Bonzai_DATA_2017_ERA_B_tasklist.txt --no-submit
+grow_bonzais --task-list Bonzai_DATA_2017_tasklist.txt --no-submit
+grow_bonzais --task-list Bonzai_MC_2017_tasklist.txt --no-submit
 Then submit:
 crab submit -c crabBonzai_SingleMuon-VJetPruner-SMu.py
 
@@ -65,9 +73,11 @@ For CRAB status --
 crab status --dir=crab_SingleMuon-VJetPruner-SMu
 
 Now make Bonzai catalogs ---
-grow_bonzais --make-catalogs Bonzai_DATA_2017_ERA_B_tasklist.txt
+grow_bonzais --make-catalogs Bonzai_DATA_2017_tasklist.txt
 
 We run the analysis code over these Bonzai ntuples (these itty bitty trees).
+Our analysis code does all of the event selection/histogram filling.
+
 
 
 ### III: To get int lumi -------
@@ -78,6 +88,7 @@ https://twiki.cern.ch/twiki/bin/view/CMSPublic/CRAB3Commands#crab_report
 crab report -d crab_SingleMuon_Run2017B-31Mar2018-v1
 and then the processed lumi file will be written in
 crab_SingleMuon_Run2017B-31Mar2018-v1/results/processedLumis.json
+(need to do this separately for every Era)
 
 # Now need to run brilcalc on processedLumis.json to get integrated lumi -------
 # If on lxplus, source brilcalc directory (and install if do not have it)

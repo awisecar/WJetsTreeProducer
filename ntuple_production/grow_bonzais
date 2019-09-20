@@ -340,14 +340,14 @@ def tasks_prepare_and_submit(catalog, selection, subselection, filesPerJob, outD
     #dataset
     ds = ds_from_catname(catalog)
     #DJALOG
-    print "dataset: "+str(ds)
+    print "\n-----> dataset: "+str(ds)
     
     if ds is None:
         return
     
     task_input_catalog = "crabBonzai_%s-%s-%s_inputs.txt" % (ds, selection, subselection)
     # print catalog
-    print "\npath to catalog:"
+    print "path to catalog:"
     print eos_to_local_path(catalog)
 
     try:
@@ -640,9 +640,16 @@ def _catalog_make_bonzai_catalog(baobab_catalog, ntuple_dir, sel, subsel):
     print "\n >>>>> Looking for ntuples with path like \n%s\n" % ntuple_pattern
     for ntf in glob.glob(ntuple_pattern):
         statinfo = os.stat(ntf)
-        eos_path = eos_to_eos_path(ntf)
+        #eos_path = eos_to_eos_path(ntf)
+     #   storeIndex = ntf.find("/store/")
+     #   if storeIndex == 0:
+     #       ntf = "root://cmsxrootd.fnal.gov/" + ntf
+     #   if storeIndex > 0:
+     #       ntf = "root://cmsxrootd.fnal.gov/" + ntf[storeIndex:len(ntf)]
+        eos_path = ntf
         print "eos_path=%s" % eos_path
-        fout.write("%s %d %s\n" % (eos_path, statinfo.st_size, time2str(statinfo.st_mtime)))
+        #fout.write("%s %d %s\n" % (eos_path, statinfo.st_size, time2str(statinfo.st_mtime)))
+        fout.write( "%s\n" % (eos_path) )
 
     fout.close()
     return eos_to_eos_path(bonzai_catalog)

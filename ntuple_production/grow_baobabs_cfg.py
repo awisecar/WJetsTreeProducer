@@ -89,7 +89,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
   gjetSrc      = cms.untracked.InputTag('slimmedGenJets'),
   gjetAK8Src      = cms.untracked.InputTag('slimmedGenJetsAK8'),
   ##### Verbosity of output
-  DJALOG       = cms.untracked.bool(True)
+  DJALOG       = cms.untracked.bool(False)
 )
 
 ########################################
