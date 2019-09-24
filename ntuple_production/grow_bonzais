@@ -56,7 +56,7 @@ mydir=os.path.dirname(myself)
 getlumi=mydir + "/getlumi"
 
 CMSSW = os.environ["CMSSW_BASE"]
-pruner_path=CMSSW + "/src/shears/Bonzais/Pruner/pruner"
+pruner_path=CMSSW + "/src/WJetsTreeProducer/Bonzais/Pruner/pruner"
 
 try:
     from CRABAPI.RawCommand import crabCommand
@@ -640,9 +640,11 @@ def _catalog_make_bonzai_catalog(baobab_catalog, ntuple_dir, sel, subsel):
     print "\n >>>>> Looking for ntuples with path like \n%s\n" % ntuple_pattern
     for ntf in glob.glob(ntuple_pattern):
         statinfo = os.stat(ntf)
-        eos_path = eos_to_eos_path(ntf)
+        # eos_path = eos_to_eos_path(ntf)
+        eos_path = ntf
         print "eos_path=%s" % eos_path
-        fout.write("%s %d %s\n" % (eos_path, statinfo.st_size, time2str(statinfo.st_mtime)))
+        # fout.write("%s %d %s\n" % (eos_path, statinfo.st_size, time2str(statinfo.st_mtime)))
+        fout.write( "%s\n" % (eos_path) )
 
     fout.close()
     return eos_to_eos_path(bonzai_catalog)

@@ -22,10 +22,8 @@ from WMCore.Configuration import Configuration
 
 CMSSW = os.environ["CMSSW_BASE"]
 
-#input_json_file=CMSSW + "/src/shears/ntuple_production/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
-
 # 2017 Golden JSON
-input_json_file=CMSSW + "/src/shears/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
+input_json_file=CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
 
 hostname = socket.gethostname()
 print "\nhostname = %s" % hostname
@@ -110,7 +108,7 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
     #config.JobType.inputFiles = inputs 
 
     # Increase required time to run jobs (defaults to 1315)
-    # config.JobType.maxJobRuntimeMin = 1400
+    config.JobType.maxJobRuntimeMin = 1800
 
     # Increase maximum memory (in MB) a job is allowed to use
     config.JobType.maxMemoryMB = 2500
@@ -119,9 +117,9 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
     # Change the year according to what dataset you are processing!
     year = 2017
     if isMC:
-        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isMC=1"]
+        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=0"]
     else:
-        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isMC=0"]
+        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=1"]
 
     config.section_('Data')
 #----------------------------------------------------------------------

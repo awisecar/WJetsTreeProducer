@@ -161,6 +161,10 @@ void VJetPruner::skimCollections(){
   filter(MuEta, mask);
   filter(MuPhi, mask);
   filter(MuE, mask);
+  filter(MuPtRoch, mask);
+  filter(MuEtaRoch, mask);
+  filter(MuPhiRoch, mask);
+  filter(MuERoch, mask);
   filter(MuIdLoose, mask);
   filter(MuIdMedium, mask);
   filter(MuIdTight, mask);

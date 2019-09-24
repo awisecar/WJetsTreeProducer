@@ -1,5 +1,7 @@
 /* -*- c-basic-offset: 2; -*-
 */
+#define DEBUG 0
+
 #include <map>
 #include <string>
 #include <fstream>
@@ -10,6 +12,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TTree.h"
+#include "TRandom3.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -74,6 +77,8 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "TreeHelper.h"
+#include "RoccoR.h"
+
 
 const double pi = 4*atan(1.);
 
@@ -243,6 +248,10 @@ private:
   edm::EDGetTokenT< double > prefweightup_token;
   edm::EDGetTokenT< double > prefweightdown_token;
 
+  // Rochester corrections
+  RoccoR rc; 
+  TRandom3 randomNum;
+
   /** Total number of events analyzed so far
    */
   Long64_t analyzedEventCnt_;
@@ -359,6 +368,10 @@ private:
   std::unique_ptr<std::vector<float> > 	MuEta_;
   std::unique_ptr<std::vector<float> > 	MuPhi_;
   std::unique_ptr<std::vector<float> > 	MuE_;
+  std::unique_ptr<std::vector<float> > 	MuPtRoch_;
+  std::unique_ptr<std::vector<float> > 	MuEtaRoch_;
+  std::unique_ptr<std::vector<float> > 	MuPhiRoch_;
+  std::unique_ptr<std::vector<float> > 	MuERoch_;
   std::unique_ptr<std::vector<bool> > MuIdLoose_;
   std::unique_ptr<std::vector<bool> > MuIdMedium_;
   std::unique_ptr<std::vector<bool> > MuIdTight_;
@@ -536,6 +549,10 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 
   // Other
   mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho" ));
+
+  // Rochester corrections
+  rc.init(edm::FileInPath("data/RoccoR2017.txt").fullPath()); 
+  randomNum.SetSeed(1234);
   
 }
 
@@ -1003,13 +1020,22 @@ void Tupel::processTrigger(const edm::Event& iEvent){
 
   // Determine if HLT paths are passed or not
   // Paths of interest defined in cmsRun cfg file
-  for (int i = 0; i < ntrigs; i++) {
-    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) {
-      MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
+
+  // HLT trigger paths only really matter for data
+  if (*EvtIsRealData_){
+    for (int i = 0; i < ntrigs; i++) {
+      if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) {
+        MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
+      }
+      if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) {
+        MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
+      }
     }
-    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) {
-      MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
-    }
+  }
+  // For MC, just push back an accept
+  else{
+    MuHltTrgPath1_->push_back(1);
+    MuHltTrgPath2_->push_back(1);
   }
 
 }
@@ -1147,7 +1173,42 @@ void Tupel::processMuons(const edm::Event& iEvent){
       // }	
       // MuMatchedStationCnt_->push_back(mu.numberOfMatchedStations());
       // MuPixelHitCnt_->push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());      
+      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());    
+
+      // Rochester corrections --------
+      double rochSF(0.);
+
+      if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
+
+      // IF DATA --
+      if (*EvtIsRealData_) rochSF = rc.kScaleDT(mu.charge(), mu.pt(), mu.eta(), mu.phi());
+      // IF MC --
+      else{
+        // IF GEN PARTICLE MATCH
+        if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
+        if (mu.genParticle()) {
+          // std::cout << "genParticle match!" << std::endl;
+          // std::cout << mu.genParticle()->pt() << std::endl;
+          if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
+          rochSF = rc.kSpreadMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.genParticle()->pt());
+          
+        }
+        // IF NOT
+        else {
+          // std::cout << "No match..." << std::endl;
+          if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
+          rochSF = rc.kSmearMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.innerTrack()->hitPattern().trackerLayersWithMeasurement(), randomNum.Rndm());
+        }
+      }
+      // std::cout << "rochSF = " << rochSF << std::endl;
+
+      if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
+
+      // Now get corrected kinematics
+      MuPtRoch_->push_back((mu.p4()*rochSF).pt());
+      MuEtaRoch_->push_back((mu.p4()*rochSF).eta());
+      MuPhiRoch_->push_back((mu.p4()*rochSF).phi());
+      MuERoch_->push_back((mu.p4()*rochSF).energy());  
 
     }
   }
@@ -1467,6 +1528,10 @@ void Tupel::beginJob(){
   ADD_BRANCH(MuEta);
   ADD_BRANCH(MuPhi);
   ADD_BRANCH(MuE);
+  ADD_BRANCH(MuPtRoch);
+  ADD_BRANCH(MuEtaRoch);
+  ADD_BRANCH(MuPhiRoch);
+  ADD_BRANCH(MuERoch);
   ADD_BRANCH(MuIdLoose);
   ADD_BRANCH(MuIdMedium);
   ADD_BRANCH_D(MuIdTight, "Muon tight id. Bit field, one bit per primary vertex hypothesis. Bit position corresponds to index in EvtVtx");
@@ -1546,50 +1611,64 @@ void Tupel::beginJob(){
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   ++analyzedEventCnt_;
 
-  //if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  // if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  if (DEBUG) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   readEvent(iEvent);
 
   //Get the event weights for MC
   if(!*EvtIsRealData_){
     //if(DJALOG_) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processLHE(iEvent);
   }
 
   //if(DJALOG_) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processVtx(iEvent);
   
   if(!*EvtIsRealData_){
     //if(DJALOG_) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJets(iEvent);
     //if(DJALOG_) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJetsAK8(iEvent);
     //if(DJALOG_) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenParticles(iEvent);
   }
   
   //if(DJALOG_) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!mets.failedToGet()) processMET(iEvent);
   
   if (!*EvtIsRealData_) {
     //if(DJALOG_) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processPu(iEvent);  
   }     
 
   //if(DJALOG_) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processTrigger(iEvent);
 
   //if(DJALOG_) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!metfilters.failedToGet()) processMETFilter(iEvent);
 
   //if(DJALOG_) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!muons.failedToGet()) processMuons(iEvent);
 
   //if(DJALOG_) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParCollAK4); 
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJets();
 
   //if(DJALOG_) std::cout << "\n ~~~ processJetsAK8() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK8PFPuppi", JetCorParCollAK8); 
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJetsAK8();
 
   //Stores the EvtNum in the output tree
