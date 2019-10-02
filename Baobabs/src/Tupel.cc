@@ -70,10 +70,12 @@
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 
-#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
-#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenRunInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
+
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "TreeHelper.h"
@@ -276,7 +278,7 @@ private:
   std::unique_ptr<int> 	  EvtPuCntObs_;
   std::unique_ptr<int> 	  EvtPuCntTruth_;
   std::unique_ptr<std::vector<double> > EvtWeights_;
-  // std::unique_ptr<double> originalXWGTUP_;
+  std::unique_ptr<double> originalXWGTUP_;
   std::unique_ptr<float>    EvtFastJetRho_;
   std::unique_ptr<double>    PreFiringWeight_;
   std::unique_ptr<double>    PreFiringWeightUp_;
@@ -478,6 +480,8 @@ private:
 
   // EffectiveAreas effectiveAreas_;
   bool DJALOG_;
+  bool printLHEWeightsInfo_;
+
   int failedVtx;
   int failedGen;
   int failedLHE;
@@ -497,6 +501,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 {
 
   DJALOG_ = iConfig.getUntrackedParameter<bool>("DJALOG");  
+  printLHEWeightsInfo_ = iConfig.getUntrackedParameter<bool>("printLHEWeightsInfo"); 
 
   failedVtx = 0;
   failedGen = 0;
@@ -639,7 +644,7 @@ void Tupel::readEvent(const edm::Event& iEvent){
         std::cout << "\nProcessing 2018 data/MC!\n" << std::endl;
     }
     else {
-        std::cout << "\nPlease pick a correct year!\n" << std::endl;
+        std::cout << "\nPlease pick a correct year...\n" << std::endl;
     }
   }
 
@@ -714,19 +719,17 @@ void Tupel::processLHE(const edm::Event& iEvent){
   }
 
   // Main weight we use to normalize MC, fill histograms
+  // Needs to be the first element of the EvtWeights_ vector!
+  // Comes from GenEventInfoProduct
   // The weight() method returns the value which is a result 
   // of multiplication of all elements in the "weights" container
-  EvtWeights_->push_back(genEventInfoProd->weight());   
-
-  if(EvtWeights_->size() == 0){
-    EvtWeights_->push_back(1.);     
-    // if(weightFromGenEventInfo_== NO) weightFromGenEventInfo_ = MIXTURE;     
-    // else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = YES;   
-  } 
-  // else{     
-  //   if(weightFromGenEventInfo_== YES) weightFromGenEventInfo_ = MIXTURE;     
-  //   else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = NO;   
-  // }   
+  if (genEventInfoProd->weight()){
+    if (analyzedEventCnt_==1) printf("For event #1: genEventInfoProd->weight() = %F\n", genEventInfoProd->weight());
+    EvtWeights_->push_back(genEventInfoProd->weight());   
+  }
+  // Making sure that we have a value of 1 for the main MC event weight
+  // if something is not fetched correctly from GenEventInfoProduct
+  else EvtWeights_->push_back(1.); 
 
   if(lheEventProd.failedToGet() || !lheEventProd.isValid()){
     printf("processLHE failed at lheEventProd\n");
@@ -734,11 +737,14 @@ void Tupel::processLHE(const edm::Event& iEvent){
     return;
   }
 
-  // *originalXWGTUP_ = lheEventProd->originalXWGTUP();
+  // This is the central event weight at LHE level (?)
+  // https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideDataFormatGeneratorInterface#Retrieving_information_on_LHE_ev
+  if (analyzedEventCnt_==1) printf("For event #1: lheEventProd->originalXWGTUP() = %F\n", lheEventProd->originalXWGTUP());
+  *originalXWGTUP_ = lheEventProd->originalXWGTUP();
 
-  // Weights from LHEEventProduct used for things like PDF, scale variations
+  // Weights from LHEEventProduct
   for(unsigned iw = 0; iw < lheEventProd->weights().size(); ++iw){       
-    //printf("lheEventProd->weights()[iw].id = %s,  lheEventProd->weights()[iw].wgt=%F\n",lheEventProd->weights()[iw].id.c_str(),lheEventProd->weights()[iw].wgt);
+    if (analyzedEventCnt_==1) printf("For event #1: lheEventProd->weights()[%u].id = %s, lheEventProd->weights()[%u].wgt=%F\n", iw, lheEventProd->weights()[iw].id.c_str(), iw, lheEventProd->weights()[iw].wgt);
     EvtWeights_->push_back(lheEventProd->weights()[iw].wgt);     
   }
 
@@ -1446,7 +1452,7 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(EvtPuCntObs, "Number of observed/measured pile-up events");
   ADD_BRANCH_D(EvtPuCntTruth, "True number of pile-up events");
   ADD_BRANCH(EvtWeights); //description filled in endRun()
-  // ADD_BRANCH(originalXWGTUP);
+  ADD_BRANCH_D(originalXWGTUP, "Main event weight at LHE level");
   ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
   ADD_BRANCH(firstGoodVertexIdx);
 
@@ -1681,19 +1687,27 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   desc += " The first element contains the GenInfoProduct weight, or it was not found and set to 1.";
   desc += "Elements starting from index 1 contains the weights from LHEEventProduct.";
 
-  // Get information about LHE weights --
-  // edm::Handle<LHERunInfoProduct> lheRun;
-  // iRun.getByToken(lheRunToken_, lheRun );
-  // if(!lheRun.failedToGet()){
-  //   const LHERunInfoProduct& myLHERunInfoProduct = *(lheRun.product());
-  //   for (std::vector<LHERunInfoProduct::Header>::const_iterator iter = myLHERunInfoProduct.headers_begin(); iter != myLHERunInfoProduct.headers_end(); iter++){
-  //     std::cout << iter->tag() << std::endl;
-  //     std::vector<std::string> lines = iter->lines();
-  //     for (unsigned int iLine = 0; iLine<lines.size(); iLine++) {
-  //       std::cout << lines.at(iLine);
-  //     }
-  //   }
-  // }
+  // ------------------------------------------------------------------------
+  // Get information about LHE weights ---
+  if(printLHEWeightsInfo_){
+    edm::Handle<LHERunInfoProduct> lheRun;
+    iRun.getByToken(lheRunToken_, lheRun);
+
+    if(!lheRun.failedToGet()){
+      const LHERunInfoProduct& myLHERunInfoProduct = *(lheRun.product());
+      std::cout << "\n\n >>>>> Getting weights information from LHERunInfoProduct!" << std::endl;
+
+      for (std::vector<LHERunInfoProduct::Header>::const_iterator iter = myLHERunInfoProduct.headers_begin(); iter != myLHERunInfoProduct.headers_end(); iter++){
+        std::cout << iter->tag() << std::endl;
+        std::vector<std::string> lines = iter->lines();
+        for (unsigned int iLine = 0; iLine<lines.size(); iLine++) {
+          std::cout << lines.at(iLine);
+        }
+      }
+
+    }
+  }
+  // ------------------------------------------------------------------------
 
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());

@@ -2,5 +2,5 @@
 * output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/Bonzai/v6/Data
 
 # Catalog files                Selection  Subselection Number of files per job
-Baobabs-SingleMuon-all.txt     VJetPruner     SMu               12
+Baobabs-SingleMuon-all.txt     VJetPruner     SMu               15
 

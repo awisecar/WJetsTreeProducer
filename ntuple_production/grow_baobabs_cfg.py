@@ -83,7 +83,8 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ##### Other
   mSrcRho      = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Verbosity of output
-  DJALOG       = cms.untracked.bool(False)
+  DJALOG       = cms.untracked.bool(False),
+  printLHEWeightsInfo = cms.untracked.bool(False)
 )
 
 ########################################

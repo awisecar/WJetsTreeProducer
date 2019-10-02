@@ -90,7 +90,8 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
     config.General.transferOutputs = True
 
 #Whether or not to copy the job log files to the storage site.
-    config.General.transferLogs = True
+    # config.General.transferLogs = True
+    config.General.transferLogs = False
 
     config.section_('JobType')
 #----------------------------------------------------------------------
@@ -107,12 +108,6 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
     #inputs.append(prefireFile)
     #config.JobType.inputFiles = inputs 
 
-    # Increase required time to run jobs (defaults to 1315)
-    config.JobType.maxJobRuntimeMin = 1800
-
-    # Increase maximum memory (in MB) a job is allowed to use
-    config.JobType.maxMemoryMB = 2500
-
     # Specify options for cfg file (as one would on command line)
     # Change the year according to what dataset you are processing!
     year = 2017
@@ -120,6 +115,13 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
         config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=0"]
     else:
         config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=1"]
+
+
+    # Increase required time to run jobs (defaults to 1315)
+    config.JobType.maxJobRuntimeMin = 1800
+
+    # Increase maximum memory (in MB) a job is allowed to use
+    config.JobType.maxMemoryMB = 2500
 
     config.section_('Data')
 #----------------------------------------------------------------------
@@ -163,7 +165,7 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
 #----------------------------------------------------------------------
 
 #A list of sites where the jobs should not run.
-    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia']
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL']
     
     #This does not seem to be a good idea since not all the files are in the US sites.
     #config.Site.whitelist = ["T2_US*","T3_US*"]

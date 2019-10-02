@@ -242,7 +242,8 @@ def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, o
     config.General.transferOutputs = True
 
 #Whether or not to copy the job log files to the storage site.
-    config.General.transferLogs = True
+    # config.General.transferLogs = True
+    config.General.transferLogs = False
 
 # Name of the project directory created by CRAB
     config.General.requestName = "%s-%s-%s" % (ds, selection, subselection)
@@ -313,7 +314,7 @@ def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, o
 #----------------------------------------------------------------------
 
 #A list of sites where the jobs should not run.
-    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia']
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL']
      
 #A list of sites where the jobs should run.
     #config.Site.whitelist = [ 'T2_BE_IIHE' ]

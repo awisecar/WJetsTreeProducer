@@ -33,8 +33,17 @@ if (options.isData == 1):
   # 2017 31Mar2018 reMiniAOD, SingleMuon dataset
   inputFilename += "/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root"
 elif (options.isData == 0):
-  # RunIIFall17MiniAODv2 campaign, WJets MLM sample
-  inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root"
+  # RunIIFall17MiniAODv2 campaign
+  ### WJets MLM sample
+  inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/70000/FE956420-925A-E911-8872-0025905A48FC.root"
+  # ### WJets, 0J, FXFX sample
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/410000/F2509DBD-37A4-E811-8876-0242AC1C0506.root"
+  # ### Single top, s-channel
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/710000/04B18578-BE44-E811-80F1-0CC47A1DF7FE.root"
+  # ### ttBar, 2L2Nu
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FECD59BD-1842-E811-96D7-0242AC130002.root"
+  # ### WZ inclusive
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WZ_TuneCP5_13TeV-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/40000/FEA1F528-1A42-E811-85AC-6CC2173D6B10.root"
 else:
   print("Pick a sensible value for isData.")
 
@@ -46,6 +55,7 @@ process.source = cms.Source("PoolSource",
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -82,43 +92,35 @@ process.GlobalTag.globaltag = globalTagString
 process.tupel = cms.EDAnalyzer("Tupel",
   yearToProcess = cms.untracked.string(options.year),
   ##### Vertex information, HLT Trigger Bits
-  vertexSrc        = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'), 
-  triggerSrc       = cms.InputTag("TriggerResults", "", "HLT"),
-  triggerObjectTag = cms.untracked.InputTag("slimmedPatTrigger"),
+  vertexSrc           = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'), 
+  triggerSrc          = cms.InputTag("TriggerResults", "", "HLT"),
+  triggerObjectTag    = cms.untracked.InputTag("slimmedPatTrigger"),
   triggerPrescalesTag = cms.untracked.InputTag("patTrigger"),
   ## HLT paths (need to be set by year; currently 2017)
   muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v"),
   muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v"),
   ##### Muons, Jets, MET
-  muonSrc      = cms.untracked.InputTag("slimmedMuons"),
-  jetSrc       = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
-  jetAK8Src    = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
+  muonSrc             = cms.untracked.InputTag("slimmedMuons"),
+  jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
+  jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
   # jetSrc       = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
   # jetAK8Src    = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
-  metSrc       = cms.untracked.InputTag("slimmedMETs"),
+  metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
   ##### MET Filters
-  noiseFilterTag = cms.InputTag("TriggerResults","","PAT"),
-  # GoodVtxNoiseFilter_Selector = cms.string("Flag_goodVertices"),
-  # GlobalSuperTightHalo2016NoiseFilter_Selector = cms.string("Flag_globalSuperTightHalo2016Filter"),
-  # HBHENoiseFilter_Selector = cms.string("Flag_HBHENoiseFilter"),
-  # HBHENoiseIsoFilter_Selector = cms.string("Flag_HBHENoiseIsoFilter"),
-  # EcalDeadCellTriggerPrimitiveNoiseFilter_Selector = cms.string("Flag_EcalDeadCellTriggerPrimitiveFilter"),
-  # BadPFMuonFilter_Selector = cms.string("Flag_BadPFMuonFilter"),
-  # EEBadScNoiseFilter_Selector = cms.string("Flag_eeBadScFilter"),
+  noiseFilterTag      = cms.InputTag("TriggerResults","","PAT"),
   ##### GEN objects, MC truth pileup information
-  genInfoSrc       = cms.untracked.InputTag('generator'),
-  lheSrc       = cms.untracked.InputTag('externalLHEProducer'),
-  puSrc        = cms.untracked.InputTag('slimmedAddPileupInfo'),
-  genSrc       = cms.untracked.InputTag("prunedGenParticles"),
-  gjetSrc      = cms.untracked.InputTag('slimmedGenJets'),
-  gjetAK8Src      = cms.untracked.InputTag('slimmedGenJetsAK8'),
-
+  genInfoSrc          = cms.untracked.InputTag('generator'),            # GenEventInfoProduct
+  lheSrc              = cms.untracked.InputTag('externalLHEProducer'),  # LHEEventProduct, LHERunInfoProduct
+  puSrc               = cms.untracked.InputTag('slimmedAddPileupInfo'), # PileupSummaryInfo
+  genSrc              = cms.untracked.InputTag("prunedGenParticles"),
+  gjetSrc             = cms.untracked.InputTag('slimmedGenJets'),
+  gjetAK8Src          = cms.untracked.InputTag('slimmedGenJetsAK8'),
   ##### Other stuff
-  mSrcRho      = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
-
+  mSrcRho             = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Extra printout statements
-  DJALOG       = cms.untracked.bool(False)
+  DJALOG              = cms.untracked.bool(False),
+  printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
 )
 
 process.p = cms.Path(
