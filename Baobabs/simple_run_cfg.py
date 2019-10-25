@@ -55,7 +55,7 @@ process.source = cms.Source("PoolSource",
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -96,9 +96,12 @@ process.tupel = cms.EDAnalyzer("Tupel",
   triggerSrc          = cms.InputTag("TriggerResults", "", "HLT"),
   triggerObjectTag    = cms.untracked.InputTag("slimmedPatTrigger"),
   triggerPrescalesTag = cms.untracked.InputTag("patTrigger"),
+
   ## HLT paths (need to be set by year; currently 2017)
   muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v"),
   muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v"),
+  muonHLTTriggerPath3 = cms.untracked.string("HLT_Mu27_v"),
+  
   ##### Muons, Jets, MET
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
   jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD

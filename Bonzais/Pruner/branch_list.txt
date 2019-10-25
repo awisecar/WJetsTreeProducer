@@ -67,6 +67,7 @@ MuPfIso
 MuHltMatch
 MuHltTrgPath1
 MuHltTrgPath2
+MuHltTrgPath3
 METPt
 METPx
 METPy

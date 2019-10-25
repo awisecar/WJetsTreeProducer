@@ -152,6 +152,7 @@ public :
    vector<unsigned int> *MuHltMatch;
    vector<bool>    *MuHltTrgPath1;
    vector<bool>    *MuHltTrgPath2;
+   vector<bool>    *MuHltTrgPath3;
    TBranch        *b_MuPt;   //!
    TBranch        *b_MuEta;   //!
    TBranch        *b_MuPhi;   //!
@@ -171,6 +172,7 @@ public :
    TBranch        *b_MuHltMatch;   //!
    TBranch        *b_MuHltTrgPath1;   //!
    TBranch        *b_MuHltTrgPath2;   //!
+   TBranch        *b_MuHltTrgPath3;   //!
 
    vector<float>   *METPt;
    vector<float>   *METPx;
@@ -410,6 +412,7 @@ void EventTree::Init(TTree *tree){
    MuHltMatch = 0;
    MuHltTrgPath1 = 0;
    MuHltTrgPath2 = 0;
+   MuHltTrgPath3 = 0;
    fChain->SetBranchAddress("MuPt", &MuPt, &b_MuPt);
    fChain->SetBranchAddress("MuEta", &MuEta, &b_MuEta);
    fChain->SetBranchAddress("MuPhi", &MuPhi, &b_MuPhi);
@@ -429,6 +432,7 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("MuHltMatch", &MuHltMatch, &b_MuHltMatch);
    fChain->SetBranchAddress("MuHltTrgPath1", &MuHltTrgPath1, &b_MuHltTrgPath1);
    fChain->SetBranchAddress("MuHltTrgPath2", &MuHltTrgPath2, &b_MuHltTrgPath2);
+   fChain->SetBranchAddress("MuHltTrgPath3", &MuHltTrgPath3, &b_MuHltTrgPath3);
 
    METPt = 0;
    METPx = 0;

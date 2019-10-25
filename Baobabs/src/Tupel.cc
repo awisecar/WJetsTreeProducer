@@ -225,6 +225,7 @@ private:
   // Tags for HLT paths (set in cfg file per year)
   std::string muonHLTTriggerPath1_;
   std::string muonHLTTriggerPath2_;
+  std::string muonHLTTriggerPath3_;
   // Tags for MET filters
  // std::string GoodVtxNoiseFilter_Selector_;
  // std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
@@ -385,6 +386,7 @@ private:
   std::unique_ptr<std::vector<unsigned> > MuHltMatch_;
   std::unique_ptr<std::vector<bool> > MuHltTrgPath1_;
   std::unique_ptr<std::vector<bool> > MuHltTrgPath2_;
+  std::unique_ptr<std::vector<bool> > MuHltTrgPath3_;
 
    //MET
   std::unique_ptr<std::vector<float> > METPt_;
@@ -535,6 +537,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   // HLT paths (set in cfg file per year)
   muonHLTTriggerPath1_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath1");
   muonHLTTriggerPath2_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath2");
+  muonHLTTriggerPath3_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath3");
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
@@ -724,7 +727,7 @@ void Tupel::processLHE(const edm::Event& iEvent){
   // The weight() method returns the value which is a result 
   // of multiplication of all elements in the "weights" container
   if (genEventInfoProd->weight()){
-    if (analyzedEventCnt_==1) printf("For event #1: genEventInfoProd->weight() = %F\n", genEventInfoProd->weight());
+    if (DJALOG_ && analyzedEventCnt_==1) printf("For event #1: genEventInfoProd->weight() = %F\n", genEventInfoProd->weight());
     EvtWeights_->push_back(genEventInfoProd->weight());   
   }
   // Making sure that we have a value of 1 for the main MC event weight
@@ -739,12 +742,12 @@ void Tupel::processLHE(const edm::Event& iEvent){
 
   // This is the central event weight at LHE level (?)
   // https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideDataFormatGeneratorInterface#Retrieving_information_on_LHE_ev
-  if (analyzedEventCnt_==1) printf("For event #1: lheEventProd->originalXWGTUP() = %F\n", lheEventProd->originalXWGTUP());
+  if (DJALOG_ && analyzedEventCnt_==1) printf("For event #1: lheEventProd->originalXWGTUP() = %F\n", lheEventProd->originalXWGTUP());
   *originalXWGTUP_ = lheEventProd->originalXWGTUP();
 
   // Weights from LHEEventProduct
   for(unsigned iw = 0; iw < lheEventProd->weights().size(); ++iw){       
-    if (analyzedEventCnt_==1) printf("For event #1: lheEventProd->weights()[%u].id = %s, lheEventProd->weights()[%u].wgt=%F\n", iw, lheEventProd->weights()[iw].id.c_str(), iw, lheEventProd->weights()[iw].wgt);
+    if (DJALOG_ && analyzedEventCnt_==1) printf("For event #1: lheEventProd->weights()[%u].id = %s, lheEventProd->weights()[%u].wgt=%F\n", iw, lheEventProd->weights()[iw].id.c_str(), iw, lheEventProd->weights()[iw].wgt);
     EvtWeights_->push_back(lheEventProd->weights()[iw].wgt);     
   }
 
@@ -1008,13 +1011,13 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   ntrigs = (int)trigNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1){
-    std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
-    std::cout << "\n--> All trigger paths:" << std::endl;
+    std::cout << "\n---> Total HLT trigger paths: " << ntrigs << std::endl;
+    std::cout << "---> All HLT trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
       std::cout << "Index " << i << ": " << trigNames->triggerName(i);
       std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << ", has prescale " << triggerPrescales->getPrescaleForIndex(i) << std::endl;
     }
-    std::cout << "\n--> Passed trigger paths:" << std::endl;
+    std::cout << "\n---> Passed trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
       // Passed triggers with index i have HLTResHandle->accept(i) give true value
       if (HLTResHandle->accept(i)){
@@ -1026,22 +1029,14 @@ void Tupel::processTrigger(const edm::Event& iEvent){
 
   // Determine if HLT paths are passed or not
   // Paths of interest defined in cmsRun cfg file
-
-  // HLT trigger paths only really matter for data
-  if (*EvtIsRealData_){
-    for (int i = 0; i < ntrigs; i++) {
-      if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) {
-        MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
-      }
-      if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) {
-        MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
-      }
-    }
-  }
-  // For MC, just push back an accept
-  else{
-    MuHltTrgPath1_->push_back(1);
-    MuHltTrgPath2_->push_back(1);
+  // Real trigger on data, "emulated" trigger on MC
+  // 2016 of interest:
+  // 2017 of interest: HLT_IsoMu24_v, HLT_IsoMu27_v, HLT_Mu27_v
+  // 2018 of interest: 
+  for (int i = 0; i < ntrigs; i++) {
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath3_) != std::string::npos ) MuHltTrgPath3_->push_back(HLTResHandle->accept(i));
   }
 
 }
@@ -1059,8 +1054,8 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
   nfilters = (int)filterNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1) {
-    std::cout << "\n--> Total PAT trigger paths: " << nfilters << std::endl;
-    std::cout << "\n--> All PAT trigger paths:" << std::endl;
+    std::cout << "\n---> Total PAT trigger paths: " << nfilters << std::endl;
+    std::cout << "---> All PAT trigger paths:" << std::endl;
     for (int i = 0; i < nfilters; i++) {
       std::cout << "Index " << i << ": " << filterNames->triggerName(i);
       std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
@@ -1072,7 +1067,7 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
     //     std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     //   }
     // }
-    std::cout << "\n--> MET Filters: " << std::endl;
+    std::cout << "\n---> MET Filters: " << std::endl;
     for (int i = 0; i < nfilters; i++) {
       //if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
       //if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
@@ -1547,9 +1542,11 @@ void Tupel::beginJob(){
   ADD_BRANCH(MuPfIso);
   ADD_BRANCH(MuDz);
   ADD_BRANCH(MuHltMatch);
+
   // Adding branches to save trigger decisions as booleans for HLT paths of interest
   ADD_BRANCH(MuHltTrgPath1);
   ADD_BRANCH(MuHltTrgPath2);
+  ADD_BRANCH(MuHltTrgPath3);
 
   //MET
   ADD_BRANCH(METPt);

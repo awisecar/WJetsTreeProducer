@@ -66,6 +66,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ## HLT paths (need to be set by year; currently 2017)
   muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v"),
   muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v"),
+  muonHLTTriggerPath3 = cms.untracked.string("HLT_Mu27_v"),
   ##### Muons, Jets, MET
   muonSrc      = cms.untracked.InputTag("slimmedMuons"),
   jetSrc       = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
