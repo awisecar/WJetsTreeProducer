@@ -1,8 +1,8 @@
 ### WJets Ntupel-izer
 ### For making "Baobab" and "Bonzai" trees for analysis-level code
 
-mkdir WJetsNtuple16_lxplus6_PanicMode
-cd WJetsNtuple16_lxplus6_PanicMode
+mkdir WJetsNtuple16_lxplus6
+cd WJetsNtuple16_lxplus6
 cmsrel CMSSW_9_4_10
 cd CMSSW_9_4_10/src
 cmsenv
