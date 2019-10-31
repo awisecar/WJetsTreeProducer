@@ -161,6 +161,10 @@ void VJetPruner::skimCollections(){
   filter(MuEta, mask);
   filter(MuPhi, mask);
   filter(MuE, mask);
+  filter(MuPtRoch, mask);
+  filter(MuEtaRoch, mask);
+  filter(MuPhiRoch, mask);
+  filter(MuERoch, mask);
   filter(MuIdLoose, mask);
   filter(MuIdMedium, mask);
   filter(MuIdTight, mask);
@@ -172,6 +176,7 @@ void VJetPruner::skimCollections(){
   filter(MuHltMatch, mask);
   filter(MuHltTrgPath1, mask);
   filter(MuHltTrgPath2, mask);
+  filter(MuHltTrgPath3, mask);
 
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterMET, mask);\n");
   //Reco MET:

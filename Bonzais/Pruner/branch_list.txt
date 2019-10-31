@@ -52,6 +52,10 @@ MuPt
 MuEta
 MuPhi
 MuE
+MuPtRoch
+MuEtaRoch
+MuPhiRoch
+MuERoch
 #MuIdLoose
 #MuIdMedium
 MuIdTight
@@ -63,6 +67,7 @@ MuPfIso
 MuHltMatch
 MuHltTrgPath1
 MuHltTrgPath2
+MuHltTrgPath3
 METPt
 METPx
 METPy

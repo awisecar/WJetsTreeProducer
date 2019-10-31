@@ -1,5 +1,7 @@
 /* -*- c-basic-offset: 2; -*-
 */
+#define DEBUG 0
+
 #include <map>
 #include <string>
 #include <fstream>
@@ -68,10 +70,12 @@
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 
-#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
-#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenRunInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
+
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 
 #include "TreeHelper.h"
@@ -220,6 +224,7 @@ private:
   // Tags for HLT paths (set in cfg file per year)
   std::string muonHLTTriggerPath1_;
   std::string muonHLTTriggerPath2_;
+  std::string muonHLTTriggerPath3_;
   // Tags for MET filters
  // std::string GoodVtxNoiseFilter_Selector_;
  // std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
@@ -273,7 +278,7 @@ private:
   std::unique_ptr<int> 	  EvtPuCntObs_;
   std::unique_ptr<int> 	  EvtPuCntTruth_;
   std::unique_ptr<std::vector<double> > EvtWeights_;
-  // std::unique_ptr<double> originalXWGTUP_;
+  std::unique_ptr<double> originalXWGTUP_;
   std::unique_ptr<float>    EvtFastJetRho_;
   std::unique_ptr<double>    PreFiringWeight_;
   std::unique_ptr<double>    PreFiringWeightUp_;
@@ -380,6 +385,7 @@ private:
   std::unique_ptr<std::vector<unsigned> > MuHltMatch_;
   std::unique_ptr<std::vector<bool> > MuHltTrgPath1_;
   std::unique_ptr<std::vector<bool> > MuHltTrgPath2_;
+  std::unique_ptr<std::vector<bool> > MuHltTrgPath3_;
 
    //MET
   std::unique_ptr<std::vector<float> > METPt_;
@@ -475,6 +481,8 @@ private:
 
   // EffectiveAreas effectiveAreas_;
   bool DJALOG_;
+  bool printLHEWeightsInfo_;
+
   int failedVtx;
   int failedGen;
   int failedLHE;
@@ -494,6 +502,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
 {
 
   DJALOG_ = iConfig.getUntrackedParameter<bool>("DJALOG");  
+  printLHEWeightsInfo_ = iConfig.getUntrackedParameter<bool>("printLHEWeightsInfo"); 
 
   failedVtx = 0;
   failedGen = 0;
@@ -527,6 +536,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   // HLT paths (set in cfg file per year)
   muonHLTTriggerPath1_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath1");
   muonHLTTriggerPath2_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath2");
+  muonHLTTriggerPath3_ =  iConfig.getUntrackedParameter<std::string>("muonHLTTriggerPath3");
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
@@ -548,7 +558,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho" ));
 
   // Rochester corrections
-  rc.init(edm::FileInPath("shears/Baobabs/src/rochesterCorr/RoccoR2017.txt").fullPath()); 
+  rc.init(edm::FileInPath("data/RoccoR2017.txt").fullPath()); 
   randomNum.SetSeed(1234);
   
 }
@@ -604,7 +614,7 @@ void Tupel::readEvent(const edm::Event& iEvent){
         std::cout << "\nProcessing 2018 data/MC!\n" << std::endl;
     }
     else {
-        std::cout << "\nPlease pick a correct year!\n" << std::endl;
+        std::cout << "\nPlease pick a correct year...\n" << std::endl;
     }
   }
 
@@ -679,19 +689,17 @@ void Tupel::processLHE(const edm::Event& iEvent){
   }
 
   // Main weight we use to normalize MC, fill histograms
+  // Needs to be the first element of the EvtWeights_ vector!
+  // Comes from GenEventInfoProduct
   // The weight() method returns the value which is a result 
   // of multiplication of all elements in the "weights" container
-  EvtWeights_->push_back(genEventInfoProd->weight());   
-
-  if(EvtWeights_->size() == 0){
-    EvtWeights_->push_back(1.);     
-    // if(weightFromGenEventInfo_== NO) weightFromGenEventInfo_ = MIXTURE;     
-    // else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = YES;   
-  } 
-  // else{     
-  //   if(weightFromGenEventInfo_== YES) weightFromGenEventInfo_ = MIXTURE;     
-  //   else if (weightFromGenEventInfo_==UNKNOWN) weightFromGenEventInfo_ = NO;   
-  // }   
+  if (genEventInfoProd->weight()){
+    if (DJALOG_ && analyzedEventCnt_==1) printf("For event #1: genEventInfoProd->weight() = %F\n", genEventInfoProd->weight());
+    EvtWeights_->push_back(genEventInfoProd->weight());   
+  }
+  // Making sure that we have a value of 1 for the main MC event weight
+  // if something is not fetched correctly from GenEventInfoProduct
+  else EvtWeights_->push_back(1.); 
 
   if(lheEventProd.failedToGet() || !lheEventProd.isValid()){
     printf("processLHE failed at lheEventProd\n");
@@ -699,11 +707,14 @@ void Tupel::processLHE(const edm::Event& iEvent){
     return;
   }
 
-  // *originalXWGTUP_ = lheEventProd->originalXWGTUP();
+  // This is the central event weight at LHE level (?)
+  // https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideDataFormatGeneratorInterface#Retrieving_information_on_LHE_ev
+  if (DJALOG_ && analyzedEventCnt_==1) printf("For event #1: lheEventProd->originalXWGTUP() = %F\n", lheEventProd->originalXWGTUP());
+  *originalXWGTUP_ = lheEventProd->originalXWGTUP();
 
-  // Weights from LHEEventProduct used for things like PDF, scale variations
+  // Weights from LHEEventProduct
   for(unsigned iw = 0; iw < lheEventProd->weights().size(); ++iw){       
-    //printf("lheEventProd->weights()[iw].id = %s,  lheEventProd->weights()[iw].wgt=%F\n",lheEventProd->weights()[iw].id.c_str(),lheEventProd->weights()[iw].wgt);
+    if (DJALOG_ && analyzedEventCnt_==1) printf("For event #1: lheEventProd->weights()[%u].id = %s, lheEventProd->weights()[%u].wgt=%F\n", iw, lheEventProd->weights()[iw].id.c_str(), iw, lheEventProd->weights()[iw].wgt);
     EvtWeights_->push_back(lheEventProd->weights()[iw].wgt);     
   }
 
@@ -967,13 +978,13 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   ntrigs = (int)trigNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1){
-    std::cout << "\n--> Total trigger paths: " << ntrigs << std::endl;
-    std::cout << "\n--> All trigger paths:" << std::endl;
+    std::cout << "\n---> Total HLT trigger paths: " << ntrigs << std::endl;
+    std::cout << "---> All HLT trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
       std::cout << "Index " << i << ": " << trigNames->triggerName(i);
       std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << ", has prescale " << triggerPrescales->getPrescaleForIndex(i) << std::endl;
     }
-    std::cout << "\n--> Passed trigger paths:" << std::endl;
+    std::cout << "\n---> Passed trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
       // Passed triggers with index i have HLTResHandle->accept(i) give true value
       if (HLTResHandle->accept(i)){
@@ -985,13 +996,14 @@ void Tupel::processTrigger(const edm::Event& iEvent){
 
   // Determine if HLT paths are passed or not
   // Paths of interest defined in cmsRun cfg file
+  // Real trigger on data, "emulated" trigger on MC
+  // 2016 of interest:
+  // 2017 of interest: HLT_IsoMu24_v, HLT_IsoMu27_v, HLT_Mu27_v
+  // 2018 of interest: 
   for (int i = 0; i < ntrigs; i++) {
-    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) {
-      MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
-    }
-    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) {
-      MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
-    }
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
+    if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath3_) != std::string::npos ) MuHltTrgPath3_->push_back(HLTResHandle->accept(i));
   }
 
 }
@@ -1009,8 +1021,8 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
   nfilters = (int)filterNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1) {
-    std::cout << "\n--> Total PAT trigger paths: " << nfilters << std::endl;
-    std::cout << "\n--> All PAT trigger paths:" << std::endl;
+    std::cout << "\n---> Total PAT trigger paths: " << nfilters << std::endl;
+    std::cout << "---> All PAT trigger paths:" << std::endl;
     for (int i = 0; i < nfilters; i++) {
       std::cout << "Index " << i << ": " << filterNames->triggerName(i);
       std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
@@ -1022,7 +1034,7 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
     //     std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     //   }
     // }
-    std::cout << "\n--> MET Filters: " << std::endl;
+    std::cout << "\n---> MET Filters: " << std::endl;
     for (int i = 0; i < nfilters; i++) {
       //if (filterNames->triggerName(i) == HBHENoiseFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
       //if (filterNames->triggerName(i) == HBHENoiseIsoFilter_Selector_) std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
@@ -1129,32 +1141,42 @@ void Tupel::processMuons(const edm::Event& iEvent){
       // }	
       // MuMatchedStationCnt_->push_back(mu.numberOfMatchedStations());
       // MuPixelHitCnt_->push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());     
+      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());    
 
       // Rochester corrections --------
       double rochSF(0.);
+
+      if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
 
       // IF DATA --
       if (*EvtIsRealData_) rochSF = rc.kScaleDT(mu.charge(), mu.pt(), mu.eta(), mu.phi());
       // IF MC --
       else{
         // IF GEN PARTICLE MATCH
+        if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
         if (mu.genParticle()) {
-          std::cout << "genParticle match!" << std::endl;
+          // std::cout << "genParticle match!" << std::endl;
+          // std::cout << mu.genParticle()->pt() << std::endl;
+          if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
           rochSF = rc.kSpreadMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.genParticle()->pt());
+          
         }
         // IF NOT
         else {
-          std::cout << "No match..." << std::endl;
+          // std::cout << "No match..." << std::endl;
+          if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
           rochSF = rc.kSmearMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.innerTrack()->hitPattern().trackerLayersWithMeasurement(), randomNum.Rndm());
         }
       }
+      // std::cout << "rochSF = " << rochSF << std::endl;
+
+      if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
 
       // Now get corrected kinematics
       MuPtRoch_->push_back((mu.p4()*rochSF).pt());
       MuEtaRoch_->push_back((mu.p4()*rochSF).eta());
       MuPhiRoch_->push_back((mu.p4()*rochSF).phi());
-      MuERoch_->push_back((mu.p4()*rochSF).energy());
+      MuERoch_->push_back((mu.p4()*rochSF).energy());  
 
     }
   }
@@ -1392,7 +1414,7 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(EvtPuCntObs, "Number of observed/measured pile-up events");
   ADD_BRANCH_D(EvtPuCntTruth, "True number of pile-up events");
   ADD_BRANCH(EvtWeights); //description filled in endRun()
-  // ADD_BRANCH(originalXWGTUP);
+  ADD_BRANCH_D(originalXWGTUP, "Main event weight at LHE level");
   ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
   ADD_BRANCH(firstGoodVertexIdx);
 
@@ -1487,9 +1509,11 @@ void Tupel::beginJob(){
   ADD_BRANCH(MuPfIso);
   ADD_BRANCH(MuDz);
   ADD_BRANCH(MuHltMatch);
+
   // Adding branches to save trigger decisions as booleans for HLT paths of interest
   ADD_BRANCH(MuHltTrgPath1);
   ADD_BRANCH(MuHltTrgPath2);
+  ADD_BRANCH(MuHltTrgPath3);
 
   //MET
   ADD_BRANCH(METPt);
@@ -1557,50 +1581,64 @@ void Tupel::beginJob(){
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   ++analyzedEventCnt_;
 
-  //if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  // if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  if (DEBUG) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   readEvent(iEvent);
 
   //Get the event weights for MC
   if(!*EvtIsRealData_){
     //if(DJALOG_) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processLHE(iEvent);
   }
 
   //if(DJALOG_) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processVtx(iEvent);
   
   if(!*EvtIsRealData_){
     //if(DJALOG_) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJets(iEvent);
     //if(DJALOG_) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJetsAK8(iEvent);
     //if(DJALOG_) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenParticles(iEvent);
   }
   
   //if(DJALOG_) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!mets.failedToGet()) processMET(iEvent);
   
   if (!*EvtIsRealData_) {
     //if(DJALOG_) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
+    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processPu(iEvent);  
   }     
 
   //if(DJALOG_) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processTrigger(iEvent);
 
   //if(DJALOG_) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!metfilters.failedToGet()) processMETFilter(iEvent);
 
   //if(DJALOG_) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!muons.failedToGet()) processMuons(iEvent);
 
   //if(DJALOG_) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParCollAK4); 
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJets();
 
   //if(DJALOG_) std::cout << "\n ~~~ processJetsAK8() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK8PFPuppi", JetCorParCollAK8); 
+  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJetsAK8();
 
   //Stores the EvtNum in the output tree
@@ -1613,19 +1651,27 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   desc += " The first element contains the GenInfoProduct weight, or it was not found and set to 1.";
   desc += "Elements starting from index 1 contains the weights from LHEEventProduct.";
 
-  // Get information about LHE weights --
-  // edm::Handle<LHERunInfoProduct> lheRun;
-  // iRun.getByToken(lheRunToken_, lheRun );
-  // if(!lheRun.failedToGet()){
-  //   const LHERunInfoProduct& myLHERunInfoProduct = *(lheRun.product());
-  //   for (std::vector<LHERunInfoProduct::Header>::const_iterator iter = myLHERunInfoProduct.headers_begin(); iter != myLHERunInfoProduct.headers_end(); iter++){
-  //     std::cout << iter->tag() << std::endl;
-  //     std::vector<std::string> lines = iter->lines();
-  //     for (unsigned int iLine = 0; iLine<lines.size(); iLine++) {
-  //       std::cout << lines.at(iLine);
-  //     }
-  //   }
-  // }
+  // ------------------------------------------------------------------------
+  // Get information about LHE weights ---
+  if(printLHEWeightsInfo_){
+    edm::Handle<LHERunInfoProduct> lheRun;
+    iRun.getByToken(lheRunToken_, lheRun);
+
+    if(!lheRun.failedToGet()){
+      const LHERunInfoProduct& myLHERunInfoProduct = *(lheRun.product());
+      std::cout << "\n\n >>>>> Getting weights information from LHERunInfoProduct!" << std::endl;
+
+      for (std::vector<LHERunInfoProduct::Header>::const_iterator iter = myLHERunInfoProduct.headers_begin(); iter != myLHERunInfoProduct.headers_end(); iter++){
+        std::cout << iter->tag() << std::endl;
+        std::vector<std::string> lines = iter->lines();
+        for (unsigned int iLine = 0; iLine<lines.size(); iLine++) {
+          std::cout << lines.at(iLine);
+        }
+      }
+
+    }
+  }
+  // ------------------------------------------------------------------------
 
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());

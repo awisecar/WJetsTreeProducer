@@ -192,28 +192,22 @@ int Pruner::run(size_t nInputFiles, const char* const inputDataFiles[],
 
 int Pruner::run(){
 
-  bool interactive = isatty(fileno(stdout)) ? true : false;
-
+  //bool interactive = isatty(fileno(stdout)) ? true : false;
+  bool interactive = false;
   if(interactive) std::cout << "Interactive mode" << std::endl;
   else std::cout << "Batch mode" << std::endl;
     
   timeval start;
-
   gettimeofday(&start, 0);
 
   if(chain_.GetFile() == 0) return 100;
-
   chain_.GetFile()->cd(); //Is this cd needed?
 
   Long64_t nevts;
-
   nevts = chain_.GetEntries() - skipEvents_;
-
   if(maxEvents_ >= 0 && nevts > maxEvents_) nevts = maxEvents_;
 
-  if(verbose_ > 0){
-    std::cout << "Number of events to read: " << nevts << "\n";
-  }
+  std::cout << "Number of events to read: " << nevts << "\n";
 
   timeval t;
   time_t smoothed_eat = 0.;
@@ -230,11 +224,14 @@ int Pruner::run(){
     ++nRead_;
     nextEvent();
 
+    //std::cout << "Event #" << i << " -------------------"  << std::endl; //andrew
+
     if(DJALOG) printf("if(i==1 && evtWeights_){\n");
     if(i==1 && evtWeights_){
       if(evtWeights_->size() > 0){
 	evtWeightSums_ = std::vector<double>(evtWeights_->size(), 0);
 	passedEvtWeightSums_ = std::vector<double>(evtWeights_->size(), 0);
+
 	npNLOBinnedEvtWeightSums_ = std::vector<float>(NPNLOBINS, 0);
 	passednpNLOBinnedEvtWeightSums_ = std::vector<float>(NPNLOBINS, 0);
       }
@@ -242,6 +239,7 @@ int Pruner::run(){
     
     if(DJALOG) printf("    bool passed = filterEvent();\n");
     bool passed = filterEvent();
+    //std::cout << "passed = " << passed << std::endl; //andrew
     if(DJALOG) printf("if(passed)\n");
     if(passed){
       //printf("Copying\n");
@@ -255,10 +253,15 @@ int Pruner::run(){
     //hnpNLO_->Fill(npNLO_);
     if(evtWeights_){
       if(evtWeights_->size() > 0){
-	float eventWeight_0 = 1.0;
+	double eventWeight_0 = 1.0;
 	for(unsigned iWeight = 0; iWeight < evtWeights_->size(); ++iWeight){
+
 	  if(iWeight == 0){
-	    eventWeight_0 = abs((*evtWeights_)[iWeight]);
+            // 0th element of EvtWeights should be the main generator weight
+	    eventWeight_0 = fabs((*evtWeights_)[iWeight]);
+            //std::cout << "(*evtWeights_)[0] = " << (*evtWeights_)[0] << std::endl; //andrew
+            //std::cout << "eventWeight_0 = " << eventWeight_0 << std::endl; //andrew
+
 	    if(npNLO_ == 0){
 	      npNLOBinnedEvtWeightSums_[0] += (*evtWeights_)[iWeight]/eventWeight_0;
 	      if(passed) passednpNLOBinnedEvtWeightSums_[0] += (*evtWeights_)[iWeight]/eventWeight_0;
@@ -272,12 +275,22 @@ int Pruner::run(){
 	      if(passed) passednpNLOBinnedEvtWeightSums_[2] += (*evtWeights_)[iWeight]/eventWeight_0;
 	    }
 	  }
+
+          //std::cout << "(*evtWeights_)[" << iWeight << "] = " << (*evtWeights_)[iWeight] << std::endl; //andrew
+
+          // evtWeightSums_ and passedEvtWeightSums_ used to get skimAccep_ in event selection code
+          // so other weights that are not the main generator weight are normalized to the main generator weight
+          // NOTE: may have to normalize to lheEventProd->originalXWGTUP() instead of genEventInfoProd->weight()
+          // also, if our main generator weight is negative, then it is still normalized by its magnitude
 	  evtWeightSums_[iWeight] += (*evtWeights_)[iWeight]/eventWeight_0;
-	  if(passed) passedEvtWeightSums_[iWeight] += (*evtWeights_)[iWeight]/eventWeight_0;
-	}
+	  if (passed) passedEvtWeightSums_[iWeight] += (*evtWeights_)[iWeight]/eventWeight_0;
+
+	} // end loop over evtWeights_
+
 	//hWeightednpNLO_->Fill(npNLO_,evtWeights_->at(0)/eventWeight_0);
       }
     }
+
     const static int step = interactive ? 100 : 100000;
     //begin-of-line character: in interactive we stay on same line,
     //when stdout is a file we go to next line

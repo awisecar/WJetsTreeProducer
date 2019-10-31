@@ -12,7 +12,6 @@ options.parseArguments()
 print("\n>>>>>>> Options:")
 print("year = "+str(options.year))
 print("isData = "+str(options.isData))
-print("")
 
 ####################
 
@@ -34,10 +33,19 @@ if (options.isData == 1):
   # 2017 31Mar2018 reMiniAOD, SingleMuon dataset
   inputFilename += "/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root"
 elif (options.isData == 0):
-  # RunIIFall17MiniAODv2 campaign, WJets MLM sample
-  inputFilename = "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root"
+  # RunIIFall17MiniAODv2 campaign
+  ### WJets MLM sample
+  inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/70000/FE956420-925A-E911-8872-0025905A48FC.root"
+  # ### WJets, 0J, FXFX sample
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/410000/F2509DBD-37A4-E811-8876-0242AC1C0506.root"
+  # ### Single top, s-channel
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/710000/04B18578-BE44-E811-80F1-0CC47A1DF7FE.root"
+  # ### ttBar, 2L2Nu
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FECD59BD-1842-E811-96D7-0242AC130002.root"
+  # ### WZ inclusive
+  # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WZ_TuneCP5_13TeV-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/40000/FEA1F528-1A42-E811-85AC-6CC2173D6B10.root"
 else:
-  print("Pick a sensible value for isData")
+  print("Pick a sensible value for isData.")
 
 print("inputFilename = "+inputFilename)
 
@@ -46,8 +54,8 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(20000) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -59,6 +67,8 @@ if (options.isData == 1):
 elif (options.isData == 0):
   outputFilename += "_MC"
 outputFilename += ".root"
+
+print("outputFilename = "+outputFilename)
 
 process.TFileService = cms.Service("TFileService",
   fileName = cms.string(outputFilename)
@@ -73,110 +83,99 @@ elif (options.isData == 0):
   globalTagString += "94X_mc2017_realistic_v17"
 
 print("globalTagString = "+globalTagString)
+print("")
+
+# #Attempting to update the JECs associated with my input GT (rather than a txt file or db file)
+# #Doing this because assuming miniAOD made for a different set of JECs associated with an older GT
+# from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+# # AK4 PF CHS
+# updateJetCollection(
+#    process,
+#    jetSource = cms.InputTag('slimmedJets'),
+#    labelName = 'UpdatedJECAK4PFchs',
+#    jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+#    # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
+# )
+# # new jet collection will be called: updatedPatJetsUpdatedJECAK4PFchs
+# # because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
+
+# # AK8 PF PUPPI
+# updateJetCollection(
+#    process,
+#    jetSource = cms.InputTag('slimmedJetsAK8'),
+#    labelName = 'UpdatedJECAK8PFPuppi',
+#    jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+#    # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
+# )
+# # new jet collection will be called: updatedPatJetsUpdatedJECAK8PFPuppi
+# # because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
+
+# # add these sequences to the path below
+# process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
+# process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
+
+# # Need to recorrect MET since we updated JECs
+# from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+# runMetCorAndUncFromMiniAOD(
+#   process,
+#   isData=True
+#   # isData=options.isData #doesn't work
+# )
+# # Need also to correct Puppi MET for AK8 jets
+# # Also to run over PUPPI MET?
+
+# # 2017 EE noise MET fix
+# # from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD   #already included above
+# runMetCorAndUncFromMiniAOD(
+#   process,
+#   isData = True, # false for MC
+#   # isData = options.isData, #doesnt work
+#   fixEE2017 = True,
+#   fixEE2017Params = {'userawPt': True, 'ptThreshold':50.0, 'minEtaThreshold':2.65, 'maxEtaThreshold': 3.139} ,
+#   postfix = "ModifiedMET"
+# )
 
 process.GlobalTag.globaltag = globalTagString
-# process.GlobalTag.globaltag = '94X_dataRun2_v11' #data
-# process.GlobalTag.globaltag = '94X_mc2017_realistic_v17' #MC
 
 #--------------------------------------------                                                                       
-
-#Attempting to update the JECs associated with my input GT (rather than a txt file or db file)
-#Doing this because assuming miniAOD made for a different set of JECs associated with an older GT
-from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
-# AK4 PF CHS
-updateJetCollection(
-   process,
-   jetSource = cms.InputTag('slimmedJets'),
-   labelName = 'UpdatedJECAK4PFchs',
-   jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
-   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
-)
-# new jet collection will be called: updatedPatJetsUpdatedJECAK4PFchs
-# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
-
-# AK8 PF PUPPI
-updateJetCollection(
-   process,
-   jetSource = cms.InputTag('slimmedJetsAK8'),
-   labelName = 'UpdatedJECAK8PFPuppi',
-   jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
-   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
-)
-# new jet collection will be called: updatedPatJetsUpdatedJECAK8PFPuppi
-# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
-
-# add these sequences to the path below
-process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
-process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
-
-# Need to recorrect MET since we updated JECs
-from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
-runMetCorAndUncFromMiniAOD(
-  process,
-  isData=True
-  # isData=options.isData #doesn't work
-)
-# Need also to correct Puppi MET for AK8 jets
-# Also to run over PUPPI MET?
-
-# 2017 EE noise MET fix
-# from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD   #already included above
-runMetCorAndUncFromMiniAOD(
-  process,
-  isData = True, # false for MC
-  # isData = options.isData, #doesnt work
-  fixEE2017 = True,
-  fixEE2017Params = {'userawPt': True, 'ptThreshold':50.0, 'minEtaThreshold':2.65, 'maxEtaThreshold': 3.139} ,
-  postfix = "ModifiedMET"
-)
 
 process.tupel = cms.EDAnalyzer("Tupel",
   yearToProcess = cms.untracked.string(options.year),
   ##### Vertex information, HLT Trigger Bits
-  vertexSrc        = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'), 
-  triggerSrc       = cms.InputTag("TriggerResults", "", "HLT"),
-  triggerObjectTag = cms.untracked.InputTag("slimmedPatTrigger"),
+  vertexSrc           = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'), 
+  triggerSrc          = cms.InputTag("TriggerResults", "", "HLT"),
+  triggerObjectTag    = cms.untracked.InputTag("slimmedPatTrigger"),
   triggerPrescalesTag = cms.untracked.InputTag("patTrigger"),
+
   ## HLT paths (need to be set by year; currently 2017)
-  muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v6"),
-  muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v9"),
+  muonHLTTriggerPath1 = cms.untracked.string("HLT_IsoMu24_v"),
+  muonHLTTriggerPath2 = cms.untracked.string("HLT_IsoMu27_v"),
+  muonHLTTriggerPath3 = cms.untracked.string("HLT_Mu27_v"),
+  
   ##### Muons, Jets, MET
-  muonSrc      = cms.untracked.InputTag("slimmedMuons"),
-  # jetSrc       = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
-  # jetAK8Src    = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
-  jetSrc       = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
-  jetAK8Src    = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
-  metSrc       = cms.untracked.InputTag("slimmedMETs"),
+  muonSrc             = cms.untracked.InputTag("slimmedMuons"),
+  jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
+  jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
+  # jetSrc       = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
+  # jetAK8Src    = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
+  metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
   ##### MET Filters
-  noiseFilterTag = cms.InputTag("TriggerResults","","PAT"),
-  GoodVtxNoiseFilter_Selector = cms.string("Flag_goodVertices"),
-  GlobalSuperTightHalo2016NoiseFilter_Selector = cms.string("Flag_globalSuperTightHalo2016Filter"),
-  HBHENoiseFilter_Selector = cms.string("Flag_HBHENoiseFilter"),
-  HBHENoiseIsoFilter_Selector = cms.string("Flag_HBHENoiseIsoFilter"),
-  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector = cms.string("Flag_EcalDeadCellTriggerPrimitiveFilter"),
-  BadPFMuonFilter_Selector = cms.string("Flag_BadPFMuonFilter"),
-  EEBadScNoiseFilter_Selector = cms.string("Flag_eeBadScFilter"),
+  noiseFilterTag      = cms.InputTag("TriggerResults","","PAT"),
   ##### GEN objects, MC truth pileup information
-  genInfoSrc       = cms.untracked.InputTag('generator'),
-  lheSrc       = cms.untracked.InputTag('externalLHEProducer'),
-  puSrc        = cms.untracked.InputTag('slimmedAddPileupInfo'),
-  genSrc       = cms.untracked.InputTag("prunedGenParticles"),
-  gjetSrc      = cms.untracked.InputTag('slimmedGenJets'),
-  gjetAK8Src      = cms.untracked.InputTag('slimmedGenJetsAK8'),
-
+  genInfoSrc          = cms.untracked.InputTag('generator'),            # GenEventInfoProduct
+  lheSrc              = cms.untracked.InputTag('externalLHEProducer'),  # LHEEventProduct, LHERunInfoProduct
+  puSrc               = cms.untracked.InputTag('slimmedAddPileupInfo'), # PileupSummaryInfo
+  genSrc              = cms.untracked.InputTag("prunedGenParticles"),
+  gjetSrc             = cms.untracked.InputTag('slimmedGenJets'),
+  gjetAK8Src          = cms.untracked.InputTag('slimmedGenJetsAK8'),
   ##### Other stuff
-  mSrcRho      = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
-  
+  mSrcRho             = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Extra printout statements
-  DJALOG       = cms.untracked.bool(False)
+  DJALOG              = cms.untracked.bool(False),
+  printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
 )
 
-# We are not running in unscheduled mode (?)
 process.p = cms.Path(
-  process.jecSequenceAK4 * 
-  process.jecSequenceAK8 *
-  process.fullPatMetSequence *
-  process.fullPatMetSequenceModifiedMET *
   process.tupel 
 )
