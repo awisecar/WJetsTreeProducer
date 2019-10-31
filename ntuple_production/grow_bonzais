@@ -348,8 +348,9 @@ def tasks_prepare_and_submit(catalog, selection, subselection, filesPerJob, outD
     
     task_input_catalog = "crabBonzai_%s-%s-%s_inputs.txt" % (ds, selection, subselection)
     # print catalog
-    print "\npath to catalog:"
+    print "path to catalog:"
     print eos_to_local_path(catalog)
+    print ""
 
     try:
         shutil.copyfile(eos_to_local_path(catalog), task_input_catalog);
