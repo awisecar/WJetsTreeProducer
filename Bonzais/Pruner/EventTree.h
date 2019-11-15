@@ -209,7 +209,8 @@ public :
    vector<bool>    *JetAk04PuIdLoose;
    vector<bool>    *JetAk04PuIdMedium;
    vector<bool>    *JetAk04PuIdTight;
-   vector<float>   *JetAk04BDiscCisvV2;
+  //  vector<float>   *JetAk04BDiscCisvV2;
+   vector<float>   *JetAk04BDiscDeepCSV;
    vector<float>   *JetAk04HadFlav;
    vector<float>   *JetAk04JecUncUp;
    vector<float>   *JetAk04JecUncDwn;
@@ -223,7 +224,8 @@ public :
    TBranch        *b_JetAk04PuIdLoose;   //!
    TBranch        *b_JetAk04PuIdMedium;   //!
    TBranch        *b_JetAk04PuIdTight;   //!
-   TBranch        *b_JetAk04BDiscCisvV2;   //!
+  //  TBranch        *b_JetAk04BDiscCisvV2;   //!
+   TBranch        *b_JetAk04BDiscDeepCSV;   //!
    TBranch        *b_JetAk04HadFlav;   //!
    TBranch        *b_JetAk04JecUncUp;
    TBranch        *b_JetAk04JecUncDwn;
@@ -233,7 +235,8 @@ public :
    vector<float>   *JetAk08Phi;
    vector<float>   *JetAk08E;
    vector<float>   *JetAk08Id;
-   vector<float>   *JetAk08BDiscCisvV2;
+  //  vector<float>   *JetAk08BDiscCisvV2;
+   vector<float>   *JetAk08BDiscDeepCSV;
    vector<float>   *JetAk08HadFlav;
    vector<float>   *JetAk08JecUncUp;
    vector<float>   *JetAk08JecUncDwn;
@@ -242,7 +245,8 @@ public :
    TBranch        *b_JetAk08Phi;   //!
    TBranch        *b_JetAk08E;   //!
    TBranch        *b_JetAk08Id;   //!
-   TBranch        *b_JetAk08BDiscCisvV2;  //!
+  //  TBranch        *b_JetAk08BDiscCisvV2;  //!
+   TBranch        *b_JetAk08BDiscDeepCSV;  //!
    TBranch        *b_JetAk08HadFlav;   //!
    TBranch        *b_JetAk08JecUncUp;
    TBranch        *b_JetAk08JecUncDwn;
@@ -469,7 +473,8 @@ void EventTree::Init(TTree *tree){
    JetAk04PuIdLoose = 0;
    JetAk04PuIdMedium = 0;
    JetAk04PuIdTight = 0;
-   JetAk04BDiscCisvV2 = 0;
+  //  JetAk04BDiscCisvV2 = 0;
+   JetAk04BDiscDeepCSV = 0;
    JetAk04HadFlav = 0;
    JetAk04JecUncUp = 0;
    JetAk04JecUncDwn = 0;
@@ -483,7 +488,8 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("JetAk04PuIdLoose", &JetAk04PuIdLoose, &b_JetAk04PuIdLoose);
    fChain->SetBranchAddress("JetAk04PuIdMedium", &JetAk04PuIdMedium, &b_JetAk04PuIdMedium);
    fChain->SetBranchAddress("JetAk04PuIdTight", &JetAk04PuIdTight, &b_JetAk04PuIdTight);
-   fChain->SetBranchAddress("JetAk04BDiscCisvV2", &JetAk04BDiscCisvV2, &b_JetAk04BDiscCisvV2);
+  //  fChain->SetBranchAddress("JetAk04BDiscCisvV2", &JetAk04BDiscCisvV2, &b_JetAk04BDiscCisvV2);
+   fChain->SetBranchAddress("JetAk04BDiscDeepCSV", &JetAk04BDiscDeepCSV, &b_JetAk04BDiscDeepCSV);
    fChain->SetBranchAddress("JetAk04HadFlav", &JetAk04HadFlav, &b_JetAk04HadFlav);
    fChain->SetBranchAddress("JetAk04JecUncUp", &JetAk04JecUncUp, &b_JetAk04JecUncUp);
    fChain->SetBranchAddress("JetAk04JecUncDwn", &JetAk04JecUncDwn, &b_JetAk04JecUncDwn);
@@ -493,7 +499,8 @@ void EventTree::Init(TTree *tree){
    JetAk08Phi = 0;
    JetAk08E = 0;
    JetAk08Id = 0;
-   JetAk08BDiscCisvV2 = 0;
+  //  JetAk08BDiscCisvV2 = 0;
+   JetAk08BDiscDeepCSV = 0;
    JetAk08HadFlav = 0;
    JetAk08JecUncUp = 0;
    JetAk08JecUncDwn = 0;
@@ -502,7 +509,8 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("JetAk08Phi", &JetAk08Phi, &b_JetAk08Phi);
    fChain->SetBranchAddress("JetAk08E", &JetAk08E, &b_JetAk08E);
    fChain->SetBranchAddress("JetAk08Id", &JetAk08Id, &b_JetAk08Id);
-   fChain->SetBranchAddress("JetAk08BDiscCisvV2", &JetAk08BDiscCisvV2, &b_JetAk08BDiscCisvV2);
+  //  fChain->SetBranchAddress("JetAk08BDiscCisvV2", &JetAk08BDiscCisvV2, &b_JetAk08BDiscCisvV2);
+   fChain->SetBranchAddress("JetAk08BDiscDeepCSV", &JetAk08BDiscDeepCSV, &b_JetAk08BDiscDeepCSV);
    fChain->SetBranchAddress("JetAk08HadFlav", &JetAk08HadFlav, &b_JetAk08HadFlav);
    fChain->SetBranchAddress("JetAk08JecUncUp", &JetAk08JecUncUp, &b_JetAk08JecUncUp);
    fChain->SetBranchAddress("JetAk08JecUncDwn", &JetAk08JecUncDwn, &b_JetAk08JecUncDwn);

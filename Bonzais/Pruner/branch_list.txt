@@ -90,7 +90,8 @@ JetAk04PuId
 JetAk04PuIdLoose
 JetAk04PuIdMedium
 JetAk04PuIdTight
-JetAk04BDiscCisvV2
+#JetAk04BDiscCisvV2
+JetAk04BDiscDeepCSV
 JetAk04HadFlav
 JetAk04JecUncUp
 JetAk04JecUncDwn
@@ -99,7 +100,8 @@ JetAk08Eta
 JetAk08Phi
 JetAk08E
 JetAk08Id
-JetAk08BDiscCisvV2
+#JetAk08BDiscCisvV2
+JetAk08BDiscDeepCSV
 JetAk08HadFlav
 JetAk08JecUncUp
 JetAk08JecUncDwn
