@@ -604,16 +604,16 @@ void Tupel::readEvent(const edm::Event& iEvent){
 
   if(analyzedEventCnt_==1) {
     if(yearToProcess_==std::string("2016")){
-        std::cout << "\nProcessing 2016 legacy data/MC!\n" << std::endl;
+        std::cout << "\nProcessing 2016 legacy data/MC!" << std::endl;
     }
     else if (yearToProcess_==std::string("2017")){
-        std::cout << "\nProcessing 2017 data/MC!\n" << std::endl;
+        std::cout << "\nProcessing 2017 data/MC!" << std::endl;
     }
     else if (yearToProcess_==std::string("2018")){
-        std::cout << "\nProcessing 2018 data/MC!\n" << std::endl;
+        std::cout << "\nProcessing 2018 data/MC!" << std::endl;
     }
     else {
-        std::cout << "\nPlease pick a correct year...\n" << std::endl;
+        std::cout << "\nPlease pick a correct year..." << std::endl;
     }
   }
 
@@ -928,7 +928,6 @@ bool Tupel::processVtx(const edm::Event& iEvent){
 }
 
 void Tupel::processMET(const edm::Event& iEvent){
-
   if(mets.failedToGet() || !mets.isValid()){
     printf("processMET, collection failed\n");
     failedMET++;
@@ -977,13 +976,13 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   ntrigs = (int)trigNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1){
-    std::cout << "\n---> Total HLT trigger paths: " << ntrigs << std::endl;
-    std::cout << "---> All HLT trigger paths:" << std::endl;
+    std::cout << "\n-----> Total number of HLT trigger paths: " << ntrigs << std::endl;
+    std::cout << "\n-----> All HLT trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
       std::cout << "Index " << i << ": " << trigNames->triggerName(i);
       std::cout << ": " <<  (HLTResHandle->accept(i) ? "PASS" : "FAIL") << ", has prescale " << triggerPrescales->getPrescaleForIndex(i) << std::endl;
     }
-    std::cout << "\n---> Passed trigger paths:" << std::endl;
+    std::cout << "\n-----> Passed HLT trigger paths:" << std::endl;
     for (int i = 0; i < ntrigs; i++) {
       // Passed triggers with index i have HLTResHandle->accept(i) give true value
       if (HLTResHandle->accept(i)){
@@ -996,9 +995,9 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   // Determine if HLT paths are passed or not
   // Paths of interest defined in cmsRun cfg file
   // Real trigger on data, "emulated" trigger on MC
-  // 2016 of interest: HLT_IsoMu24_v, HLT_IsoTkMu24_v, ...
+  // 2016 of interest: HLT_IsoMu24_v, HLT_IsoTkMu24_v, HLT_Mu27_v
   // 2017 of interest: HLT_IsoMu24_v, HLT_IsoMu27_v, HLT_Mu27_v
-  // 2018 of interest: ...
+  // 2018 of interest: HLT_IsoMu24, ...
   for (int i = 0; i < ntrigs; i++) {
     if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
     if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
@@ -1020,20 +1019,20 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
   nfilters = (int)filterNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1) {
-    std::cout << "\n---> Total PAT trigger paths: " << nfilters << std::endl;
-    std::cout << "---> All PAT trigger paths:" << std::endl;
+    std::cout << "\n-----> Total PAT trigger paths: " << nfilters << std::endl;
+    std::cout << "\n-----> All PAT trigger paths:" << std::endl;
     for (int i = 0; i < nfilters; i++) {
       std::cout << "Index " << i << ": " << filterNames->triggerName(i);
       std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     }
-    // std::cout << "\n--> Passed PAT trigger paths:" << std::endl;
+    // std::cout << "\n----> Passed PAT trigger paths:" << std::endl;
     // for (int i = 0; i < nfilters; i++) {
     //   if (metfilters->accept(i)){
     //     std::cout << "Index " << i << ": " << filterNames->triggerName(i);
     //     std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     //   }
     // }
-    std::cout << "\n---> MET Filters: " << std::endl;
+    std::cout << "\n-----> MET Filters: " << std::endl;
     for (int i = 0; i < nfilters; i++) {
       if (filterNames->triggerName(i) == "Flag_HBHENoiseFilter") std::cout << "Index " << i << ": Flag_HBHENoiseFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
       if (filterNames->triggerName(i) == "Flag_HBHENoiseIsoFilter") std::cout << "Index " << i << ": Flag_HBHENoiseIsoFilter" << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
@@ -1046,10 +1045,18 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
   }
 
   // Determine if MET filters are passed or not
-  // if (yearToProcess_ == "2017"){
-  //   std::cout << "nothing yet" << std::endl;
-  // }
-  if (yearToProcess_ == "2017"){
+  if (yearToProcess_ == "2016"){
+    for (int i = 0; i < nfilters; i++) {
+      if (filterNames->triggerName(i) == "Flag_HBHENoiseFilter") METFilterPath1_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_HBHENoiseIsoFilter") METFilterPath2_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_globalSuperTightHalo2016Filter") METFilterPath3_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_EcalDeadCellTriggerPrimitiveFilter") METFilterPath4_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_goodVertices") METFilterPath5_->push_back(metfilters->accept(i));
+      // if (filterNames->triggerName(i) == "Flag_eeBadScFilter") METFilterPath6_->push_back(metfilters->accept(i)); #not recommended/used for 2016
+      if (filterNames->triggerName(i) == "Flag_BadPFMuonFilter") METFilterPath7_->push_back(metfilters->accept(i));
+    }
+  }
+  else if (yearToProcess_ == "2017"){
     for (int i = 0; i < nfilters; i++) {
       if (filterNames->triggerName(i) == "Flag_HBHENoiseFilter") METFilterPath1_->push_back(metfilters->accept(i));
       if (filterNames->triggerName(i) == "Flag_HBHENoiseIsoFilter") METFilterPath2_->push_back(metfilters->accept(i));
@@ -1573,62 +1580,64 @@ void Tupel::beginJob(){
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   ++analyzedEventCnt_;
 
-  // if(DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  // if (DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
   if (DEBUG) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   readEvent(iEvent);
 
   //Get the event weights for MC
   if(!*EvtIsRealData_){
-    //if(DJALOG_) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
+    if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
     if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processLHE(iEvent);
   }
 
-  //if(DJALOG_) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processVtx(iEvent);
   
   if(!*EvtIsRealData_){
-    //if(DJALOG_) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
+    if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
     if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJets(iEvent);
-    //if(DJALOG_) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
+    if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
     if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJetsAK8(iEvent);
-    //if(DJALOG_) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
+    if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
     if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenParticles(iEvent);
   }
   
-  //if(DJALOG_) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
-  if (!mets.failedToGet()) processMET(iEvent);
+  // if (!mets.failedToGet()) processMET(iEvent);
+  processMET(iEvent);
   
   if (!*EvtIsRealData_) {
-    //if(DJALOG_) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
+    if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
     if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processPu(iEvent);  
   }     
 
-  //if(DJALOG_) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processTrigger(iEvent);
 
-  //if(DJALOG_) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
-  if (!metfilters.failedToGet()) processMETFilter(iEvent);
+  // if (!metfilters.failedToGet()) processMETFilter(iEvent);
+  processMETFilter(iEvent);
 
-  //if(DJALOG_) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   if (!muons.failedToGet()) processMuons(iEvent);
 
-  //if(DJALOG_) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParCollAK4); 
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJets();
 
-  //if(DJALOG_) std::cout << "\n ~~~ processJetsAK8() ~~~ "  << std::endl;
+  if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processJetsAK8() ~~~ \n"  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK8PFPuppi", JetCorParCollAK8); 
   if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJetsAK8();
@@ -1668,7 +1677,8 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n >>>>> Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d", failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
+  printf("\n>>>>>>>  Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d  <<<<<<<", 
+    failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
 
   std::cout << "\nRun ending!\n" << std::endl;
 }

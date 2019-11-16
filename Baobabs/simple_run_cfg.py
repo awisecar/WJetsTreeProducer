@@ -9,7 +9,7 @@ options.register('isData', '1', VarParsing.VarParsing.multiplicity.singleton, Va
 options.parseArguments()
 
 # Print out all options
-print("\n>>>>>>> Options:")
+print("\n>>>>>>> Running with following options:")
 print("year = "+str(options.year))
 print("isData = "+str(options.isData))
 
@@ -37,7 +37,9 @@ if (options.year == "2016"):
   elif (options.isData == 0):
     # RunIISummer16MiniAODv3 campaign
     ### WJets, 0J, FXFX sample
-    inputFilename += "/store/mc/RunIISummer16MiniAODv3/WToLNu_0J_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v2/90000/F6D52575-F828-E911-BB5C-5065F38162B1.root"
+    # inputFilename += "/store/mc/RunIISummer16MiniAODv3/WToLNu_0J_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v2/90000/F6D52575-F828-E911-BB5C-5065F38162B1.root"
+    ### DY+jets sample
+    inputFilename += "/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FEFC23FC-37C7-E811-97DA-0CC47AA53D86.root"
   else:
     print("Pick a sensible value for isData.")
 # ------- 2017 samples -------
@@ -70,7 +72,7 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
 # process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 outputFilename = "ntupleTest"
@@ -168,7 +170,7 @@ hltTriggerPath3 = ""
 if (options.year == "2016"):
   hltTriggerPath1 += "HLT_IsoMu24_v"
   hltTriggerPath2 += "HLT_IsoTkMu24_v"
-  hltTriggerPath3 += "blank"
+  hltTriggerPath3 += "HLT_Mu27_v"
 elif (options.year == "2017"):
   hltTriggerPath1 += "HLT_IsoMu24_v"
   hltTriggerPath2 += "HLT_IsoMu27_v"
@@ -177,6 +179,9 @@ else:
   hltTriggerPath1 += "HLT_IsoMu24"
   hltTriggerPath2 += "blank"
   hltTriggerPath3 += "blank"
+
+print("Using these three HLT paths: \n"+hltTriggerPath1+", "+hltTriggerPath2+", "+hltTriggerPath3)
+print("")
 
 #--------------------------------------------                                                                       
 
@@ -199,8 +204,14 @@ process.tupel = cms.EDAnalyzer("Tupel",
   # jetAK8Src    = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
-  ##### MET Filters
-  noiseFilterTag      = cms.InputTag("TriggerResults","","PAT"),
+
+  ##### MET Filters (may be better to grab a TriggerResults either of RECO or PAT process, not sure...)
+
+  ### have to implement at data/MC switch for the PAT or the RECO for the MET filters here...?
+
+  noiseFilterTag      = cms.InputTag("TriggerResults","","PAT"), #this line doesn't work for 2016 legacy rereco
+  # noiseFilterTag      = cms.InputTag("TriggerResults","","RECO"), #this line should work for both 2016 and 2017 (apparently not for 2016 MC...?)
+  
   ##### GEN objects, MC truth pileup information
   genInfoSrc          = cms.untracked.InputTag('generator'),            # GenEventInfoProduct
   lheSrc              = cms.untracked.InputTag('externalLHEProducer'),  # LHEEventProduct, LHERunInfoProduct
