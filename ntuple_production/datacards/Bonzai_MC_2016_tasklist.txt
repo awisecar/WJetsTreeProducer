@@ -1,0 +1,23 @@
+* base directory: /eos/cms/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2016/17Jul2018/MC/Catalogs/v1
+* output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2016/17Jul2018/Bonzai/v1/MC
+
+# Catalog files                                                                                            Selection     Subselection     Number of files per job
+Baobabs-WToLNu_0J_13TeV-amcatnloFXFX-pythia8-all.txt                                                       VJetPruner        SMu                   8 
+Baobabs-WToLNu_1J_13TeV-amcatnloFXFX-pythia8-all.txt                                                       VJetPruner        SMu                   8
+Baobabs-WToLNu_2J_13TeV-amcatnloFXFX-pythia8-all.txt                                                       VJetPruner        SMu                   8
+Baobabs-WjetsToLNu_Pt-50To100_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                              VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-100To250_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-250To400_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-400To600_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-600ToInf_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                                    VJetPruner        SMu                   8
+Baobabs-ST_s-channel_4f_leptonDecays_13TeV-amcatnlo-pythia8_TuneCUETP8M1-all.txt                           VJetPruner        SMu                   8
+Baobabs-ST_t-channel_antitop_4f_inclusiveDecays_13TeV-powhegV2-madspin-pythia8_TuneCUETP8M1-all.txt        VJetPruner        SMu                   8
+Baobabs-ST_t-channel_top_4f_inclusiveDecays_13TeV-powhegV2-madspin-pythia8_TuneCUETP8M1-all.txt            VJetPruner        SMu                   8
+Baobabs-ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1-all.txt                         VJetPruner        SMu                   8
+Baobabs-ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1-all.txt                             VJetPruner        SMu                   8
+Baobabs-TT_TuneCUETP8M2T4_13TeV-powheg-pythia8-all.txt                                                     VJetPruner        SMu                   8
+Baobabs-WWTo2L2Nu_13TeV-powheg-all.txt                                                                     VJetPruner        SMu                   8
+Baobabs-WZ_TuneCUETP8M1_13TeV-pythia8-all.txt                                                              VJetPruner        SMu                   8
+Baobabs-ZZ_TuneCUETP8M1_13TeV-pythia8-all.txt                                                              VJetPruner        SMu                   8
+

@@ -8,9 +8,13 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 # cmsRun simple_run_cfg.py year=2017 isData=1
 
 
-
 #### I: For Baobab production -----
 To create crab config file:
+
+####################################################################################
+## NOTE: currently have to change the JSON file directory and the year for grow_baobabs_cfg if you want to change the year!!!
+## TODO: implement a switch to fix this
+####################################################################################
 
 simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=60000
 or maybe
@@ -105,6 +109,9 @@ pip install --user --upgrade brilws
 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
 https://cms-service-lumi.web.cern.ch/cms-service-lumi/brilwsdoc.html#brilcalclumi
 https://twiki.cern.ch/twiki/bin/view/CMSPublic/LumiPublicResults#Technical_details
-# To get int lumi in pb^-1, do (normtag works for at least 2017) --
+# To get int lumi in pb^-1, do (the same normtag works for all of Run 2) --
+2016:
+brilcalc lumi -i crab_SingleMuon_Run2016B-17Jul2018_ver2-v1/results/processedLumis.json -b "STABLE BEAMS" -u /pb --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json
+2017:
 brilcalc lumi -i crab_SingleMuon_Run2017B-31Mar2018-v1/results/processedLumis.json -b "STABLE BEAMS" -u /pb --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json
 

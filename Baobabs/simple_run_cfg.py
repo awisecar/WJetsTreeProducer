@@ -72,8 +72,8 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -180,8 +180,15 @@ else:
   hltTriggerPath2 += "blank"
   hltTriggerPath3 += "blank"
 
-print("Using these three HLT paths: \n"+hltTriggerPath1+", "+hltTriggerPath2+", "+hltTriggerPath3)
-print("")
+print("Using these three HLT paths: \n"+hltTriggerPath1+", "+hltTriggerPath2+", "+hltTriggerPath3+"\n")
+
+metFilterSwitch = ""
+if (options.isData == 0):
+  metFilterSwitch += "PAT"
+elif (options.isData == 1):
+  metFilterSwitch += "RECO"
+
+print ("Using ('TriggerResults','','"+metFilterSwitch+"') for accessing MET filters\n")
 
 #--------------------------------------------                                                                       
 
@@ -204,14 +211,8 @@ process.tupel = cms.EDAnalyzer("Tupel",
   # jetAK8Src    = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
-
-  ##### MET Filters (may be better to grab a TriggerResults either of RECO or PAT process, not sure...)
-
-  ### have to implement at data/MC switch for the PAT or the RECO for the MET filters here...?
-
-  noiseFilterTag      = cms.InputTag("TriggerResults","","PAT"), #this line doesn't work for 2016 legacy rereco
-  # noiseFilterTag      = cms.InputTag("TriggerResults","","RECO"), #this line should work for both 2016 and 2017 (apparently not for 2016 MC...?)
-  
+  ##### MET Filters (grab either PAT or RECO depending on data or MC)
+  noiseFilterTag      = cms.InputTag("TriggerResults","",metFilterSwitch),
   ##### GEN objects, MC truth pileup information
   genInfoSrc          = cms.untracked.InputTag('generator'),            # GenEventInfoProduct
   lheSrc              = cms.untracked.InputTag('externalLHEProducer'),  # LHEEventProduct, LHERunInfoProduct
@@ -222,7 +223,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ##### Other stuff
   mSrcRho             = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Extra printout statements
-  DJALOG              = cms.untracked.bool(True), #prints out info about gen weight structure, HLT trigger paths, etc.
+  DJALOG              = cms.untracked.bool(False), #prints out info about gen weight structure, HLT trigger paths, etc.
   printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
 )
 

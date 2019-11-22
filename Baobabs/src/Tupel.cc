@@ -1019,13 +1019,13 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
   nfilters = (int)filterNames->size();
 
   if(DJALOG_ && analyzedEventCnt_==1) {
-    std::cout << "\n-----> Total PAT trigger paths: " << nfilters << std::endl;
-    std::cout << "\n-----> All PAT trigger paths:" << std::endl;
+    std::cout << "\n-----> Total RECO/PAT trigger paths: " << nfilters << std::endl;
+    std::cout << "\n-----> All RECO/PAT trigger paths:" << std::endl;
     for (int i = 0; i < nfilters; i++) {
       std::cout << "Index " << i << ": " << filterNames->triggerName(i);
       std::cout << ": " <<  (metfilters->accept(i) ? "PASS" : "FAIL") << std::endl;
     }
-    // std::cout << "\n----> Passed PAT trigger paths:" << std::endl;
+    // std::cout << "\n----> Passed RECO/PAT trigger paths:" << std::endl;
     // for (int i = 0; i < nfilters; i++) {
     //   if (metfilters->accept(i)){
     //     std::cout << "Index " << i << ": " << filterNames->triggerName(i);
@@ -1677,7 +1677,7 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n>>>>>>>  Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d  <<<<<<<", 
+  printf("\n>>>>>>>  Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d  <<<<<<<\n", 
     failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
 
   std::cout << "\nRun ending!\n" << std::endl;
