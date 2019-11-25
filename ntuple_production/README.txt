@@ -5,7 +5,7 @@ voms-proxy-init --voms cms
 source /cvmfs/cms.cern.ch/crab3/crab.sh
 
 # To run the test cfg:
-# cmsRun simple_run_cfg.py year=2017 isData=1
+# cmsRun simple_run_cfg.py year=2016 isData=1 doGenInfo=0
 
 
 #### I: For Baobab production -----

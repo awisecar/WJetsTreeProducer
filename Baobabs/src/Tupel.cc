@@ -165,7 +165,6 @@ private:
   }
 
   void allocateTrigMap(int ntrigMax);
-  // void defineBitFields();
     
   //Write Job information tree in the output. The tree
   //contains one event, with general information
@@ -225,14 +224,6 @@ private:
   std::string muonHLTTriggerPath1_;
   std::string muonHLTTriggerPath2_;
   std::string muonHLTTriggerPath3_;
-  // Tags for MET filters
- // std::string GoodVtxNoiseFilter_Selector_;
- // std::string GlobalSuperTightHalo2016NoiseFilter_Selector_;
- // std::string HBHENoiseFilter_Selector_;
- // std::string HBHENoiseIsoFilter_Selector_;
- // std::string EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_;
- // std::string BadPFMuonFilter_Selector_;
- // std::string EEBadScNoiseFilter_Selector_;
   
   // GEN tokens
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
@@ -286,20 +277,6 @@ private:
   std::unique_ptr<double>    PreFiringWeightUp_;
   std::unique_ptr<double>    PreFiringWeightDown_;
   std::unique_ptr<int>       firstGoodVertexIdx_;
-
-  // MET Filter
-  // std::unique_ptr<ULong64_t>              TrigMET_;
-  // std::unique_ptr<ULong64_t>              TrigMETBit_;
-  // std::unique_ptr<std::vector<unsigned> > TrigMETBit_prescale_;
-  // std::map<std::string, ULong64_t>        TrigMETBitMap_; //bit assignment
-
-  //Trigger
-  // std::unique_ptr<unsigned>               TrigHlt_;
-  // std::map<std::string, unsigned>         TrigHltMap_; //bit assignment
-  // std::unique_ptr<ULong64_t>              TrigHltMu_;
-  // std::unique_ptr<std::vector<unsigned> > TrigHltMu_prescale_;
-  // std::map<std::string, ULong64_t>        TrigHltMuMap_; //bit assignment
-  // std::map<std::string, ULong64_t>        TrigHltMuObjMap_;//bit assignment
 
   struct  TrigHltMapRcd {
     TrigHltMapRcd(): pMap(0), pTrig(0), pPrescale(0) {}
@@ -474,16 +451,7 @@ private:
   std::vector<std::vector<int> > trigAccept_;
   std::vector<std::string> trigNames_;
 
-
-  // struct TrigSorter{
-  //   TrigSorter(Tupel* t): tupel_(t){}
-  //   bool operator()(int i, int j) const{
-  //     return tupel_->trigAccept_[1+i][0] > tupel_->trigAccept_[1+j][0];
-  //   }
-  //   Tupel* tupel_;
-  // };
-
-  // EffectiveAreas effectiveAreas_;
+  int doGenInfo_;
   bool DJALOG_;
   bool printLHEWeightsInfo_;
 
@@ -505,6 +473,7 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   analyzedEventCnt_(0)
 {
 
+  doGenInfo_ = iConfig.getUntrackedParameter<int>("doGenInfo");
   DJALOG_ = iConfig.getUntrackedParameter<bool>("DJALOG");  
   printLHEWeightsInfo_ = iConfig.getUntrackedParameter<bool>("printLHEWeightsInfo"); 
 
@@ -544,14 +513,6 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   // MET
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
-  // MET filters
-  //  GoodVtxNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GoodVtxNoiseFilter_Selector");
-  //  GlobalSuperTightHalo2016NoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("GlobalSuperTightHalo2016NoiseFilter_Selector");
-  //  HBHENoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseFilter_Selector");
-  //  HBHENoiseIsoFilter_Selector_ =  iConfig.getParameter<std::string> ("HBHENoiseIsoFilter_Selector");
-  //  EcalDeadCellTriggerPrimitiveNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EcalDeadCellTriggerPrimitiveNoiseFilter_Selector");
-  //  BadPFMuonFilter_Selector_ =  iConfig.getParameter<std::string> ("BadPFMuonFilter_Selector");
-  //  EEBadScNoiseFilter_Selector_ =  iConfig.getParameter<std::string> ("EEBadScNoiseFilter_Selector");
 
   // //L1 Prefire
   // prefweight_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProb"));
@@ -603,18 +564,10 @@ void Tupel::writeHeader(){
 void Tupel::readEvent(const edm::Event& iEvent){
 
   if(analyzedEventCnt_==1) {
-    if(yearToProcess_==std::string("2016")){
-        std::cout << "\nProcessing 2016 legacy data/MC!" << std::endl;
-    }
-    else if (yearToProcess_==std::string("2017")){
-        std::cout << "\nProcessing 2017 data/MC!" << std::endl;
-    }
-    else if (yearToProcess_==std::string("2018")){
-        std::cout << "\nProcessing 2018 data/MC!" << std::endl;
-    }
-    else {
-        std::cout << "\nPlease pick a correct year..." << std::endl;
-    }
+    if(yearToProcess_==std::string("2016")) std::cout << "\nProcessing 2016 legacy data/MC!" << std::endl;
+    else if (yearToProcess_==std::string("2017")) std::cout << "\nProcessing 2017 data/MC!" << std::endl;
+    else if (yearToProcess_==std::string("2018")) std::cout << "\nProcessing 2018 data/MC!" << std::endl;
+    else std::cout << "\nPlease pick a correct year..." << std::endl;
   }
 
   *EvtNum_        = iEvent.id().event();
@@ -953,11 +906,10 @@ void Tupel::processMET(const edm::Event& iEvent){
   // met.corPt(pat::MET::Type1) - Type1 corrected MET
   // met.corPt(pat::MET::Type1XY) - phi-corrected MET
 
-  if(!*EvtIsRealData_){
+  if(!*EvtIsRealData_ && doGenInfo_){
     GMETPt_->push_back(met.genMET()->pt());
     GMETPx_->push_back(met.genMET()->px());
     GMETPy_->push_back(met.genMET()->py());
-    // GMETPz_->push_back(met.genMET()->pz());
     GMETE_->push_back(met.genMET()->energy());
     GMETPhi_->push_back(met.genMET()->phi());
   }
@@ -1415,15 +1367,6 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
   ADD_BRANCH(firstGoodVertexIdx);
 
-  //Trigger
-  // ADD_BRANCH_D(TrigHlt, "HLT triggger bits. See BitField.TrigHlt for bit description."); 
-  // ADD_BRANCH_D(TrigHltMu, "HLT Muon triggger bits. See BitField.TrigHltMu for bit description.");
-  // ADD_BRANCH_D(TrigHltMu_prescale, "HLT Muon triggger prescales for the corresponding trigger bits. See BitField.TrigHltMu for bit description.");
-
-  // ADD_BRANCH(TrigMET);
-  // ADD_BRANCH_D(TrigMETBit, "MET filter bits. See BitField.TrigMETBit for bit description.");
-  // ADD_BRANCH_D(TrigMETBit_prescale, "MET filter prescales for the corresponding trigger bits. See BitField.TrigHltPhot for bit description.");
-
   ADD_BRANCH_D(PreFiringWeight,     "L1 Prefire Weight");
   ADD_BRANCH_D(PreFiringWeightUp,   "L1 Prefire Weight Up");
   ADD_BRANCH_D(PreFiringWeightDown, "L1 Prefire Weight Down");
@@ -1573,73 +1516,55 @@ void Tupel::beginJob(){
   ADD_BRANCH(JetAk08EtaUncorr);
   ADD_BRANCH(JetAk08EUncorr);
 
-  // Defining trigger bits
-  // defineBitFields();
 }
 
 void Tupel::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup){
   ++analyzedEventCnt_;
-
-  // if (DJALOG_) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
+  
   if (DEBUG) std::cout << "\n ------------ New Event #" << analyzedEventCnt_ << " ----------- "  << std::endl;  
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   readEvent(iEvent);
 
   //Get the event weights for MC
   if(!*EvtIsRealData_){
     if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processLHE() ~~~ "  << std::endl;
-    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processLHE(iEvent);
   }
 
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processVtx() ~~~ "  << std::endl;
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processVtx(iEvent);
   
-  if(!*EvtIsRealData_){
+  if(!*EvtIsRealData_ && doGenInfo_){
     if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processGenJets() ~~~ "  << std::endl;
-    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJets(iEvent);
     if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processGenJetsAK8() ~~~ "  << std::endl;
-    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenJetsAK8(iEvent);
     if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processGenParticles() ~~~ "  << std::endl;
-    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processGenParticles(iEvent);
   }
   
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processMET() ~~~ " << std::endl;
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
-  // if (!mets.failedToGet()) processMET(iEvent);
   processMET(iEvent);
   
   if (!*EvtIsRealData_) {
     if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processPu() ~~~ "  << std::endl;
-    if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
     processPu(iEvent);  
   }     
 
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processTrigger() ~~~ "  << std::endl;
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processTrigger(iEvent);
 
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processMETFilter() ~~~ "  << std::endl;
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
-  // if (!metfilters.failedToGet()) processMETFilter(iEvent);
   processMETFilter(iEvent);
 
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processMuons() ~~~ "  << std::endl;
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
-  if (!muons.failedToGet()) processMuons(iEvent);
+  processMuons(iEvent);
 
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processJets() ~~~ "  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK4PFchs", JetCorParCollAK4); 
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJets();
 
   if(DJALOG_ && analyzedEventCnt_==1) std::cout << "\n ~~~ processJetsAK8() ~~~ \n"  << std::endl;
   iSetup.get<JetCorrectionsRecord>().get("AK8PFPuppi", JetCorParCollAK8); 
-  if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
   processJetsAK8();
 
   //Stores the EvtNum in the output tree

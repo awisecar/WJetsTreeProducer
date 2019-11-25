@@ -117,61 +117,6 @@ process.GlobalTag.globaltag = globalTagString
 
 #--------------------------------------------
 
-#Update the JECs associated with my input GT
-from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
-
-# AK4 PF CHS
-updateJetCollection(
-   process,
-   jetSource = cms.InputTag('slimmedJets'),
-   labelName = 'UpdatedJECAK4PFchs',
-   jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
-   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
-)
-# new jet collection will be called: updatedPatJetsUpdatedJECAK4PFchs
-# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
-
-# AK8 PF PUPPI
-updateJetCollection(
-   process,
-   jetSource = cms.InputTag('slimmedJetsAK8'),
-   labelName = 'UpdatedJECAK8PFPuppi',
-   jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
-   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
-)
-# new jet collection will be called: updatedPatJetsUpdatedJECAK8PFPuppi
-# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
-
-# add these sequences to the path below
-process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
-process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
-
-#--------------------------------------------
-
-# Need to recorrect MET since we updated JECs
-from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
-if (options.isData == 1): 
-  metSwitch = True
-else:
-  metSwitch = False
-runMetCorAndUncFromMiniAOD(
-  process,
-  isData=metSwitch
-)
-
-# # 2017 EE noise MET fix
-# # from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD   #already included above
-# runMetCorAndUncFromMiniAOD(
-#   process,
-#   isData = True, # false for MC
-#   # isData = options.isData, #doesnt work
-#   fixEE2017 = True,
-#   fixEE2017Params = {'userawPt': True, 'ptThreshold':50.0, 'minEtaThreshold':2.65, 'maxEtaThreshold': 3.139} ,
-#   postfix = "ModifiedMET"
-# )
-
-#--------------------------------------------
-
 # Set HLT trigger paths of interest by year
 hltTriggerPath1 = ""
 hltTriggerPath2 = ""
@@ -215,10 +160,8 @@ process.tupel = cms.EDAnalyzer("Tupel",
   muonHLTTriggerPath3 = cms.untracked.string(hltTriggerPath3),
   ##### Muons, Jets, MET
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
-  # jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet collection in miniAOD
-  # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet collection in miniAOD
-  jetSrc              = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
-  jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
+  jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet collection in miniAOD
+  jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet collection in miniAOD
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
   ##### MET Filters (grab either PAT or RECO depending on data or MC)
@@ -238,8 +181,5 @@ process.tupel = cms.EDAnalyzer("Tupel",
 )
 
 process.p = cms.Path(
-  process.jecSequenceAK4 * 
-  process.jecSequenceAK8 *
-  process.fullPatMetSequence *
   process.tupel 
 )
