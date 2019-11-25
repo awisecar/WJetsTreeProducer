@@ -20,24 +20,30 @@ except ImportError:
 from httplib import HTTPException
 from WMCore.Configuration import Configuration
 
-CMSSW = os.environ["CMSSW_BASE"]
-
-# 2016 Golden JSON
-input_json_file=CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt"
-# 2017 Golden JSON
-# input_json_file=CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
+##############################################
 
 hostname = socket.gethostname()
 print "\nhostname = %s" % hostname
-#if(hostname.find("lxplus") > 0):
-#    eos_mount_point="/eos/cms/"
-#    print "eos_mount_point = %s" % eos_mount_point
-# for now just setting eos_mount_point because if statement isn't working
 eos_mount_point="/eos/cms/"
 print "eos_mount_point = %s" % eos_mount_point
 
-def getLumiMaskJsonFile():
+
+def getLumiMaskJsonFile(year):
     """Gets the input json file indicating the certified luminosity section which can be processed."""
+
+    CMSSW = os.environ["CMSSW_BASE"]
+    input_json_file = ""
+    if (year == 2016):
+        # 2016 Golden JSON
+        input_json_file += CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt"
+    elif (year == 2017):
+        # 2017 Golden JSON
+        input_json_file += CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
+    else:
+        # No Golden JSON for 2018 yet!!!
+        input_json_file += CMSSW + ""
+    print "input_json_file = %s" % input_json_file
+
     candidates = glob.glob(input_json_file)
     latest_ts = 0
     latest_file = None
@@ -50,7 +56,6 @@ def getLumiMaskJsonFile():
         raise RuntimeError("JSON file required to process real data was not found. We have looked for files named %s" % input_json_file)
     return latest_file
 
-
 def checkDataSetName(dataset):
     a = dataset.split("/")
     if len(a) != 4:
@@ -62,7 +67,7 @@ def checkDataSetName(dataset):
         return False
     return True
 
-def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
+def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
     """Build the crab configuration file."""
     
     dataset_tier = dataset.split("/")[3]
@@ -78,123 +83,111 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents):
     config = Configuration()
 
     config.section_('General')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
-#Request name. Used to identify job batch and to name the result directory    
-    #config.General.requestName = dataset.split('/')[1]+("_%04d"%iDataset)
+    #Request name. Used to identify job batch and to name the result directory    
     if isMC:
-        config.General.requestName = dataset.split('/')[1]
+        config.General.requestName = str(year) + "_" + dataset.split('/')[1]
     else:
-        config.General.requestName = dataset.split('/')[1]+"_"+dataset.split("/")[2]#+("_%04d"%iDataset)
-    #config.General.requestName = dataset.split('/')[1]+"_"+dataset.split("/")[2]
+        config.General.requestName = str(year) + "_" + dataset.split('/')[1]+"_"+dataset.split("/")[2]
 
-#Switch for the copy of the results to the storage site.
+    #Switch for the copy of the results to the storage site.
     config.General.transferOutputs = True
 
-#Whether or not to copy the job log files to the storage site.
+    #Whether or not to copy the job log files to the storage site.
     # config.General.transferLogs = True
     config.General.transferLogs = False
 
     config.section_('JobType')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
     # Running an analysis over a data set
     config.JobType.pluginName = 'Analysis'
 
-# CMSS Configuration file
+    # CMSS Configuration file
     config.JobType.psetName = 'grow_baobabs_cfg.py'
-
-#Need to add the L1PreFire root file
-    #inputs = []
-    #prefireFile = "L1PrefiringMaps_new.root"
-    #inputs.append(prefireFile)
-    #config.JobType.inputFiles = inputs 
 
     # Specify options for cfg file (as one would on command line)
     # Change the year according to what dataset you are processing!
-    year = 2016
-    # year = 2017
     if isMC:
-        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=0"]
+        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=0", "doGenInfo=0"]
     else:
-        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=1"]
-
+        config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=1", "doGenInfo=0"]
 
     # Increase required time to run jobs (defaults to 1315)
-    config.JobType.maxJobRuntimeMin = 1800
+    config.JobType.maxJobRuntimeMin = 2000
 
     # Increase maximum memory (in MB) a job is allowed to use
     config.JobType.maxMemoryMB = 2500
 
     config.section_('Data')
-#----------------------------------------------------------------------
-# Name of the dataset to analyze
+    #----------------------------------------------------------------------
+    # Name of the dataset to analyze
     config.Data.inputDataset = dataset
 
-# List of certified luminosity section, which can be processed
-# (applies to real data only)
+    # List of certified luminosity section, which can be processed (applies to real data only)
     if not isMC:
-        config.Data.lumiMask = getLumiMaskJsonFile()
-        print ("Using this JSON file as lumi mask: "+str(input_json_file))
+        config.Data.lumiMask = getLumiMaskJsonFile(year)
+        # print ("Using this JSON file as lumi mask: "+str(input_json_file))
 
-# Output directory on the storage site (storage site defined in the Site section)
+    # Output directory on the storage site (storage site defined in the Site section)
     print "Output Dir: %s\n" % outDir.split(":")[1]
     config.Data.outLFNDirBase = outDir.split(":")[1]
 
-#Mode to use to split the task in jobs. 
-# for 'Analysis' job type: 'FileBased', 'LumiBased' (recommended for real data), or 'EventAwareLumiBased'
-# for 'PrivateMC' job type: 'EventBased'
+    #Mode to use to split the task in jobs. 
+    # for 'Analysis' job type: 'FileBased', 'LumiBased' (recommended for real data), or 'EventAwareLumiBased'
+    # for 'PrivateMC' job type: 'EventBased'
     if isMC:
         config.Data.splitting = 'FileBased'
     else:
         config.Data.splitting = 'EventAwareLumiBased'
 
-# Number of units to produce or process
+    # Number of units to produce or process
     if maxEvents and maxEvents > 0:
         config.Data.totalUnits = maxEvents
         if maxEvents < unitsPerJob:
             unitsPerJob = maxEvents
 
-# Number of units (events in case of PrivateMC)  per job
+    # Number of units (events in case of PrivateMC)  per job
     config.Data.unitsPerJob = unitsPerJob
 
-# Switch for publication of output data to DBS
+    # Switch for publication of output data to DBS
     config.Data.publication = False
 
     config.section_('User')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
     
     config.section_('Site')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
-#A list of sites where the jobs should not run.
+    #A list of sites where the jobs should not run.
     config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL']
     
     #This does not seem to be a good idea since not all the files are in the US sites.
     #config.Site.whitelist = ["T2_US*","T3_US*"]
 
-#Site where the output should be copied. 
-# See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
+    #Site where the output should be copied. 
+    # See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
     #config.Site.storageSite = 'T2_CH_CERN'
     print "Storage site = %s" % outDir.split(":")[0]
     config.Site.storageSite = outDir.split(":")[0]
     
     return config
 
-def submitJobs(dataset, iDataset, unitsPerJob, outDir, maxEvents, no_submit):
+def submitJobs(dataset, iDataset, unitsPerJob, year, outDir, maxEvents, no_submit):
     """Submit crab jobs to produce the Baobab ntuple from a provided dataset."""
-    crab_config = getCrabConfig(dataset, iDataset, unitsPerJob, outDir, maxEvents)
+    crab_config = getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents)
 
     dataset_tier = dataset.split("/")[3]
     if dataset_tier.find("SIM") > 0:
         isMC = True
     else:
         isMC = False
-
     if isMC:
-        crab_cfg_file = "crab_" + dataset.split("/")[1] + ".py"
+        crab_cfg_file = "crab_" + str(year) + "_" + dataset.split("/")[1] + ".py"
     else:
-        crab_cfg_file = "crab_" + dataset.split("/")[1] + "_" + dataset.split("/")[2] + ".py"
+        crab_cfg_file = "crab_" + str(year) + "_" + dataset.split("/")[1] + "_" + dataset.split("/")[2] + ".py"
+
     f = open(crab_cfg_file, "w")
     f.write(str(crab_config))
     f.close()
@@ -233,10 +226,8 @@ def eos_to_eos_path(path):
         path = path[path.find("/store"):len(path)]
         return path
 
-
 def GetNTupleSubDirectories(directory):
     subDirectory=""
-    
     return subDirectory
 
 def catalog_make_ntuple_catalog(dataset, ntuple_dir):
@@ -267,7 +258,6 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
     #ntuple_subdir = GetNTupleSubDirectories(cat_dir_path)
     #ntuple_dir_path += "/" + ntuple_subdir
 
-
     #creates directory if it does not exist as it should
     try:
         os.mkdir(cat_dir_path)
@@ -283,16 +273,14 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
             xsec_str = ""
         #endif
         fout.write('''# primary dataset: %s
-# data type: %s
-# processed events: %s
-# processed files: %s
-# lumi: %s
-%s
-''' % (prim_dataset, datatype, str(processed_events or ''), str(processed_files or ''), str(lumi or ''), xsec_str))
+            # data type: %s
+            # processed events: %s
+            # processed files: %s
+            # lumi: %s
+            %s
+            ''' % (prim_dataset, datatype, str(processed_events or ''), str(processed_files or ''), str(lumi or ''), xsec_str))
     #enddef
         
-
-
     cat_alltasks = cat_dir_path + "/Baobabs-%s-all.txt" % prim_dataset
     print "cat_alltasks=%s" % cat_alltasks
 
@@ -311,13 +299,13 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
     lumi=None
 
     fout_thistask.write('''
-# task id: %d
-# task submission date: %s
-# reco dataset: %s
-# task nevents: %d
-# task nfiles: %d
-# task lumi: %s /pb\n
-'''     % (task_id, date, reco_dataset, nevents, nfiles, str(lumi)))
+        # task id: %d
+        # task submission date: %s
+        # reco dataset: %s
+        # task nevents: %d
+        # task nfiles: %d
+        # task lumi: %s /pb\n
+        '''     % (task_id, date, reco_dataset, nevents, nfiles, str(lumi)))
  
     # looks for all files within the subfolder of primary dataset (doesn't discriminate among eras currently)
     files = glob.glob(ntuple_dir_path +"/"+ prim_dataset+"/*/*/*/ntupleOut_*.root")
@@ -340,27 +328,16 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
     return
 #enddef catalog_make_ntuple_catalog
 
-
-
 def main(arguments):
 
-    parser = argparse.ArgumentParser(description='Tool from the Shears framwork [1] to launch a Baobab nutple production on the GRID.', epilog='[1]  https://twiki.cern.ch/twiki/bin/viewauth/CMS/ShearsAnalysisFramework')
-
-    parser.add_argument('dataset_catalogs', nargs='+',
-                        help='Catalog files containing the list of CMS datasets to process')
-    
-    parser.add_argument('--max-events', type=int, action='store', default=-1,
-                        help='Specify the maximum number of events to process for each dataset. The default is to process to full dataset.')
-    
-    parser.add_argument('--unitsPerJob', type=int, action='store', default = 100000,
-                        help='Specify the number of units per job (based on data splitting)')
-    
-    parser.add_argument('--no-submit', action='store_true',
-                        help='With this option the crab configuration files are created but the crab tasks are not submitted')
-    parser.add_argument('--make-catalogs', action='store_true',
-                        help='Make catalog files. Not fully implemented. Mostly for MC.')
+    parser = argparse.ArgumentParser(description='Launches Baobab nutple production on the GRID.')
+    parser.add_argument('dataset_catalogs', nargs='+', help='Catalog files containing the list of CMS datasets to process')
+    parser.add_argument('--max-events', type=int, action='store', default=-1, help='Specify the maximum number of events to process for each dataset. The default is to process to full dataset.')
+    parser.add_argument('--unitsPerJob', type=int, action='store', default = 100000, help='Specify the number of units per job (based on data splitting)')
+    parser.add_argument('--year', type=int, action='store', default = 2016, help='Select year of data/MC to process')
+    parser.add_argument('--no-submit', action='store_true', help='With this option the crab configuration files are created but the crab tasks are not submitted')
+    parser.add_argument('--make-catalogs', action='store_true', help='Make catalog files. Not fully implemented. Mostly for MC.')
     args = parser.parse_args()
-
 
     outDirLine = re.compile(r'#\s*output directory[:\s=]+\s*([^\s]+)')
     commentLine = re.compile(r'^\s*^#')
@@ -380,17 +357,15 @@ def main(arguments):
                 outDir = m.groups()[0]
             elif not outDir:
                 sys.stderr.write('''Fatal error while processing dataset catalog '%s'.
-Output directory line is missing from the input dataset catalog.
-The line should be before any dataset name and should have the following format:
-# output directory: /store/group/phys_smp/AnalysisFramework/Baobab/.../ntuples.
-''' % dataset_catalog)
+                    Output directory line is missing from the input dataset catalog.
+                    The line should be before any dataset name and should have the following format:
+                    # output directory: /store/group/phys_smp/AnalysisFramework/Baobab/.../ntuples.
+                    ''' % dataset_catalog)
                 break
-
 
         if(len(outDir.split(":")) < 2):
             print "Please put the storage site in the output directory argument as:\n output directory: site:/store/user/..."
             exit(1)
-
 
         f.seek(0)
         if not args.make_catalogs:
@@ -400,12 +375,11 @@ The line should be before any dataset name and should have the following format:
                 if len(dataset) == 0 or commentLine.match(dataset):
                     continue
                 if checkDataSetName(dataset):
-                    submitJobs(dataset, iDataset, args.unitsPerJob, outDir, args.max_events, args.no_submit)
+                    submitJobs(dataset, iDataset, args.unitsPerJob, args.year, outDir, args.max_events, args.no_submit)
                 iDataset+=1
 
         f.seek(0)
         if args.make_catalogs:
-
             iDataset=0
             for dataset in f:
                 dataset=dataset.strip()
@@ -417,7 +391,6 @@ The line should be before any dataset name and should have the following format:
                     catalog_make_ntuple_catalog(dataset, outDir.split(":")[1])
                 iDataset+=1
             
-
 if __name__ == '__main__':
     main(sys.argv[1:])
 

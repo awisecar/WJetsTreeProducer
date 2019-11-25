@@ -8,6 +8,7 @@ import FWCore.ParameterSet.VarParsing as VarParsing
 options = VarParsing.VarParsing('analysis')
 options.register('year', '2016', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string, 'Year of data/MC to process.')
 options.register('isData', '1', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'Switch to run on real data (isData=1) or MC (isData=0).')
+options.register('doGenInfo', '0', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'Switch to process GEN-level info (doGenInfo=1).')
 options.parseArguments()
 
 ################################################################################
@@ -39,6 +40,8 @@ process.TFileService = cms.Service("TFileService",
   fileName = cms.string('ntupleOut.root')
 )
 
+from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
+
 globalTagString = ""
 if (options.year == "2016"):
   if (options.isData == 1):
@@ -50,8 +53,6 @@ elif (options.year == "2017"):
     globalTagString += "94X_dataRun2_v11"
   elif (options.isData == 0):
     globalTagString += "94X_mc2017_realistic_v17"
-
-from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 
 process.GlobalTag.globaltag = globalTagString
 
@@ -77,6 +78,51 @@ if (options.isData == 0):
 elif (options.isData == 1):
   metFilterSwitch += "RECO"
 
+################################################################################
+## PRODUCERS
+##
+
+# Updating JECs ---
+from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+updateJetCollection(
+   process,
+   jetSource = cms.InputTag('slimmedJets'),  # AK4 PF CHS
+   labelName = 'UpdatedJECAK4PFchs',
+   jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+)
+updateJetCollection(
+   process,
+   jetSource = cms.InputTag('slimmedJetsAK8'),  # AK8 PF PUPPI
+   labelName = 'UpdatedJECAK8PFPuppi',
+   jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+)
+process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
+process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
+
+# Updating MET ---
+from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+if (options.isData == 1): 
+  metSwitch = True
+else:
+  metSwitch = False
+runMetCorAndUncFromMiniAOD(
+  process,
+  isData=metSwitch
+)
+
+# L1 Prefiring Weights ---
+prefiringString = ""
+if (options.year == "2016"):
+  prefiringString += "2016BtoH"
+elif (options.year == "2017"):
+  prefiringString += "2017BtoF"
+from PhysicsTools.PatUtils.l1ECALPrefiringWeightProducer_cfi import l1ECALPrefiringWeightProducer
+process.prefiringweight = l1ECALPrefiringWeightProducer.clone(
+  DataEra = cms.string(prefiringString),
+  UseJetEMPt = cms.bool(False),
+  PrefiringRateSystematicUncty = cms.double(0.2),
+  SkipWarnings = False
+)
 
 ################################################################################
 ## MAIN ANALYZER
@@ -84,6 +130,7 @@ elif (options.isData == 1):
 
 process.tupel = cms.EDAnalyzer("Tupel",
   yearToProcess = cms.untracked.string(options.year),
+  doGenInfo           = cms.untracked.int32(options.doGenInfo),
   ##### Vertex information, HLT Trigger Bits
   vertexSrc           = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'), 
   triggerSrc          = cms.InputTag("TriggerResults", "", "HLT"),
@@ -95,8 +142,10 @@ process.tupel = cms.EDAnalyzer("Tupel",
   muonHLTTriggerPath3 = cms.untracked.string(hltTriggerPath3),
   ##### Muons, Jets, MET
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
-  jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
-  jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
+  # jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
+  # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
+  jetSrc              = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
+  jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   ##### MET Filters
   noiseFilterTag      = cms.InputTag("TriggerResults","",metFilterSwitch),
@@ -117,7 +166,11 @@ process.tupel = cms.EDAnalyzer("Tupel",
 ########################################
 
 process.p = cms.Path(
- process.tupel 
+  process.jecSequenceAK4 * 
+  process.jecSequenceAK8 *
+  process.fullPatMetSequence *
+  process.prefiringweight *
+  process.tupel 
 )
 
 

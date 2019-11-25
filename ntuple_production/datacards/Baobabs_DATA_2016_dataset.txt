@@ -1,4 +1,4 @@
-# output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2016/17Jul2018/DATA/v1
+# output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2016/17Jul2018/DATA/v2
 # json file: /afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/ReReco/Final/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt
 
 /SingleMuon/Run2016B-17Jul2018_ver2-v1/MINIAOD

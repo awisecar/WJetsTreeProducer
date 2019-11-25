@@ -11,24 +11,24 @@ source /cvmfs/cms.cern.ch/crab3/crab.sh
 #### I: For Baobab production -----
 To create crab config file:
 
-####################################################################################
-## NOTE: currently have to change the JSON file directory and the year for grow_baobabs_cfg if you want to change the year!!!
-## TODO: implement a switch to fix this
-####################################################################################
+For 2016 ---
+simple_grow_boababs Baobabs_DATA_2016_dataset.txt --year=2016 --unitsPerJob=60000 --no-submit 
+simple_grow_boababs Baobabs_MC_2016_dataset.txt --year=2016 --unitsPerJob=3 --no-submit
+For 2017 ---
+simple_grow_boababs Baobabs_DATA_2017_dataset.txt --year=2017 --unitsPerJob=60000 --no-submit 
+simple_grow_boababs Baobabs_MC_2017_dataset.txt --year=2017 --unitsPerJob=3 --no-submit
 
-simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=60000
-or maybe
-simple_grow_boababs Baobabs_DATA_2017_dataset.txt  --no-submit --unitsPerJob=80000
-
-simple_grow_boababs Baobabs_MC_2017_dataset.txt --no-submit --unitsPerJob=3
-or maybe
-simple_grow_boababs Baobabs_MC_2017_dataset.txt --no-submit --unitsPerJob=5
+############################################################################################################
+##
+## NOTE: for W+Jets MC you will need to manually switch on doGenInfo=1 in the crab cfg file after it's made!
+##
+############################################################################################################
 
 # Make sure to alter grow_baobabs_cfg.py if needed (this is your cmsRun cfg file)
 # To run grow_baobabs_cfg.py for testing you can do, e.g.
-cmsRun grow_baobabs_cfg.py maxEvents=10000 isData=1 year=2017 inputFiles=/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root
+cmsRun grow_baobabs_cfg.py year=2017 isData=1 doGenInfo=0 maxEvents=10000 inputFiles=/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root
 # meaning 2017, real data, 10000 events
-cmsRun grow_baobabs_cfg.py maxEvents=10000 isData=0 year=2017 inputFiles=/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root
+cmsRun grow_baobabs_cfg.py year=2017 isData=0 doGenInfo=0 maxEvents=10000 inputFiles=/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root
 # meaning 2017, MC, 10000 events
 
 To submit:
