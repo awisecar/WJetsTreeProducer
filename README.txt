@@ -3,8 +3,8 @@
 
 mkdir WJetsNtuple16_lxplus6
 cd WJetsNtuple16_lxplus6
-cmsrel CMSSW_9_4_10
-cd CMSSW_9_4_10/src
+cmsrel CMSSW_9_4_15
+cd CMSSW_9_4_15/src
 cmsenv
 
 ### NOTE: This MET EE noise fix not verified yet!!!

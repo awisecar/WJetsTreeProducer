@@ -15,9 +15,9 @@ TrigHltMu_prescale
 TrigMET
 TrigMETBit
 TrigMETBit_prescale
-#PreFiringWeight
-#PreFiringWeightUp
-#PreFiringWeightDown
+PreFiringWeight
+PreFiringWeightUp
+PreFiringWeightDown
 GLepBarePt
 GLepBareEta
 GLepBarePhi

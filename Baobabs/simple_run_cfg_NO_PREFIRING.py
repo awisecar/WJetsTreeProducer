@@ -117,35 +117,6 @@ process.GlobalTag.globaltag = globalTagString
 
 #--------------------------------------------
 
-# Set HLT trigger paths of interest by year
-hltTriggerPath1 = ""
-hltTriggerPath2 = ""
-hltTriggerPath3 = ""
-if (options.year == "2016"):
-  hltTriggerPath1 += "HLT_IsoMu24_v"
-  hltTriggerPath2 += "HLT_IsoTkMu24_v"
-  hltTriggerPath3 += "HLT_Mu27_v"
-elif (options.year == "2017"):
-  hltTriggerPath1 += "HLT_IsoMu24_v"
-  hltTriggerPath2 += "HLT_IsoMu27_v"
-  hltTriggerPath3 += "HLT_Mu27_v"
-else:
-  hltTriggerPath1 += "HLT_IsoMu24"
-  hltTriggerPath2 += "blank"
-  hltTriggerPath3 += "blank"
-
-print("Using these three HLT paths: \n"+hltTriggerPath1+", "+hltTriggerPath2+", "+hltTriggerPath3+"\n")
-
-metFilterSwitch = ""
-if (options.isData == 0):
-  metFilterSwitch += "PAT"
-elif (options.isData == 1):
-  metFilterSwitch += "RECO"
-
-print ("Using ('TriggerResults','','"+metFilterSwitch+"') for accessing MET filters\n")
-
-#--------------------------------------------
-
 #Update the JECs associated with my input GT
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 
@@ -201,19 +172,32 @@ runMetCorAndUncFromMiniAOD(
 
 #--------------------------------------------
 
-# Compute the L1 prefiring weight
-prefiringString = ""
+# Set HLT trigger paths of interest by year
+hltTriggerPath1 = ""
+hltTriggerPath2 = ""
+hltTriggerPath3 = ""
 if (options.year == "2016"):
-  prefiringString += "2016BtoH"
+  hltTriggerPath1 += "HLT_IsoMu24_v"
+  hltTriggerPath2 += "HLT_IsoTkMu24_v"
+  hltTriggerPath3 += "HLT_Mu27_v"
 elif (options.year == "2017"):
-  prefiringString += "2017BtoF"
-from PhysicsTools.PatUtils.l1ECALPrefiringWeightProducer_cfi import l1ECALPrefiringWeightProducer
-process.prefiringweight = l1ECALPrefiringWeightProducer.clone(
-  DataEra = cms.string(prefiringString),
-  UseJetEMPt = cms.bool(False),
-  PrefiringRateSystematicUncty = cms.double(0.2),
-  SkipWarnings = False
-)
+  hltTriggerPath1 += "HLT_IsoMu24_v"
+  hltTriggerPath2 += "HLT_IsoMu27_v"
+  hltTriggerPath3 += "HLT_Mu27_v"
+else:
+  hltTriggerPath1 += "HLT_IsoMu24"
+  hltTriggerPath2 += "blank"
+  hltTriggerPath3 += "blank"
+
+print("Using these three HLT paths: \n"+hltTriggerPath1+", "+hltTriggerPath2+", "+hltTriggerPath3+"\n")
+
+metFilterSwitch = ""
+if (options.isData == 0):
+  metFilterSwitch += "PAT"
+elif (options.isData == 1):
+  metFilterSwitch += "RECO"
+
+print ("Using ('TriggerResults','','"+metFilterSwitch+"') for accessing MET filters\n")
 
 #--------------------------------------------                                                                       
 
@@ -257,6 +241,5 @@ process.p = cms.Path(
   process.jecSequenceAK4 * 
   process.jecSequenceAK8 *
   process.fullPatMetSequence *
-  process.prefiringweight *
   process.tupel 
 )

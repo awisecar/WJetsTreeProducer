@@ -236,7 +236,7 @@ private:
 
   edm::EDGetTokenT<double> mSrcRhoToken_;
 
-  //2016 L1 Prefire
+  // for L1 Prefiring for 2016, 2017 MC
   edm::EDGetTokenT< double > prefweight_token;
   edm::EDGetTokenT< double > prefweightup_token;
   edm::EDGetTokenT< double > prefweightdown_token;
@@ -268,15 +268,13 @@ private:
   std::unique_ptr<int> 	     EvtVtxCnt_;
   std::unique_ptr<int> 	     EvtPuCntObs_;
   std::unique_ptr<int> 	     EvtPuCntTruth_;
-
+  std::unique_ptr<int>       firstGoodVertexIdx_;
   std::unique_ptr<std::vector<double> > EvtWeights_;
-
   std::unique_ptr<double>    originalXWGTUP_;
   std::unique_ptr<float>     EvtFastJetRho_;
   std::unique_ptr<double>    PreFiringWeight_;
   std::unique_ptr<double>    PreFiringWeightUp_;
   std::unique_ptr<double>    PreFiringWeightDown_;
-  std::unique_ptr<int>       firstGoodVertexIdx_;
 
   struct  TrigHltMapRcd {
     TrigHltMapRcd(): pMap(0), pTrig(0), pPrescale(0) {}
@@ -514,10 +512,10 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   metToken_ = consumes<std::vector<pat::MET> >(iConfig.getUntrackedParameter<edm::InputTag>("metSrc"));
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
 
-  // //L1 Prefire
-  // prefweight_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProb"));
-  // prefweightup_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProbUp"));
-  // prefweightdown_token = consumes< double >(edm::InputTag("prefiringweight:NonPrefiringProbDown"));
+  // for L1 Prefiring for 2016, 2017 MC
+  prefweight_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProb"));
+  prefweightup_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProbUp"));
+  prefweightdown_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProbDown"));
 
   // Other
   mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho"));
@@ -613,19 +611,21 @@ void Tupel::readEvent(const edm::Event& iEvent){
   if(!rho.failedToGet()) rhoIso = *rho;
   *EvtFastJetRho_ =  rhoIso;
 
-  
-  // edm::Handle< double > theprefweight;
-  // iEvent.getByToken(prefweight_token, theprefweight ) ;
-  // *PreFiringWeight_ =(*theprefweight);
-  // //printf("prefireWeight = %F\n", *PreFiringWeight_);
+  // for L1 Prefiring for 2016, 2017 MC
+  edm::Handle< double > theprefweight;
+  iEvent.getByToken(prefweight_token, theprefweight) ;
+  // double _prefiringweight =(*theprefweight);
+  *PreFiringWeight_ = (*theprefweight);
 
-  // edm::Handle< double > theprefweightup;
-  // iEvent.getByToken(prefweightup_token, theprefweightup ) ;
-  // *PreFiringWeightUp_ =(*theprefweightup);
+  edm::Handle< double > theprefweightup;
+  iEvent.getByToken(prefweightup_token, theprefweightup) ;
+  // double _prefiringweightup =(*theprefweightup);
+  *PreFiringWeightUp_ = (*theprefweightup);
 
-  // edm::Handle< double > theprefweightdown;
-  // iEvent.getByToken(prefweightdown_token, theprefweightdown ) ;
-  // *PreFiringWeightDown_ =(*theprefweightdown);
+  edm::Handle< double > theprefweightdown;
+  iEvent.getByToken(prefweightdown_token, theprefweightdown) ;
+  // double _prefiringweightdown =(*theprefweightdown);
+  *PreFiringWeightDown_ = (*theprefweightdown);
 
 }
 
@@ -1366,7 +1366,6 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(originalXWGTUP, "Main event weight at LHE level");
   ADD_BRANCH_D(EvtFastJetRho, "Fastjet pile-up variable \\rho");
   ADD_BRANCH(firstGoodVertexIdx);
-
   ADD_BRANCH_D(PreFiringWeight,     "L1 Prefire Weight");
   ADD_BRANCH_D(PreFiringWeightUp,   "L1 Prefire Weight Up");
   ADD_BRANCH_D(PreFiringWeightDown, "L1 Prefire Weight Down");

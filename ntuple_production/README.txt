@@ -1,6 +1,6 @@
 #### Setup -----
-Working on lxplus6 in CMSSW_9_4_10
-PATH=$PATH:/afs/cern.ch/work/a/awisecar/WJetsNtuple16_lxplus6/CMSSW_9_4_10/src/WJetsTreeProducer/ntuple_production
+Working on lxplus6 in CMSSW_9_4_15
+PATH=$PATH:/afs/cern.ch/work/a/awisecar/WJetsNtuple16_lxplus6/CMSSW_9_4_15/src/WJetsTreeProducer/ntuple_production
 voms-proxy-init --voms cms
 source /cvmfs/cms.cern.ch/crab3/crab.sh
 
