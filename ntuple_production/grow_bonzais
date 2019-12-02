@@ -43,10 +43,6 @@ eos_cmd="/afs/cern.ch/project/eos/installation/pro/bin/eos.select"
 
 hostname = socket.gethostname()
 print "\nhostname = %s" % hostname
-# if(hostname.find("lpc") > 0):
-#     eos_mount_point="/eos/uscms/"
-# if(hostname.find("lxplus") > 0):
-#     eos_mount_point="/eos/cms/"
 eos_mount_point="/eos/cms/"
 print "eos_mount_point = %s" % eos_mount_point
 
@@ -87,7 +83,7 @@ def time2str(t):
 def check_environment():
     for f in [ "job_bonzai_prod.sh", "donothing_cfg.py" ]:
         if not os.path.isfile(f):
-            print "File %s was not found. Copying file from %s." % (f, mydir)
+            print "File %s was not found. Copying file from %s" % (f, mydir)
             try:
                 shutil.copyfile(mydir + "/" + f, "./" + f)
             except IOError:
@@ -201,12 +197,13 @@ def cat_get_file_count(catalog):
 
 ######################################################################
 # CRAB interface
+
 def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, outDir, deps):
     """Builds the crab configuration file."""
 
     catalog_basename = os.path.basename(catalog)
 
-#    catname_re = re.compile(r'Baobabs-([^-\s]+)-[^-\s]*.txt')
+    #    catname_re = re.compile(r'Baobabs-([^-\s]+)-[^-\s]*.txt')
     ds = ds_from_catname(catalog)
 
     # print("\033[1;33m dataset is "+ds+"\033[1;37m")
@@ -222,9 +219,9 @@ def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, o
         storage_site = toks[0]
         dir_path = toks[1]
 
-#    nJobs = nfiles  / filesPerJob
-#    if nfiles > nJobs * filesPerJob:
-#        nJobs += 1
+    #    nJobs = nfiles  / filesPerJob
+    #    if nfiles > nJobs * filesPerJob:
+    #        nJobs += 1
 
     crab_dir = "crabBonzai_%s-%s-%s" % (ds, selection, subselection)
 
@@ -236,91 +233,91 @@ def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, o
     config = Configuration()
 
     config.section_('General')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
-#Switch for the copy of the results to the storage site.
+    #Switch for the copy of the results to the storage site.
     config.General.transferOutputs = True
 
-#Whether or not to copy the job log files to the storage site.
+    #Whether or not to copy the job log files to the storage site.
     # config.General.transferLogs = True
     config.General.transferLogs = False
 
-# Name of the project directory created by CRAB
+    # Name of the project directory created by CRAB
     config.General.requestName = "%s-%s-%s" % (ds, selection, subselection)
 
-# Crab task directory (see crab -d option)
-#    config.General.workArea = crab_dir
+    # Crab task directory (see crab -d option)
+    #    config.General.workArea = crab_dir
 
     config.section_('JobType')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
-# Specifies if this task is running an analysis ('Analysis') on an existing dataset
-# or is running MC event generation ('PrivateMC')
+    # Specifies if this task is running an analysis ('Analysis') on an existing dataset
+    # or is running MC event generation ('PrivateMC')
     config.JobType.pluginName = 'PrivateMC'
 
-# A user script that should be run on the worker node instead of the default cmsRun.
-# The user must ensure that a properly named framework job report file will be written;
-# this can be done e.g. by calling cmsRun within the script as
-# cmsRun -j FrameworkJobReport.xml -p PSet.py.
+    # A user script that should be run on the worker node instead of the default cmsRun.
+    # The user must ensure that a properly named framework job report file will be written;
+    # this can be done e.g. by calling cmsRun within the script as
+    # cmsRun -j FrameworkJobReport.xml -p PSet.py.
     config.JobType.scriptExe = 'job_bonzai_prod.sh'
     config.JobType.scriptArgs = ['sel=%s' % selection, 'subsel=%s' % subselection, 'output_file=%s' % output_file, 'input_catalog=%s' % input_file, 'files_per_job=%d' % filesPerJob ]
 
-# Allows use of non-production CMSSW version
-# (required for CMSSW_5_3_11 on slc6_amd64_gcc472)
+    # Allows use of non-production CMSSW version
+    # (required for CMSSW_5_3_11 on slc6_amd64_gcc472)
    #JobType.allowUndistributedCMSSW = True
 
-# CMSS Configuration file
+    # CMSS Configuration file
     config.JobType.psetName = 'donothing_cfg.py'
 
-# Private input files and directories needed by the jobs. Must be < 100 MB.
+    # Private input files and directories needed by the jobs. Must be < 100 MB.
     deps.append(input_file);
     deps.append(pruner_path);
     config.JobType.inputFiles = deps
 
-# Output files that need to be collected, besides default CMSSW outputs
+    # Output files that need to be collected, besides default CMSSW outputs
     config.JobType.outputFiles = [ output_file ]
 
-# Increase required time to run jobs (defaults to 1315)
+    # Increase required time to run jobs (defaults to 1315)
     config.JobType.maxJobRuntimeMin = 1400
 
     config.section_('Data')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
-# Name of the dataset to analyze
+    # Name of the dataset to analyze
     #config.Data.inputDataset = 'none'
 
-# Output directory on the storage site (storage site defined in the Site section)
+    # Output directory on the storage site (storage site defined in the Site section)
     config.Data.outLFNDirBase = dir_path
 
-#Mode to use to split the task in jobs.
-# for 'Analysis' job type: 'FileBased', 'LumiBased' (recommended for real data), or 'EventAwareLumiBased'
-# for 'PrivateMC' job type: 'EventBased'
-# Should be set here to EventBased, although the splitting is done in files.
+    #Mode to use to split the task in jobs.
+    # for 'Analysis' job type: 'FileBased', 'LumiBased' (recommended for real data), or 'EventAwareLumiBased'
+    # for 'PrivateMC' job type: 'EventBased'
+    # Should be set here to EventBased, although the splitting is done in files.
     config.Data.splitting = 'EventBased'
 
-# Number of units (here number of files) to produce or process
+    # Number of units (here number of files) to produce or process
     config.Data.totalUnits =  n_files
 
-# Number of units (here number of files)  per job
+    # Number of units (here number of files)  per job
     config.Data.unitsPerJob = filesPerJob
 
-# Switch for publication of output data to DBS
+    # Switch for publication of output data to DBS
     config.Data.publication = False
 
     config.section_('User')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
     config.section_('Site')
-#----------------------------------------------------------------------
+    #----------------------------------------------------------------------
 
-#A list of sites where the jobs should not run.
+    #A list of sites where the jobs should not run.
     config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL']
      
-#A list of sites where the jobs should run.
+    #A list of sites where the jobs should run.
     #config.Site.whitelist = [ 'T2_BE_IIHE' ]
 
-#Site where the output should be copied.
-# See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
+    #Site where the output should be copied.
+    # See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
     config.Site.storageSite = storage_site
 
     return config
@@ -396,32 +393,14 @@ def tasks_submit_task(catalog, selection, subselection, resubmission = False):
             print "Resubmitting dataset %s task %d..." % (prim_dataset, task_id)
             res = crabCommand('resubmit', '-d', crab_dir)
             print "Resubmission status: ", res['status']
-#            if res['status'] == 'SUCCESS':
-#                db_update_task_record(prim_dataset, task_id, {'status': 'resubmitted'})
         else:
             res = crabCommand('submit', config=locs['config'])
             taskname = res['uniquerequestname']
             print "Task name:", taskname
 
-            # print "Glidemon monitoring URL: http://glidemon.web.cern.ch/glidemon/jobs.php?taskname=%s" % urllib.quote_plus(taskname)
-            # print "Dashboard monitoring URL:http://dashb-cms-job.cern.ch/dashboard/templates/task-analysis/#user=crab&refresh=0&table=Jobs&p=1&records=25&activemenu=2&status=&site=&tid=%s" % urllib.quote_plus(taskname)
-
-
-#            try:
-#                props = {}
-#                for k in "uniquerequestname", "requestname":
-#                    props[k] = res[k]
-#                    props["status"] = "submitted"
-#                    props['ntuple_subdir'] = prim_dataset + "/" + props['requestname'] + "/" + props['uniquerequestname'].split(":")[0];
-#                    db_update_task_record(prim_dataset, task_id, props)
-#            except KeyError:
-#                sys.stderr.write("\nError while submitting job for dataset %s. No requestname was returned.\n" % prim_dataset)
-#                db_update_task_record(prim_dataset, task_id, { "status": "submission_error"})
     except HTTPException, e:
-#        db_update_task_record(prim_dataset, task_id, { "status": "submission_error"})
         print e.headers
     except ClientException, e:
-#        db_update_task_record(prim_dataset, task_id, { "status": "submission_error"})
         print e
 #enddef
 
@@ -734,56 +713,6 @@ def prod_process_bonzai_tasks(task_list):
     for t in tasks:
         tasks_prepare_and_submit(*t)
 
-### def prod_process_bonzai_tasks(job_list):
-###
-###     commentLine = re.compile(r'^\s*^#')
-###
-###     f = open(job_list)
-###
-###     baseDirLine = re.compile(r'[*#]\s*base directory[:\s=]+\s*([^\s]+)')
-###     outDirLine = re.compile(r'[*#]\s*output directory[:\s=]+\s*([^\s]+)')
-###
-###     baseDir = ""
-###     outDir = ""
-###     for i, l in enumerate(f):
-###         l = l.strip()
-###         m = baseDirLine.match(l)
-###         if m:
-###             baseDir = eos_to_local_path(m.groups()[0])
-###             continue
-###
-###         m = outDirLine.match(l)
-###         if m:
-###             outDir = m.groups()[0]
-###             continue
-###
-###         if (len(l) == 0) or l[0] == '#':
-###             continue
-###
-###         if l[0] == '*':
-###             sys.stderr.write("Line %d of file %d was not understood.\n\n" % (i+1, job_list))
-###             continue;
-###
-###         toks = re.split(r'\s+', l)
-###         if len(toks) != 4:
-###             print ">", l,  "<"
-###             sys.stderr.write("Job specification not recognized in line %d of file %s\n" % (i+1, job_list))
-###             continue
-###         #endif
-###         (catalog, selection, subselection, filesPerJob) = toks
-###         if catalog[0] != '/':
-###             if not baseDir:
-###                 sys.stderr.write("Base directory required for line %d of file %s. Is '* base directory: ...' line missing?\n\n" %
-###                                  (i+1, job_list))
-###                 continue
-###             #endif
-###             catalog = baseDir + "/" + catalog
-###         #endif
-###         filesPerJob = int(filesPerJob)
-###         tasks_prepare_and_submit(catalog, selection, subselection, filesPerJob, outDir)
-###     #next i, l
-### #enddef prod_process_job_list
-
 # Upper level production management tools
 ######################################################################
 
@@ -793,9 +722,6 @@ def parse_command_line():
 
     parser.add_argument('--task-list', action='store', default=None,
                         help='Specifies the file containing the list of task to submit. The file must contain one task specification per line. The specificaiton consist of three space-separated value: catalog of input files, pruner selection, pruner subselection. The catalog can be an eos path (/store/...).')
-
-#    parser.add_argument('--output-dir', action = 'store', default = None,
-#                        help='Specifies the EOS base directory for the ouput.')
 
     parser.add_argument('--no-submit', action='store_true',
                         help="Option to disable job submission. With this option active, the crab configuration files will be generated, but the crab submit command will not be called")

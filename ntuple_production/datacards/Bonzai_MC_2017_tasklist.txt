@@ -1,5 +1,5 @@
-* base directory: /eos/cms/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/MC/Catalogs/v7
-* output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/Bonzai/v7/MC
+* base directory: /eos/cms/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/MC/Catalogs/v8
+* output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/Bonzai/v8/MC
 
 # Catalog files                                                                                       Selection     Subselection     Number of files per job
 Baobabs-DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                    VJetPruner        SMu                   10 

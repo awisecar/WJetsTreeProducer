@@ -115,10 +115,12 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
         config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=1", "doGenInfo=0"]
 
     # Increase required time to run jobs (defaults to 1315)
-    config.JobType.maxJobRuntimeMin = 2000
+    #config.JobType.maxJobRuntimeMin = 1800
+    config.JobType.maxJobRuntimeMin = 1315 #based on crab logs for current event submission numbers
 
     # Increase maximum memory (in MB) a job is allowed to use
-    config.JobType.maxMemoryMB = 2500
+    #config.JobType.maxMemoryMB = 2500
+    config.JobType.maxMemoryMB = 2100 #based on crab logs for current event submission numbers
 
     config.section_('Data')
     #----------------------------------------------------------------------
@@ -161,7 +163,8 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
     #----------------------------------------------------------------------
 
     #A list of sites where the jobs should not run.
-    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL']
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL', 'T2_US_UCSD', 'T2_US_Caltech']
+    # last two in this list because they can't handle CMSSW_9_4_15 well I think
     
     #This does not seem to be a good idea since not all the files are in the US sites.
     #config.Site.whitelist = ["T2_US*","T3_US*"]
@@ -273,12 +276,12 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
             xsec_str = ""
         #endif
         fout.write('''# primary dataset: %s
-            # data type: %s
-            # processed events: %s
-            # processed files: %s
-            # lumi: %s
-            %s
-            ''' % (prim_dataset, datatype, str(processed_events or ''), str(processed_files or ''), str(lumi or ''), xsec_str))
+# data type: %s
+# processed events: %s
+# processed files: %s
+# lumi: %s
+%s
+''' % (prim_dataset, datatype, str(processed_events or ''), str(processed_files or ''), str(lumi or ''), xsec_str))
     #enddef
         
     cat_alltasks = cat_dir_path + "/Baobabs-%s-all.txt" % prim_dataset
@@ -299,13 +302,13 @@ def catalog_make_ntuple_catalog(dataset, ntuple_dir):
     lumi=None
 
     fout_thistask.write('''
-        # task id: %d
-        # task submission date: %s
-        # reco dataset: %s
-        # task nevents: %d
-        # task nfiles: %d
-        # task lumi: %s /pb\n
-        '''     % (task_id, date, reco_dataset, nevents, nfiles, str(lumi)))
+# task id: %d
+# task submission date: %s
+# reco dataset: %s
+# task nevents: %d
+# task nfiles: %d
+# task lumi: %s /pb\n
+'''     % (task_id, date, reco_dataset, nevents, nfiles, str(lumi)))
  
     # looks for all files within the subfolder of primary dataset (doesn't discriminate among eras currently)
     files = glob.glob(ntuple_dir_path +"/"+ prim_dataset+"/*/*/*/ntupleOut_*.root")
