@@ -1032,7 +1032,7 @@ void Tupel::processMuons(const edm::Event& iEvent){
   for(unsigned int j = 0; j < muons->size(); ++j){
     const pat::Muon & mu = muons->at(j);
 
-    if(mu.pt() > 15.0 && mu.isLooseMuon()){
+    if(mu.pt() >= 10.0 && mu.isLooseMuon()){
 
       // Muon ID --------
       bool loose = mu.isLooseMuon();
