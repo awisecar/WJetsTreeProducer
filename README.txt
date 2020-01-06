@@ -1,13 +1,13 @@
 ### WJets Ntupelizer
 ### For making "Baobab" and "Bonzai" trees for analysis-level code
 
-mkdir WJetsNtuple16_lxplus7
-cd WJetsNtuple16_lxplus7
-cmsrel CMSSW_9_4_14_UL_patch1
-cd CMSSW_9_4_14_UL_patch1/src
+mkdir WJetsNtuple16_2018
+cd WJetsNtuple16_2018
+cmsrel CMSSW_10_2_18
+cd CMSSW_10_2_18/src
 cmsenv
 
 Then pull repository:
-git clone -b lxplus7 git@github.com:awisecar/WJetsTreeProducer.git
+git clone -b 2018 git@github.com:awisecar/WJetsTreeProducer.git
 
 For further instructions, see the README in the ntuple_production directory...
