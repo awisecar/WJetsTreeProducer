@@ -33,15 +33,15 @@ def getLumiMaskJsonFile(year):
 
     CMSSW = os.environ["CMSSW_BASE"]
     input_json_file = ""
-    if (year == 2016):
+    if (year == "2016"):
         # 2016 Golden JSON
         input_json_file += CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt"
-    elif (year == 2017):
+    elif (year == "2017"):
         # 2017 Golden JSON
         input_json_file += CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt"
     else:
-        # No Golden JSON for 2018 yet!!!
-        input_json_file += CMSSW + ""
+        # 2018 (ABC, D) Golden JSON
+        input_json_file += CMSSW + "/src/WJetsTreeProducer/ntuple_production/datacards/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt"
     print "input_json_file = %s" % input_json_file
 
     candidates = glob.glob(input_json_file)
@@ -74,10 +74,10 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
 
     if dataset_tier.find("SIM") > 0:
         isMC = True
-        print "Input dataset is recognized as MC"
+        print "\nInput dataset is recognized as MC"
     else:
         isMC = False
-        print "Input dataset is NOT recognized as MC"
+        print "\nInput dataset is NOT recognized as MC"
     #endif
     
     config = Configuration()
@@ -133,7 +133,7 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
         # print ("Using this JSON file as lumi mask: "+str(input_json_file))
 
     # Output directory on the storage site (storage site defined in the Site section)
-    print "Output Dir: %s\n" % outDir.split(":")[1]
+    print "Output Dir: %s" % outDir.split(":")[1]
     config.Data.outLFNDirBase = outDir.split(":")[1]
 
     #Mode to use to split the task in jobs. 
@@ -164,10 +164,6 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
 
     #A list of sites where the jobs should not run.
     config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL', 'T2_US_UCSD', 'T2_US_Caltech']
-    # last two in this list because they can't handle CMSSW_9_4_15 well I think
-    
-    #This does not seem to be a good idea since not all the files are in the US sites.
-    #config.Site.whitelist = ["T2_US*","T3_US*"]
 
     #Site where the output should be copied. 
     # See https://cmsweb.cern.ch/sitedb/prod/sites/ for the list of site names
@@ -337,7 +333,8 @@ def main(arguments):
     parser.add_argument('dataset_catalogs', nargs='+', help='Catalog files containing the list of CMS datasets to process')
     parser.add_argument('--max-events', type=int, action='store', default=-1, help='Specify the maximum number of events to process for each dataset. The default is to process to full dataset.')
     parser.add_argument('--unitsPerJob', type=int, action='store', default = 100000, help='Specify the number of units per job (based on data splitting)')
-    parser.add_argument('--year', type=int, action='store', default = 2016, help='Select year of data/MC to process')
+    # parser.add_argument('--year', type=int, action='store', default = 2016, help='Select year of data/MC to process')
+    parser.add_argument('--year', type=str, action='store', default = 2016, help='Select year of data/MC to process')
     parser.add_argument('--no-submit', action='store_true', help='With this option the crab configuration files are created but the crab tasks are not submitted')
     parser.add_argument('--make-catalogs', action='store_true', help='Make catalog files. Not fully implemented. Mostly for MC.')
     args = parser.parse_args()

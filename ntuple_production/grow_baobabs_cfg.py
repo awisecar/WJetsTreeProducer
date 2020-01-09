@@ -6,7 +6,7 @@ import FWCore.ParameterSet.VarParsing as VarParsing
 ##
 
 options = VarParsing.VarParsing('analysis')
-options.register('year', '2016', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string, 'Year of data/MC to process.')
+options.register('year', '2018ABC', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string, 'Year of data/MC to process.')
 options.register('isData', '1', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'Switch to run on real data (isData=1) or MC (isData=0).')
 options.register('doGenInfo', '0', VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'Switch to process GEN-level info (doGenInfo=1).')
 options.parseArguments()
@@ -53,6 +53,16 @@ elif (options.year == "2017"):
     globalTagString += "94X_dataRun2_v11"
   elif (options.isData == 0):
     globalTagString += "94X_mc2017_realistic_v17"
+elif (options.year == "2018ABC"):
+  if (options.isData == 1):
+    globalTagString += "102X_dataRun2_v12"
+  elif (options.isData == 0):
+    globalTagString += "102X_upgrade2018_realistic_v20"
+elif (options.year == "2018D"):
+  if (options.isData == 1):
+    globalTagString += "102X_dataRun2_Prompt_v15"
+  elif (options.isData == 0):
+    globalTagString += "102X_upgrade2018_realistic_v20"
 
 process.GlobalTag.globaltag = globalTagString
 
@@ -67,10 +77,14 @@ elif (options.year == "2017"):
   hltTriggerPath1 += "HLT_IsoMu24_v"
   hltTriggerPath2 += "HLT_IsoMu27_v"
   hltTriggerPath3 += "HLT_Mu27_v"
-else:
-  hltTriggerPath1 += "HLT_IsoMu24"
-  hltTriggerPath2 += "blank"
-  hltTriggerPath3 += "blank"
+elif (options.year == "2018ABC"):
+  hltTriggerPath1 += "HLT_IsoMu24_v"
+  hltTriggerPath2 += "HLT_IsoMu27_v"
+  hltTriggerPath3 += "HLT_Mu27_v"
+elif (options.year == "2018D"):
+  hltTriggerPath1 += "HLT_IsoMu24_v"
+  hltTriggerPath2 += "HLT_IsoMu27_v"
+  hltTriggerPath3 += "HLT_Mu27_v"
 
 metFilterSwitch = ""
 if (options.isData == 0):
@@ -108,20 +122,6 @@ else:
 runMetCorAndUncFromMiniAOD(
   process,
   isData=metSwitch
-)
-
-# L1 Prefiring Weights ---
-prefiringString = ""
-if (options.year == "2016"):
-  prefiringString += "2016BtoH"
-elif (options.year == "2017"):
-  prefiringString += "2017BtoF"
-from PhysicsTools.PatUtils.l1ECALPrefiringWeightProducer_cfi import l1ECALPrefiringWeightProducer
-process.prefiringweight = l1ECALPrefiringWeightProducer.clone(
-  DataEra = cms.string(prefiringString),
-  UseJetEMPt = cms.bool(False),
-  PrefiringRateSystematicUncty = cms.double(0.2),
-  SkipWarnings = False
 )
 
 ################################################################################
@@ -169,7 +169,6 @@ process.p = cms.Path(
   process.jecSequenceAK4 * 
   process.jecSequenceAK8 *
   process.fullPatMetSequence *
-  process.prefiringweight *
   process.tupel 
 )
 

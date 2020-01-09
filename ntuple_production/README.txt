@@ -1,22 +1,20 @@
 #### Setup -----
-Working on lxplus7 in CMSSW_9_4_14_UL_patch1
-PATH=$PATH:/afs/cern.ch/work/a/awisecar/WJetsNtuple16_lxplus7/CMSSW_9_4_14_UL_patch1/src/WJetsTreeProducer/ntuple_production
+Working on lxplus7 in CMSSW_10_2_20_UL
+PATH=$PATH:/afs/cern.ch/work/a/awisecar/WJetsNtuple16_2018/CMSSW_10_2_20_UL/src/WJetsTreeProducer/ntuple_production
 voms-proxy-init --voms cms
 source /cvmfs/cms.cern.ch/crab3/crab.sh
 
 # To run the test cfg:
-# cmsRun simple_run_cfg.py year=2016 isData=1 doGenInfo=0
-
+# cmsRun simple_run_cfg.py year=2018ABC isData=1 doGenInfo=0
 
 #### I: For Baobab production -----
 To create crab config file:
 
-For 2016 ---
-simple_grow_boababs Baobabs_DATA_2016_dataset.txt --year=2016 --unitsPerJob=60000 --no-submit 
-simple_grow_boababs Baobabs_MC_2016_dataset.txt --year=2016 --unitsPerJob=3 --no-submit
-For 2017 ---
-simple_grow_boababs Baobabs_DATA_2017_dataset.txt --year=2017 --unitsPerJob=60000 --no-submit 
-simple_grow_boababs Baobabs_MC_2017_dataset.txt --year=2017 --unitsPerJob=3 --no-submit
+For 2018 data --
+simple_grow_boababs Baobabs_DATA_2018ABC_dataset.txt --year=2018ABC --unitsPerJob=60000 --no-submit 
+simple_grow_boababs Baobabs_DATA_2018D_dataset.txt   --year=2018D   --unitsPerJob=60000 --no-submit 
+For 2018 MC --
+simple_grow_boababs Baobabs_MC_2018_dataset.txt      --year=2018ABC --unitsPerJob=3     --no-submit
 
 ############################################################################################################
 ##
@@ -25,11 +23,12 @@ simple_grow_boababs Baobabs_MC_2017_dataset.txt --year=2017 --unitsPerJob=3 --no
 ############################################################################################################
 
 # Make sure to alter grow_baobabs_cfg.py if needed (this is your cmsRun cfg file)
-# To run grow_baobabs_cfg.py for testing you can do, e.g.
-cmsRun grow_baobabs_cfg.py year=2017 isData=1 doGenInfo=0 maxEvents=10000 inputFiles=/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/FEC62083-1E39-E811-B2A1-0CC47A4D75F8.root
-# meaning 2017, real data, 10000 events
-cmsRun grow_baobabs_cfg.py year=2017 isData=0 doGenInfo=0 maxEvents=10000 inputFiles=/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/100000/7A8364F3-A394-E811-8419-0CC47A78A418.root
-# meaning 2017, MC, 10000 events
+# To run grow_baobabs_cfg.py for testing you can do...
+## e.g. 2018, real data, 10000 events
+cmsRun grow_baobabs_cfg.py year=2018ABC isData=1 doGenInfo=0 maxEvents=10000 inputFiles=/store/data/Run2018A/SingleMuon/MINIAOD/17Sep2018-v2/110000/10210DAB-2848-054A-B7A2-BE9B4866EA19.root
+cmsRun grow_baobabs_cfg.py year=2018D   isData=1 doGenInfo=0 maxEvents=10000 inputFiles=/store/data/Run2018D/SingleMuon/MINIAOD/22Jan2019-v2/60002/FF86562D-76CB-4B43-90CC-1E76C7D3286C.root
+# e.g. 2018, MC, 10000 events
+cmsRun grow_baobabs_cfg.py year=2018ABC isData=0 doGenInfo=1 maxEvents=10000 inputFiles=/store/mc/RunIIAutumn18MiniAOD/WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/90000/957A0153-D108-6449-A9BF-7B971EE370D5.root
 
 To submit:
 crab submit -c crab_SingleMuon_Run2017B-31Mar2018-v1.py --dryrun
@@ -40,11 +39,7 @@ crab submit -c crab_SingleMuon_Run2017B-31Mar2018-v1.py
 To check status:
 crab status -d crab_SingleMuon_Run2017B-31Mar2018-v1
 
-Jobs will go here (listed in input datasets.txt file) --
-/eos/cms/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2017/31Mar2018/DATA/<CRAB JOBS VERSION NUMBER>
-
 Make catalog files, which list the Baobab output files for Bonzai input --
-
 simple_grow_boababs Baobabs_DATA_2017_dataset.txt --make-catalogs
 simple_grow_boababs Baobabs_MC_2017_dataset.txt --make-catalogs
 

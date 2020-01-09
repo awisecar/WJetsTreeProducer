@@ -3,8 +3,8 @@
 
 mkdir WJetsNtuple16_2018
 cd WJetsNtuple16_2018
-cmsrel CMSSW_10_2_18
-cd CMSSW_10_2_18/src
+cmsrel CMSSW_10_2_20_UL
+cd CMSSW_10_2_20_UL/src
 cmsenv
 
 Then pull repository:

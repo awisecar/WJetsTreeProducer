@@ -513,9 +513,11 @@ Tupel::Tupel(const edm::ParameterSet& iConfig):
   noiseFilterToken_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("noiseFilterTag"));
 
   // for L1 Prefiring for 2016, 2017 MC
-  prefweight_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProb"));
-  prefweightup_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProbUp"));
-  prefweightdown_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProbDown"));
+  if (yearToProcess_ == "2016" || yearToProcess_ == "2017"){
+    prefweight_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProb"));
+    prefweightup_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProbUp"));
+    prefweightdown_token = consumes< double >(edm::InputTag("prefiringweight:nonPrefiringProbDown"));
+  }
 
   // Other
   mSrcRhoToken_ = consumes<double>(iConfig.getUntrackedParameter<edm::InputTag>("mSrcRho"));
@@ -612,21 +614,23 @@ void Tupel::readEvent(const edm::Event& iEvent){
   *EvtFastJetRho_ =  rhoIso;
 
   // for L1 Prefiring for 2016, 2017 MC
-  edm::Handle< double > theprefweight;
-  iEvent.getByToken(prefweight_token, theprefweight) ;
-  // double _prefiringweight =(*theprefweight);
-  *PreFiringWeight_ = (*theprefweight);
+  if (yearToProcess_ == "2016" || yearToProcess_ == "2017"){
+    edm::Handle< double > theprefweight;
+    iEvent.getByToken(prefweight_token, theprefweight) ;
+    // double _prefiringweight =(*theprefweight);
+    *PreFiringWeight_ = (*theprefweight);
 
-  edm::Handle< double > theprefweightup;
-  iEvent.getByToken(prefweightup_token, theprefweightup) ;
-  // double _prefiringweightup =(*theprefweightup);
-  *PreFiringWeightUp_ = (*theprefweightup);
+    edm::Handle< double > theprefweightup;
+    iEvent.getByToken(prefweightup_token, theprefweightup) ;
+    // double _prefiringweightup =(*theprefweightup);
+    *PreFiringWeightUp_ = (*theprefweightup);
 
-  edm::Handle< double > theprefweightdown;
-  iEvent.getByToken(prefweightdown_token, theprefweightdown) ;
-  // double _prefiringweightdown =(*theprefweightdown);
-  *PreFiringWeightDown_ = (*theprefweightdown);
-
+    edm::Handle< double > theprefweightdown;
+    iEvent.getByToken(prefweightdown_token, theprefweightdown) ;
+    // double _prefiringweightdown =(*theprefweightdown);
+    *PreFiringWeightDown_ = (*theprefweightdown);
+  }
+  
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -949,7 +953,7 @@ void Tupel::processTrigger(const edm::Event& iEvent){
   // Real trigger on data, "emulated" trigger on MC
   // 2016 of interest: HLT_IsoMu24_v, HLT_IsoTkMu24_v, HLT_Mu27_v
   // 2017 of interest: HLT_IsoMu24_v, HLT_IsoMu27_v, HLT_Mu27_v
-  // 2018 of interest: HLT_IsoMu24, ...
+  // 2018 of interest: HLT_IsoMu24_v, HLT_IsoMu27_v, HLT_Mu27_v
   for (int i = 0; i < ntrigs; i++) {
     if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath1_) != std::string::npos ) MuHltTrgPath1_->push_back(HLTResHandle->accept(i));
     if ( (trigNames->triggerName(i)).find(muonHLTTriggerPath2_) != std::string::npos ) MuHltTrgPath2_->push_back(HLTResHandle->accept(i));
@@ -1016,6 +1020,17 @@ void Tupel::processMETFilter(const edm::Event& iEvent){
       if (filterNames->triggerName(i) == "Flag_EcalDeadCellTriggerPrimitiveFilter") METFilterPath4_->push_back(metfilters->accept(i));
       if (filterNames->triggerName(i) == "Flag_goodVertices") METFilterPath5_->push_back(metfilters->accept(i));
       if (filterNames->triggerName(i) == "Flag_eeBadScFilter") METFilterPath6_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_BadPFMuonFilter") METFilterPath7_->push_back(metfilters->accept(i));
+    }
+  }
+  else{
+    for (int i = 0; i < nfilters; i++) {
+      if (filterNames->triggerName(i) == "Flag_HBHENoiseFilter") METFilterPath1_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_HBHENoiseIsoFilter") METFilterPath2_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_globalSuperTightHalo2016Filter") METFilterPath3_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_EcalDeadCellTriggerPrimitiveFilter") METFilterPath4_->push_back(metfilters->accept(i));
+      if (filterNames->triggerName(i) == "Flag_goodVertices") METFilterPath5_->push_back(metfilters->accept(i));
+      // if (filterNames->triggerName(i) == "Flag_eeBadScFilter") METFilterPath6_->push_back(metfilters->accept(i));
       if (filterNames->triggerName(i) == "Flag_BadPFMuonFilter") METFilterPath7_->push_back(metfilters->accept(i));
     }
   }
@@ -1174,9 +1189,9 @@ void Tupel::processJets(){
         if ( (yearToProcess_ == "2016") && (NHF < 0.99) && (NEMF < 0.99) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) && (CEMF < 0.99) ) tempJetID = 1;
         // 2017 jet ID: tight WP
         if ( (yearToProcess_ == "2017") && (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ) tempJetID = 1;
-        // 2018 jet ID: ???
+        // 2018ABC, 2018D jet ID: tight WP (really just the one WP)
+        if ( (yearToProcess_ == "2018ABC" || yearToProcess_ == "2018D") && (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ) tempJetID = 1;
       }
-
       JetAk04Id_->push_back(tempJetID);
 
       // jet PU MVA ID --------
@@ -1289,7 +1304,8 @@ void Tupel::processJetsAK8(){
         if ( (yearToProcess_ == "2016") && (NHF < 0.99) && (NEMF < 0.99) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) && (CEMF < 0.99) ) tempJetID = 1;
         // 2017 jet ID: tight WP
         if ( (yearToProcess_ == "2017") && (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ) tempJetID = 1;
-        // 2018 jet ID: ???
+        // 2018ABC, 2018D jet ID: tight WP (really just the one WP)
+        if ( (yearToProcess_ == "2018ABC" || yearToProcess_ == "2018D") && (NHF < 0.90) && (NEMF < 0.90) && (NCONST > 1) && (CHF > 0) && (CMULTI > 0) ) tempJetID = 1;
       }
       JetAk08Id_->push_back(tempJetID);
 
