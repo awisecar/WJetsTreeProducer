@@ -16,7 +16,7 @@ import sqlite3
 import time
 import hashlib
 import os
-import das_client
+#import das_client
 import os.path
 import datetime
 import operator

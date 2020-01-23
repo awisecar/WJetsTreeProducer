@@ -40,8 +40,9 @@ To check status:
 crab status -d crab_SingleMuon_Run2017B-31Mar2018-v1
 
 Make catalog files, which list the Baobab output files for Bonzai input --
-simple_grow_boababs Baobabs_DATA_2017_dataset.txt --make-catalogs
-simple_grow_boababs Baobabs_MC_2017_dataset.txt --make-catalogs
+simple_grow_boababs Baobabs_DATA_2018ABC_dataset.txt --make-catalogs
+simple_grow_boababs Baobabs_DATA_2018D_dataset.txt --make-catalogs
+simple_grow_boababs Baobabs_MC_2018_dataset.txt --make-catalogs
 
 (simple_grow_baobabs does not discriminate among Eras for Data, so all Eras go in one file)
 
@@ -65,8 +66,9 @@ Can also use the option:
 This Pruner utility is run within the "grow_bonzais" program -----
 To generate the CRAB cfg file first:
 
-grow_bonzais --task-list Bonzai_DATA_2017_tasklist.txt --no-submit
-grow_bonzais --task-list Bonzai_MC_2017_tasklist.txt --no-submit
+grow_bonzais --task-list Bonzai_DATA_2018ABC_tasklist.txt --no-submit
+grow_bonzais --task-list Bonzai_DATA_2018D_tasklist.txt --no-submit
+grow_bonzais --task-list Bonzai_MC_2018_tasklist.txt --no-submit
 
 Then submit:
 crab submit -c crabBonzai_SingleMuon-VJetPruner-SMu.py
@@ -75,8 +77,9 @@ For CRAB status --
 crab status -d crab_SingleMuon-VJetPruner-SMu
 
 Now make Bonzai catalogs ---
-grow_bonzais --make-catalogs Bonzai_DATA_2017_tasklist.txt
-grow_bonzais --make-catalogs Bonzai_MC_2017_tasklist.txt
+grow_bonzais --make-catalogs Bonzai_DATA_2018ABC_tasklist.txt
+grow_bonzais --make-catalogs Bonzai_DATA_2018D_tasklist.txt
+grow_bonzais --make-catalogs Bonzai_MC_2018_tasklist.txt
 
 We run the analysis code over these Bonzai ntuples (these itty bitty trees).
 Our analysis code does all of the event selection/histogram filling.
