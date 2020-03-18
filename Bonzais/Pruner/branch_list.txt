@@ -9,12 +9,10 @@ EvtPuCntTruth
 EvtWeights
 #EvtFastJetRho
 #firstGoodVertexIdx
-TrigHlt
-TrigHltMu
-TrigHltMu_prescale
-TrigMET
-TrigMETBit
-TrigMETBit_prescale
+#TrigHlt
+#TrigHltMu
+#TrigMET
+#TrigMETBit
 PreFiringWeight
 PreFiringWeightUp
 PreFiringWeightDown
@@ -90,7 +88,7 @@ JetAk04PuId
 JetAk04PuIdLoose
 JetAk04PuIdMedium
 JetAk04PuIdTight
-#JetAk04BDiscCisvV2
+JetAk04BDiscCisvV2
 JetAk04BDiscDeepCSV
 JetAk04HadFlav
 JetAk04JecUncUp

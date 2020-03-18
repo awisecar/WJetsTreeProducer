@@ -21,14 +21,22 @@ process = cms.Process("BAOBAB")
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
-process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
+process.options = cms.untracked.PSet( 
+  wantSummary = cms.untracked.bool(False) # can also be True if you want a longer printout
+)
 
 # Load the standard set of configuration modules
+# process.load("Configuration.EventContent.EventContent_cff")
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.GeometryDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
+
+#####
+process.load("RecoBTag.Configuration.RecoBTag_cff") ## this allows us to get the TagInfo's needed for b-tagging stuff
+## but it doesn't work anyway???
+#####
 
 inputFilename = ""
 # ------- 2016 samples -------
@@ -52,13 +60,13 @@ elif (options.year == "2017"):
   elif (options.isData == 0):
     # RunIIFall17MiniAODv2 campaign
     ### WJets MLM sample
-    inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/70000/FE956420-925A-E911-8872-0025905A48FC.root"
+    # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/70000/FE956420-925A-E911-8872-0025905A48FC.root"
     # ### WJets, 0J, FXFX sample
     # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/410000/F2509DBD-37A4-E811-8876-0242AC1C0506.root"
     # ### Single top, s-channel
     # inputFilename += "/store/mc/RunIIFall17MiniAODv2/ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/710000/04B18578-BE44-E811-80F1-0CC47A1DF7FE.root"
     # ### ttBar, 2L2Nu
-    # inputFilename += "/store/mc/RunIIFall17MiniAODv2/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FECD59BD-1842-E811-96D7-0242AC130002.root"
+    inputFilename += "/store/mc/RunIIFall17MiniAODv2/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FECD59BD-1842-E811-96D7-0242AC130002.root"
     # ### WZ inclusive
     # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WZ_TuneCP5_13TeV-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/40000/FEA1F528-1A42-E811-85AC-6CC2173D6B10.root"
   else:
@@ -74,8 +82,8 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -144,6 +152,116 @@ elif (options.isData == 1):
 
 print ("Using ('TriggerResults','','"+metFilterSwitch+"') for accessing MET filters\n")
 
+#--------------------------------------------
+
+#Update the JECs associated with my input GT
+from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+
+# AK4 PF CHS
+updateJetCollection(
+   process,
+   jetSource = cms.InputTag('slimmedJets'),
+  #  labelName = 'UpdatedJECAK4PFchs', #turning label off here
+   jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None'),  
+   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
+   btagDiscriminators = [
+    'pfCombinedInclusiveSecondaryVertexV2BJetTags',
+    # 'pfJetProbabilityBJetTags',
+    # 'pfCombinedMVAV2BJetTags',
+    # 'pfCombinedCvsLJetTags',
+    # 'pfCombinedCvsBJetTags',
+    'pfDeepCSVJetTags:probudsg',
+    'pfDeepCSVJetTags:probbb',
+    'pfDeepCSVJetTags:probb',
+    'pfDeepCSVJetTags:probc'
+    ]
+)
+# new jet collection will be called: updatedPatJetsUpdatedJECAK4PFchs
+# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
+
+# add these sequences to the path below
+# note: for getting the SV info from the appropriate TagInfo's in miniAOD, one must re-run the b-tagging
+# in order to re-run b-tagging, we have to use the updateJetCollection PAT function (or something similar)
+
+process.jecSequenceAK4 = cms.Sequence(
+
+  # First two steps of sequence necessary (at least to update JECs) ---
+  process.patJetCorrFactors * 
+  process.updatedPatJets *
+
+  # Next steps are getting TagInfos for the jet collection ---
+  process.pfImpactParameterTagInfos *                    # essential accessing later information
+  process.pfSecondaryVertexTagInfos *                    # will read in Tupel, necessary!!!
+  process.pfInclusiveSecondaryVertexFinderTagInfos *     # will read in Tupel, necessary!!!
+  # process.pfJetProbabilityBJetTags *
+  process.pfCombinedInclusiveSecondaryVertexV2BJetTags * # CSVv2 tagger
+  # process.pfJetProbabilityBJetTags *
+  # process.softPFMuonsTagInfos *                        
+  # process.softPFElectronsTagInfos *
+  # process.pfCombinedMVAV2BJetTags *
+  process.pfInclusiveSecondaryVertexFinderCvsLTagInfos *
+  # process.pfCombinedCvsLJetTags *
+  # process.pfCombinedCvsBJetTags *
+  process.pfDeepCSVTagInfos *
+  process.pfDeepCSVJetTags *                             # DeepCSV tagger
+
+  # Last steps are for getting final jet collection ---
+  process.patJetCorrFactorsTransientCorrected *
+  process.updatedPatJetsTransientCorrected
+
+)
+
+# Additional statements
+process.updatedPatJetsTransientCorrected.addTagInfos = cms.bool(True)
+process.pfInclusiveSecondaryVertexFinderCvsLTagInfos.extSVCollection = cms.InputTag("slimmedSecondaryVertices")
+
+#--------------------------------------------
+
+# AK8 PF PUPPI
+updateJetCollection(
+   process,
+   jetSource = cms.InputTag('slimmedJetsAK8'),
+   labelName = 'UpdatedJECAK8PFPuppi',
+   jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
+)
+# new jet collection will be called: updatedPatJetsUpdatedJECAK8PFPuppi
+# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
+
+process.jecSequenceAK8 = cms.Sequence(
+  process.patJetCorrFactorsUpdatedJECAK8PFPuppi * 
+  process.updatedPatJetsUpdatedJECAK8PFPuppi
+)
+
+#--------------------------------------------
+
+# Need to recorrect MET since we updated JECs
+from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+if (options.isData == 1): 
+  metSwitch = True
+else:
+  metSwitch = False
+runMetCorAndUncFromMiniAOD(
+  process,
+  isData=metSwitch
+)
+
+#--------------------------------------------
+
+# Compute the L1 prefiring weight
+prefiringString = ""
+if (options.year == "2016"):
+  prefiringString += "2016BtoH"
+elif (options.year == "2017"):
+  prefiringString += "2017BtoF"
+from PhysicsTools.PatUtils.l1ECALPrefiringWeightProducer_cfi import l1ECALPrefiringWeightProducer
+process.prefiringweight = l1ECALPrefiringWeightProducer.clone(
+  DataEra = cms.string(prefiringString),
+  UseJetEMPt = cms.bool(False),
+  PrefiringRateSystematicUncty = cms.double(0.2),
+  SkipWarnings = False
+)
+
 #--------------------------------------------                                                                       
 
 process.tupel = cms.EDAnalyzer("Tupel",
@@ -160,8 +278,17 @@ process.tupel = cms.EDAnalyzer("Tupel",
   muonHLTTriggerPath3 = cms.untracked.string(hltTriggerPath3),
   ##### Muons, Jets, MET
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
-  jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet collection in miniAOD
-  jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet collection in miniAOD
+
+
+  # jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet collection in miniAOD
+  # jetSrc              = cms.untracked.InputTag("updatedPatJets"), #updated with JECs
+  jetSrc              = cms.untracked.InputTag("updatedPatJetsTransientCorrected"), #updated with JECs, b-tag TagInfo's, currently throwing an error!!!
+  
+
+  # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet collection in miniAOD
+  jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
+
+
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
   ##### MET Filters (grab either PAT or RECO depending on data or MC)
@@ -180,6 +307,12 @@ process.tupel = cms.EDAnalyzer("Tupel",
   printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
 )
 
+print ("")
+
 process.p = cms.Path(
+  process.jecSequenceAK4 * 
+  process.jecSequenceAK8 *
+  process.fullPatMetSequence *
+  process.prefiringweight *
   process.tupel 
 )

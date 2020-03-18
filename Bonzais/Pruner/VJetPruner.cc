@@ -209,7 +209,7 @@ void VJetPruner::skimCollections(){
   filter(JetAk04PuIdLoose, mask);
   filter(JetAk04PuIdMedium, mask);
   filter(JetAk04PuIdTight, mask);
-  // filter(JetAk04BDiscCisvV2, mask);
+  filter(JetAk04BDiscCisvV2, mask);
   filter(JetAk04BDiscDeepCSV, mask);
   filter(JetAk04HadFlav, mask);
   filter(JetAk04JecUncUp, mask);

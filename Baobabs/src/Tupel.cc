@@ -46,6 +46,9 @@
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/BTauReco/interface/JetTag.h"
+#include "DataFormats/BTauReco/interface/SecondaryVertexTagInfo.h"
+#include "DataFormats/BTauReco/interface/TrackIPTagInfo.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
@@ -55,7 +58,8 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "DataFormats/BTauReco/interface/JetTag.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 
 #include "EgammaAnalysis/ElectronTools/interface/EGammaCutBasedEleId.h"
 #include "EgammaAnalysis/ElectronTools/interface/ElectronEffectiveArea.h"
@@ -394,7 +398,7 @@ private:
   std::unique_ptr<std::vector<bool> >  JetAk04PuIdMedium_;
   std::unique_ptr<std::vector<bool> >  JetAk04PuIdTight_;
   std::unique_ptr<std::vector<float> > JetAk04PuMva_;
-  // std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
+  std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
   std::unique_ptr<std::vector<float> > JetAk04BDiscDeepCSV_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncUp_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncDwn_;
@@ -1204,7 +1208,7 @@ void Tupel::processJets(){
       }
       else JetAk04PuMva_->push_back(-99.);
 
-      //JEC uncertainty --------
+      // JEC uncertainty --------
       jecUncAK4->setJetEta(jet.eta());
       jecUncAK4->setJetPt(jet.pt()); // here you must use the CORRECTED jet pt
       double unc = jecUncAK4->getUncertainty(true);
@@ -1213,10 +1217,120 @@ void Tupel::processJets(){
       JetAk04JecUncUp_->push_back(1. + unc);
       JetAk04JecUncDwn_->push_back(1. - unc);
 
-      //b-tag score, hadron flavor --------
-      // JetAk04BDiscCisvV2_->push_back(jet.bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags")); // CSVv2 tagger
+      // b-tag score, hadron flavor --------
+      if (yearToProcess_ == "2017"){
+        JetAk04BDiscCisvV2_->push_back(jet.bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags")); // CSVv2 tagger
+      }
       JetAk04BDiscDeepCSV_->push_back(jet.bDiscriminator("pfDeepCSVJetTags:probb")+jet.bDiscriminator("pfDeepCSVJetTags:probbb")); // DeepCSV tagger
       JetAk04HadFlav_->push_back(jet.hadronFlavour());
+
+
+
+      //----------------------------------------------------
+      // secondary vertex (SV) information -----------------
+
+      // std::cout << " >>> jet #" << i << std::endl;
+
+      // Reading the TagInfos for pfInclusiveSecondaryVertexFinder
+      // Can look at the code here: DataFormats/​BTauReco/​interface/​TemplatedSecondaryVertexTagInfo.h
+      const reco::CandSecondaryVertexTagInfo *candSVTagInfo = jet.tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
+      if (candSVTagInfo != nullptr && candSVTagInfo->nVertices() >= 1){
+
+        // Fetching related impact parameter (IP) information
+        const reco::CandIPTagInfo *candIPTagInfo = candSVTagInfo->trackIPTagInfoRef().get();
+        if (candIPTagInfo != nullptr && candSVTagInfo->vertexTracks().size() > 0){
+
+          // std::cout << " >>>>>>> candSVTagInfo->nVertices() = " << candSVTagInfo->nVertices() << std::endl;
+
+          ////////////////////////////////////////
+          //
+          // Requiring at least 1 SV
+          //
+          // NOTE: could just stop here, because if there's at least one SV in any jet that passes cuts, we would veto the event later on
+          //       actually, there should only be one good SV per jet, right? 
+          //       what are some quality cuts to make sure this SV is "good", 
+          //       and if not, we should push back elements to zero, because the structure of these vectors will be the same as the other AK4 jet variables
+          //       Could perform dR matching of the flight distance vector and jet vector?
+          //
+          ////////////////////////////////////////
+          
+          // const reco::VertexRef& jetPV = candIPTagInfo->primaryVertex(); // Get the PV
+          double flightDistance(0.), flightDistanceError(0.), flightDistanceSignificance(0.);
+          double svMass(0.);
+
+          // Loop over SV's
+          for (unsigned int isv = 0; isv < candSVTagInfo->nVertices(); ++isv){
+
+            // std::cout << " >>>>>>> SV #" << isv << ":     ";
+
+            // Flight distance and its significance ---
+
+            // 2d distance...
+            // flightDistance             = candSVTagInfo->flightDistance(isv, 2).value();
+            // flightDistanceError        = candSVTagInfo->flightDistance(isv, 2).error();
+            // flightDistanceSignificance = candSVTagInfo->flightDistance(isv, 2).significance(); // significance is value/error
+            // // std::cout << " >>>>>>> SV #" << isv << ":     ";
+            // // std::cout << flightDistance << "     " << flightDistanceError << "     " << flightDistanceSignificance << "     " << std::endl;
+
+            // 3d distance (the default)...
+            flightDistance             = candSVTagInfo->flightDistance(isv).value();
+            flightDistanceError        = candSVTagInfo->flightDistance(isv).error();
+            flightDistanceSignificance = candSVTagInfo->flightDistance(isv).significance(); // significance is value/error
+            std::cout << " >>>>>>> SV #" << isv << ":     ";
+            std::cout << flightDistance << "     " << flightDistanceError << "     " << flightDistanceSignificance << "     " << std::endl;
+
+            // SV mass ---
+            svMass = candSVTagInfo->secondaryVertex(isv).p4().M();
+            std::cout << " >>>>>>> SV #" << isv << ":     ";
+            std::cout << svMass << std::endl;
+
+
+
+            // NOTE: Review below sections before using...
+
+
+
+
+            // Distances between SV and PV ---
+            // Involves grabbing the position of the SV using the secondaryVertex method
+            // reco::Vertex::Point vtx_relative(
+            //   candSVTagInfo->secondaryVertex(isv).position().x() - jetPV->x(),
+            //   candSVTagInfo->secondaryVertex(isv).position().y() - jetPV->y(),
+            //   candSVTagInfo->secondaryVertex(isv).position().z() - jetPV->z()
+            // );
+            // std::cout << vtx_relative.phi() << std::endl;
+            // std::cout << vtx_relative.eta() << std::endl;
+
+            // Loop over tracks for this SV ---
+            // for (unsigned int it = 0; it < candSVTagInfo->nVertexTracks(isv); ++it) {
+
+            //   double charge = candSVTagInfo->vertexTracks(isv)[it]->charge();
+            //   double pt     = candSVTagInfo->vertexTracks(isv)[it]->pt();
+            //   double eta    = candSVTagInfo->vertexTracks(isv)[it]->eta();
+            //   double phi    = candSVTagInfo->vertexTracks(isv)[it]->phi();
+
+            //   // dxyTrack
+            //   std::cout << candSVTagInfo->vertexTracks(isv)[it]->bestTrack()->dxy(jetPV->position()) << std::endl;
+            //   // edxyTrack
+            //   std::cout << candSVTagInfo->vertexTracks(isv)[it]->bestTrack()->dxyError() << std::endl;
+
+            //   // dzTrack
+            //   std::cout << candSVTagInfo->vertexTracks(isv)[it]->bestTrack()->dz(jetPV->position()) << std::endl;
+            //   // edzTrack
+            //   std::cout << candSVTagInfo->vertexTracks(isv)[it]->bestTrack()->dzError() << std::endl;
+
+            //   // nHitsTrack
+            //   std::cout << candSVTagInfo->vertexTracks(isv)[it]->bestTrack()->hitPattern().numberOfValidHits() << std::endl;
+            //   // nPixelHitsTrack
+            //   std::cout << candSVTagInfo->vertexTracks(isv)[it]->bestTrack()->hitPattern().numberOfValidPixelHits() << std::endl;
+
+            // } // end loop over tracks 
+
+          } // end loop over SV's
+        } // end if candIPTagInfo
+      } // end if candSVTagInfo
+      
+      //----------------------------------------------------
 
       //kinematics --------
       JetAk04E_->push_back(jet.energy());
@@ -1486,7 +1600,7 @@ void Tupel::beginJob(){
   ADD_BRANCH(JetAk04PuIdMedium);
   ADD_BRANCH(JetAk04PuIdTight);
   treeHelper_->addDescription("JetAk04BTag", "B tagging with different algorithms");
-  // ADD_BRANCH_D(JetAk04BDiscCisvV2, "pfCombinedInclusiveSecondaryVertexV2BJetTags");
+  ADD_BRANCH_D(JetAk04BDiscCisvV2,  "pfCombinedInclusiveSecondaryVertexV2BJetTags");
   ADD_BRANCH_D(JetAk04BDiscDeepCSV, "pfDeepCSVJetTags:probb+pfDeepCSVJetTags:probbb");
   ADD_BRANCH_D(JetAk04HadFlav, "Hadron-based jet flavor.");
   ADD_BRANCH(JetAk04JecUncUp);

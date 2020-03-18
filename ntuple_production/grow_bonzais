@@ -278,7 +278,8 @@ def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, o
     config.JobType.outputFiles = [ output_file ]
 
     # Increase required time to run jobs (defaults to 1315)
-    config.JobType.maxJobRuntimeMin = 1400
+    #config.JobType.maxJobRuntimeMin = 1400
+    config.JobType.maxJobRuntimeMin = 1600
 
     config.section_('Data')
     #----------------------------------------------------------------------
@@ -311,7 +312,7 @@ def crab_get_config(catalog, selection, subselection, input_file, filesPerJob, o
     #----------------------------------------------------------------------
 
     #A list of sites where the jobs should not run.
-    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL']
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL', 'T3_UK_London_QMUL', 'T2_KR_KISTI']
      
     #A list of sites where the jobs should run.
     #config.Site.whitelist = [ 'T2_BE_IIHE' ]
@@ -608,12 +609,12 @@ def _catalog_make_bonzai_catalog(baobab_catalog, ntuple_dir, sel, subsel):
 
     fout = open(bonzai_catalog, "w")
 
-    fout.write('''# primary dataset: %s
-    * data type: %s
-    * primary events: %s
-    * primary files: %s
-    * lumi: %s
-    * sample xsec: %s\n\n''' % (info['primary_dataset'], info['datatype'], info['primary_events'], info['primary_files'], info['luminosity'], xsec))
+  #  fout.write('''# primary dataset: %s
+  #  * data type: %s
+  #  * primary events: %s
+  #  * primary files: %s
+  #  * lumi: %s
+  #  * sample xsec: %s\n\n''' % (info['primary_dataset'], info['datatype'], info['primary_events'], info['primary_files'], info['luminosity'], xsec))
 
     ntuple_pattern = ntuple_dir_path + "/" + ntuple_subdir + "/*/Bonzai*.root"
     print("ntuple_pattern="+ntuple_pattern)
