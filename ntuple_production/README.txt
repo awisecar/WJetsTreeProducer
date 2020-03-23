@@ -18,11 +18,11 @@ For 2017 ---
 simple_grow_boababs Baobabs_DATA_2017_dataset.txt --year=2017 --unitsPerJob=60000 --no-submit 
 simple_grow_boababs Baobabs_MC_2017_dataset.txt --year=2017 --unitsPerJob=3 --no-submit
 
-############################################################################################################
-##
-## NOTE: for W+Jets MC you will need to manually switch on doGenInfo=1 in the crab cfg file after it's made!
-##
-############################################################################################################
+#################################################################################################################
+##                                                                                                             ##
+##  NOTE: for W+Jets MC you will need to manually switch on doGenInfo=1 in the crab cfg file after it's made!  ##
+##                                                                                                             ##
+#################################################################################################################
 
 # Make sure to alter grow_baobabs_cfg.py if needed (this is your cmsRun cfg file)
 # To run grow_baobabs_cfg.py for testing you can do, e.g.

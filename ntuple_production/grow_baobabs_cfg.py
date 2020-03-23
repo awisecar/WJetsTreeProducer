@@ -19,7 +19,9 @@ process = cms.Process("GrowBaobabs")
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
-process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
+process.options = cms.untracked.PSet( 
+  wantSummary = cms.untracked.bool(False) 
+)
 
 # Load the standard set of configuration modules
 process.load('Configuration.StandardSequences.Services_cff')
@@ -27,6 +29,7 @@ process.load('Configuration.StandardSequences.GeometryDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
+process.load("RecoBTag.Configuration.RecoBTag_cff")
 
 process.source = cms.Source("PoolSource",
   fileNames = cms.untracked.vstring(options.inputFiles)
@@ -82,22 +85,49 @@ elif (options.isData == 1):
 ## PRODUCERS
 ##
 
-# Updating JECs ---
+# Updating JECs and Getting B-tagging TagInfos ---
+
+# -- AK4 PF CHS --
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 updateJetCollection(
    process,
    jetSource = cms.InputTag('slimmedJets'),  # AK4 PF CHS
-   labelName = 'UpdatedJECAK4PFchs',
-   jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+   jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None'), 
+   btagDiscriminators = [
+    'pfCombinedInclusiveSecondaryVertexV2BJetTags',
+    'pfDeepCSVJetTags:probudsg',
+    'pfDeepCSVJetTags:probbb',
+    'pfDeepCSVJetTags:probb',
+    'pfDeepCSVJetTags:probc'
+   ]  
 )
+process.jecSequenceAK4 = cms.Sequence(
+  process.patJetCorrFactors * 
+  process.updatedPatJets *
+  process.pfImpactParameterTagInfos *                   
+  process.pfSecondaryVertexTagInfos *                   
+  process.pfInclusiveSecondaryVertexFinderTagInfos *    
+  process.pfCombinedInclusiveSecondaryVertexV2BJetTags * 
+  process.pfInclusiveSecondaryVertexFinderCvsLTagInfos *
+  process.pfDeepCSVTagInfos *
+  process.pfDeepCSVJetTags *                       
+  process.patJetCorrFactorsTransientCorrected *
+  process.updatedPatJetsTransientCorrected
+)
+process.updatedPatJetsTransientCorrected.addTagInfos = cms.bool(True)
+process.pfInclusiveSecondaryVertexFinderCvsLTagInfos.extSVCollection = cms.InputTag("slimmedSecondaryVertices")
+
+# -- AK8 PF PUPPI --
 updateJetCollection(
    process,
    jetSource = cms.InputTag('slimmedJetsAK8'),  # AK8 PF PUPPI
    labelName = 'UpdatedJECAK8PFPuppi',
    jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
 )
-process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
-process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
+process.jecSequenceAK8 = cms.Sequence(
+  process.patJetCorrFactorsUpdatedJECAK8PFPuppi * 
+  process.updatedPatJetsUpdatedJECAK8PFPuppi
+)
 
 # Updating MET ---
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
@@ -129,6 +159,7 @@ process.prefiringweight = l1ECALPrefiringWeightProducer.clone(
 ##
 
 process.tupel = cms.EDAnalyzer("Tupel",
+  ##### Switches
   yearToProcess = cms.untracked.string(options.year),
   doGenInfo           = cms.untracked.int32(options.doGenInfo),
   ##### Vertex information, HLT Trigger Bits
@@ -144,7 +175,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
   # jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
   # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
-  jetSrc              = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
+  jetSrc              = cms.untracked.InputTag("updatedPatJetsTransientCorrected"), #updated with JECs, b-tagging TagInfos
   jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   ##### MET Filters

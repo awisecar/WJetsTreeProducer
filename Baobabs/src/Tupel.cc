@@ -400,9 +400,16 @@ private:
   std::unique_ptr<std::vector<float> > JetAk04PuMva_;
   std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
   std::unique_ptr<std::vector<float> > JetAk04BDiscDeepCSV_;
+  std::unique_ptr<std::vector<float> > JetAk04HadFlav_;
+
+  std::unique_ptr<std::vector<bool> >  JetAk04hasGoodSV_;
+  std::unique_ptr<std::vector<float> > JetAk04SVflightDist_;
+  // std::unique_ptr<std::vector<float> > JetAk04SVflightDistErr_;
+  std::unique_ptr<std::vector<float> > JetAk04SVflightDistSig_;
+  std::unique_ptr<std::vector<float> > JetAk04SVmass_;
+  
   std::unique_ptr<std::vector<float> > JetAk04JecUncUp_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncDwn_;
-  std::unique_ptr<std::vector<float> > JetAk04HadFlav_;
   std::unique_ptr<std::vector<float> > JetAk04PtUncorr_;
   std::unique_ptr<std::vector<float> > JetAk04EtaUncorr_;
   std::unique_ptr<std::vector<float> > JetAk04EUncorr_;
@@ -566,10 +573,10 @@ void Tupel::writeHeader(){
 void Tupel::readEvent(const edm::Event& iEvent){
 
   if(analyzedEventCnt_==1) {
-    if(yearToProcess_==std::string("2016")) std::cout << "\nProcessing 2016 legacy data/MC!" << std::endl;
-    else if (yearToProcess_==std::string("2017")) std::cout << "\nProcessing 2017 data/MC!" << std::endl;
-    else if (yearToProcess_==std::string("2018")) std::cout << "\nProcessing 2018 data/MC!" << std::endl;
-    else std::cout << "\nPlease pick a correct year..." << std::endl;
+    if(yearToProcess_==std::string("2016")) std::cout << "\nProcessing 2016 legacy data/MC!\n" << std::endl;
+    else if (yearToProcess_==std::string("2017")) std::cout << "\nProcessing 2017 data/MC!\n" << std::endl;
+    else if (yearToProcess_==std::string("2018")) std::cout << "\nProcessing 2018 data/MC!\n" << std::endl;
+    else std::cout << "\nPlease pick a correct year...\n" << std::endl;
   }
 
   *EvtNum_        = iEvent.id().event();
@@ -1231,6 +1238,14 @@ void Tupel::processJets(){
 
       // std::cout << " >>> jet #" << i << std::endl;
 
+      // start with first assuming there is no good SV in jet
+      bool hasGoodSV(false);
+      // if good SV in jet, will fill value > 0, but if no SV, fill dummy value
+      float flightDistance(-1.); 
+      // float flightDistanceError(-1.);
+      float flightDistanceSignificance(-1.);
+      float svPt(-1.), svMass(-1.);
+
       // Reading the TagInfos for pfInclusiveSecondaryVertexFinder
       // Can look at the code here: DataFormats/​BTauReco/​interface/​TemplatedSecondaryVertexTagInfo.h
       const reco::CandSecondaryVertexTagInfo *candSVTagInfo = jet.tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
@@ -1241,55 +1256,51 @@ void Tupel::processJets(){
         if (candIPTagInfo != nullptr && candSVTagInfo->vertexTracks().size() > 0){
 
           // std::cout << " >>>>>>> candSVTagInfo->nVertices() = " << candSVTagInfo->nVertices() << std::endl;
-
-          ////////////////////////////////////////
-          //
-          // Requiring at least 1 SV
-          //
-          // NOTE: could just stop here, because if there's at least one SV in any jet that passes cuts, we would veto the event later on
-          //       actually, there should only be one good SV per jet, right? 
-          //       what are some quality cuts to make sure this SV is "good", 
-          //       and if not, we should push back elements to zero, because the structure of these vectors will be the same as the other AK4 jet variables
-          //       Could perform dR matching of the flight distance vector and jet vector?
-          //
-          ////////////////////////////////////////
           
           // const reco::VertexRef& jetPV = candIPTagInfo->primaryVertex(); // Get the PV
-          double flightDistance(0.), flightDistanceError(0.), flightDistanceSignificance(0.);
-          double svMass(0.);
 
           // Loop over SV's
+          int highestPtSVidx(0);
+          float svPtMax(-1.);
           for (unsigned int isv = 0; isv < candSVTagInfo->nVertices(); ++isv){
 
             // std::cout << " >>>>>>> SV #" << isv << ":     ";
 
             // Flight distance and its significance ---
-
-            // 2d distance...
-            // flightDistance             = candSVTagInfo->flightDistance(isv, 2).value();
+            // --- 2d distance ---
+            flightDistance             = candSVTagInfo->flightDistance(isv, 2).value();
             // flightDistanceError        = candSVTagInfo->flightDistance(isv, 2).error();
-            // flightDistanceSignificance = candSVTagInfo->flightDistance(isv, 2).significance(); // significance is value/error
+            flightDistanceSignificance = candSVTagInfo->flightDistance(isv, 2).significance(); // significance is value/error
+            // std::cout << " >>>>>>> SV #" << isv << ":     ";
+            // std::cout << flightDistance << "     " << flightDistanceError << "     " << flightDistanceSignificance << "     " << std::endl;
+            // --- 3d distance (the default) ---
+            // flightDistance             = candSVTagInfo->flightDistance(isv).value();
+            // flightDistanceError        = candSVTagInfo->flightDistance(isv).error();
+            // flightDistanceSignificance = candSVTagInfo->flightDistance(isv).significance(); // significance is value/error
             // // std::cout << " >>>>>>> SV #" << isv << ":     ";
             // // std::cout << flightDistance << "     " << flightDistanceError << "     " << flightDistanceSignificance << "     " << std::endl;
 
-            // 3d distance (the default)...
-            flightDistance             = candSVTagInfo->flightDistance(isv).value();
-            flightDistanceError        = candSVTagInfo->flightDistance(isv).error();
-            flightDistanceSignificance = candSVTagInfo->flightDistance(isv).significance(); // significance is value/error
-            std::cout << " >>>>>>> SV #" << isv << ":     ";
-            std::cout << flightDistance << "     " << flightDistanceError << "     " << flightDistanceSignificance << "     " << std::endl;
+            // SV pT ---
+            svPt = candSVTagInfo->secondaryVertex(isv).pt();
+            // std::cout << " >>>>>>> SV #" << isv << ":     ";
+            // std::cout << svPt << std::endl;
 
             // SV mass ---
             svMass = candSVTagInfo->secondaryVertex(isv).p4().M();
-            std::cout << " >>>>>>> SV #" << isv << ":     ";
-            std::cout << svMass << std::endl;
+            // std::cout << " >>>>>>> SV #" << isv << ":     ";
+            // std::cout << svMass << std::endl;
 
+            // Fetch index for highest-pT SV in the jet ---
+            if (svPt > svPtMax){
+              // Update the index of the highest pT SV
+              svPtMax = svPt;
+              highestPtSVidx = isv;
+              // Only current quality requirement is that there is at least 1 SV in the collection
+              hasGoodSV = true;
+            }
+            
 
-
-            // NOTE: Review below sections before using...
-
-
-
+            // ------- NOTE: Review below sections before using ------- 
 
             // Distances between SV and PV ---
             // Involves grabbing the position of the SV using the secondaryVertex method
@@ -1326,9 +1337,27 @@ void Tupel::processJets(){
 
             // } // end loop over tracks 
 
+
           } // end loop over SV's
+
+          // Get observables for highest-pT SV reconstructed in the jet
+          flightDistance             = candSVTagInfo->flightDistance(highestPtSVidx, 2).value();
+          // flightDistanceError        = candSVTagInfo->flightDistance(highestPtSVidx, 2).error();
+          flightDistanceSignificance = candSVTagInfo->flightDistance(highestPtSVidx, 2).significance();  
+          svPt                       = candSVTagInfo->secondaryVertex(highestPtSVidx).pt();
+          svMass                     = candSVTagInfo->secondaryVertex(highestPtSVidx).p4().M();
+
         } // end if candIPTagInfo
       } // end if candSVTagInfo
+
+      // assuming that there is only one good SV (maximum) per jet...
+      // fill values with 0 if no SV's found
+      // or fill with non-zero values if loop over SV's is broken
+      JetAk04hasGoodSV_->push_back(hasGoodSV);
+      JetAk04SVflightDist_->push_back(flightDistance);
+      // JetAk04SVflightDistErr_->push_back(flightDistanceError);
+      JetAk04SVflightDistSig_->push_back(flightDistanceSignificance);
+      JetAk04SVmass_->push_back(svMass);
       
       //----------------------------------------------------
 
@@ -1603,6 +1632,13 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(JetAk04BDiscCisvV2,  "pfCombinedInclusiveSecondaryVertexV2BJetTags");
   ADD_BRANCH_D(JetAk04BDiscDeepCSV, "pfDeepCSVJetTags:probb+pfDeepCSVJetTags:probbb");
   ADD_BRANCH_D(JetAk04HadFlav, "Hadron-based jet flavor.");
+
+  ADD_BRANCH(JetAk04hasGoodSV);
+  ADD_BRANCH(JetAk04SVflightDist);
+  // ADD_BRANCH(JetAk04SVflightDistErr);
+  ADD_BRANCH(JetAk04SVflightDistSig);
+  ADD_BRANCH(JetAk04SVmass);
+
   ADD_BRANCH(JetAk04JecUncUp);
   ADD_BRANCH(JetAk04JecUncDwn);
   ADD_BRANCH(JetAk04PtUncorr);

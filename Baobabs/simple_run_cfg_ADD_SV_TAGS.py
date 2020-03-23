@@ -26,17 +26,12 @@ process.options = cms.untracked.PSet(
 )
 
 # Load the standard set of configuration modules
-# process.load("Configuration.EventContent.EventContent_cff")
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('Configuration.StandardSequences.GeometryDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
-
-#####
-process.load("RecoBTag.Configuration.RecoBTag_cff") ## this allows us to get the TagInfo's needed for b-tagging stuff
-## but it doesn't work anyway???
-#####
+process.load("RecoBTag.Configuration.RecoBTag_cff") 
 
 inputFilename = ""
 # ------- 2016 samples -------
@@ -83,7 +78,7 @@ process.source = cms.Source("PoolSource",
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 # process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -265,6 +260,7 @@ process.prefiringweight = l1ECALPrefiringWeightProducer.clone(
 #--------------------------------------------                                                                       
 
 process.tupel = cms.EDAnalyzer("Tupel",
+  ##### Switches
   yearToProcess       = cms.untracked.string(options.year),
   doGenInfo           = cms.untracked.int32(options.doGenInfo),
   ##### Vertex information, HLT Trigger Bits

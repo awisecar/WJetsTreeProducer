@@ -91,6 +91,10 @@ JetAk04PuIdTight
 JetAk04BDiscCisvV2
 JetAk04BDiscDeepCSV
 JetAk04HadFlav
+JetAk04hasGoodSV
+JetAk04SVflightDist
+JetAk04SVflightDistSig
+JetAk04SVmass
 JetAk04JecUncUp
 JetAk04JecUncDwn
 JetAk08Pt

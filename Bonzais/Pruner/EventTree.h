@@ -212,6 +212,10 @@ public :
    vector<float>   *JetAk04BDiscCisvV2;
    vector<float>   *JetAk04BDiscDeepCSV;
    vector<float>   *JetAk04HadFlav;
+   vector<bool>    *JetAk04hasGoodSV;
+   vector<float>   *JetAk04SVflightDist;
+   vector<float>   *JetAk04SVflightDistSig;
+   vector<float>   *JetAk04SVmass;
    vector<float>   *JetAk04JecUncUp;
    vector<float>   *JetAk04JecUncDwn;
    TBranch        *b_JetAk04Pt;   //!
@@ -227,6 +231,10 @@ public :
    TBranch        *b_JetAk04BDiscCisvV2;   //!
    TBranch        *b_JetAk04BDiscDeepCSV;   //!
    TBranch        *b_JetAk04HadFlav;   //!
+   TBranch        *b_JetAk04hasGoodSV;
+   TBranch        *b_JetAk04SVflightDist;
+   TBranch        *b_JetAk04SVflightDistSig;
+   TBranch        *b_JetAk04SVmass;
    TBranch        *b_JetAk04JecUncUp;
    TBranch        *b_JetAk04JecUncDwn;
 
@@ -476,6 +484,10 @@ void EventTree::Init(TTree *tree){
    JetAk04BDiscCisvV2 = 0;
    JetAk04BDiscDeepCSV = 0;
    JetAk04HadFlav = 0;
+   JetAk04hasGoodSV = 0;
+   JetAk04SVflightDist = 0;
+   JetAk04SVflightDistSig = 0;
+   JetAk04SVmass = 0;
    JetAk04JecUncUp = 0;
    JetAk04JecUncDwn = 0;
    fChain->SetBranchAddress("JetAk04Pt", &JetAk04Pt, &b_JetAk04Pt);
@@ -491,6 +503,10 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("JetAk04BDiscCisvV2", &JetAk04BDiscCisvV2, &b_JetAk04BDiscCisvV2);
    fChain->SetBranchAddress("JetAk04BDiscDeepCSV", &JetAk04BDiscDeepCSV, &b_JetAk04BDiscDeepCSV);
    fChain->SetBranchAddress("JetAk04HadFlav", &JetAk04HadFlav, &b_JetAk04HadFlav);
+   fChain->SetBranchAddress("JetAk04hasGoodSV", &JetAk04hasGoodSV, &b_JetAk04hasGoodSV);
+   fChain->SetBranchAddress("JetAk04SVflightDist", &JetAk04SVflightDist, &b_JetAk04SVflightDist);
+   fChain->SetBranchAddress("JetAk04SVflightDistSig", &JetAk04SVflightDistSig, &b_JetAk04SVflightDistSig);
+   fChain->SetBranchAddress("JetAk04SVmass", &JetAk04SVmass, &b_JetAk04SVmass);
    fChain->SetBranchAddress("JetAk04JecUncUp", &JetAk04JecUncUp, &b_JetAk04JecUncUp);
    fChain->SetBranchAddress("JetAk04JecUncDwn", &JetAk04JecUncDwn, &b_JetAk04JecUncDwn);
 

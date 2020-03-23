@@ -212,6 +212,10 @@ void VJetPruner::skimCollections(){
   filter(JetAk04BDiscCisvV2, mask);
   filter(JetAk04BDiscDeepCSV, mask);
   filter(JetAk04HadFlav, mask);
+  filter(JetAk04hasGoodSV, mask);
+  filter(JetAk04SVflightDist, mask);
+  filter(JetAk04SVflightDistSig, mask);
+  filter(JetAk04SVmass, mask);
   filter(JetAk04JecUncUp, mask);
   filter(JetAk04JecUncDwn, mask);
 
