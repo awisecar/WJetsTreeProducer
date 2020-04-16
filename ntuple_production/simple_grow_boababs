@@ -163,7 +163,7 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
     #----------------------------------------------------------------------
 
     #A list of sites where the jobs should not run.
-    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL', 'T2_US_UCSD', 'T2_US_Caltech']
+    config.Site.blacklist = ['T3_TW_NTU_HEP', 'T3_GR_IASA', 'T2_GR_Ioannina', 'T3_MX_Cinvestav', 'T2_DE_RWTH', 'T2_UK_SGrid_RALPP', 'T3_RU_FIAN', 'T2_FI_HIP', 'T2_BR_SPRACE', 'T2_ES_CIEMAT', 'T2_EE_Estonia', 'T3_UK_London_RHUL', 'T2_US_UCSD', 'T2_US_Caltech', 'T2_UK_London_IC', 'T3_UK_London_QMUL']
     # last two in this list because they can't handle CMSSW_9_4_15 well I think
     
     #This does not seem to be a good idea since not all the files are in the US sites.

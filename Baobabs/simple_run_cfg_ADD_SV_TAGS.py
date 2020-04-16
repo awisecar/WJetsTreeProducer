@@ -55,13 +55,13 @@ elif (options.year == "2017"):
   elif (options.isData == 0):
     # RunIIFall17MiniAODv2 campaign
     ### WJets MLM sample
-    # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/70000/FE956420-925A-E911-8872-0025905A48FC.root"
+    inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/70000/FE956420-925A-E911-8872-0025905A48FC.root"
     # ### WJets, 0J, FXFX sample
     # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/410000/F2509DBD-37A4-E811-8876-0242AC1C0506.root"
     # ### Single top, s-channel
     # inputFilename += "/store/mc/RunIIFall17MiniAODv2/ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/710000/04B18578-BE44-E811-80F1-0CC47A1DF7FE.root"
     # ### ttBar, 2L2Nu
-    inputFilename += "/store/mc/RunIIFall17MiniAODv2/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FECD59BD-1842-E811-96D7-0242AC130002.root"
+    # inputFilename += "/store/mc/RunIIFall17MiniAODv2/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FECD59BD-1842-E811-96D7-0242AC130002.root"
     # ### WZ inclusive
     # inputFilename += "/store/mc/RunIIFall17MiniAODv2/WZ_TuneCP5_13TeV-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/40000/FEA1F528-1A42-E811-85AC-6CC2173D6B10.root"
   else:
@@ -77,7 +77,7 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 outputFilename = "ntupleTest"
@@ -186,8 +186,8 @@ process.jecSequenceAK4 = cms.Sequence(
 
   # Next steps are getting TagInfos for the jet collection ---
   process.pfImpactParameterTagInfos *                    # essential accessing later information
-  process.pfSecondaryVertexTagInfos *                    # will read in Tupel, necessary!!!
-  process.pfInclusiveSecondaryVertexFinderTagInfos *     # will read in Tupel, necessary!!!
+  process.pfSecondaryVertexTagInfos *                    # SSV algorithm for SV's
+  process.pfInclusiveSecondaryVertexFinderTagInfos *     # IVF algorithm for SV's
   # process.pfJetProbabilityBJetTags *
   process.pfCombinedInclusiveSecondaryVertexV2BJetTags * # CSVv2 tagger
   # process.pfJetProbabilityBJetTags *
@@ -299,7 +299,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ##### Other stuff
   mSrcRho             = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Extra printout statements
-  DJALOG              = cms.untracked.bool(False), #prints out info about gen weight structure, HLT trigger paths, etc.
+  DJALOG              = cms.untracked.bool(False), #IMPORTANT: prints out info about LHE weight structure, HLT trigger paths, etc.
   printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
 )
 
