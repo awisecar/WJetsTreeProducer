@@ -4,9 +4,6 @@ PATH=$PATH:/afs/cern.ch/work/a/awisecar/WJetsNtuple16_2018/CMSSW_10_2_20_UL/src/
 voms-proxy-init --voms cms
 source /cvmfs/cms.cern.ch/crab3/crab.sh
 
-# To run the test cfg:
-# cmsRun simple_run_cfg.py year=2018ABC isData=1 doGenInfo=0
-
 #### I: For Baobab production -----
 To create crab config file:
 

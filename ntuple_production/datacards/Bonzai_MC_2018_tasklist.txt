@@ -2,6 +2,7 @@
 * output directory: T2_CH_CERN:/store/group/phys_smp/AnalysisFramework/Baobab/awisecar/2018/17Sep2018/Bonzai/v1/MC
 
 # Catalog files                                                                                       Selection     Subselection     Number of files per job
+
 Baobabs-DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                    VJetPruner        SMu                   8 
 Baobabs-ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-madgraph-pythia8-all.txt                           VJetPruner        SMu                   8 
 Baobabs-ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8-all.txt          VJetPruner        SMu                   8 
@@ -11,9 +12,20 @@ Baobabs-ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8-all.txt       
 Baobabs-TTToHadronic_TuneCP5_13TeV-powheg-pythia8-all.txt                                             VJetPruner        SMu                   8
 Baobabs-TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8-all.txt                                         VJetPruner        SMu                   8
 Baobabs-TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8-all.txt                                                VJetPruner        SMu                   8 
+Baobabs-ttHTobb_M125_TuneCP5_13TeV-powheg-pythia8-all.txt                                             VJetPruner        SMu                   8
+Baobabs-ttHToNonbb_M125_TuneCP5_13TeV-powheg-pythia8-all.txt                                          VJetPruner        SMu                   8
+Baobabs-TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8-all.txt                               VJetPruner        SMu                   8
+Baobabs-TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8-all.txt                                VJetPruner        SMu                   8
+Baobabs-TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8-all.txt                                       VJetPruner        SMu                   8
+Baobabs-TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8-all.txt                                                VJetPruner        SMu                   8
 Baobabs-WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                      VJetPruner        SMu                   8 
 Baobabs-WJetsToLNu_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                      VJetPruner        SMu                   8 
 Baobabs-WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                      VJetPruner        SMu                   8 
+Baobabs-WJetsToLNu_Pt-50To100_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                              VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-400To600_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
+Baobabs-WJetsToLNu_Pt-600ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8
 Baobabs-WWTo2L2Nu_NNPDF31_TuneCP5_13TeV-powheg-pythia8-all.txt                                        VJetPruner        SMu                   8 
 Baobabs-WZ_TuneCP5_PSweights_13TeV-pythia8-all.txt                                                    VJetPruner        SMu                   8 
 Baobabs-ZZ_TuneCP5_13TeV-pythia8-all.txt                                                              VJetPruner        SMu                   8 

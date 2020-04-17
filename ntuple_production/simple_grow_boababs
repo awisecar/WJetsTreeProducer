@@ -386,7 +386,7 @@ def main(arguments):
                 if len(dataset) == 0 or commentLine.match(dataset):
                     continue
                 if checkDataSetName(dataset):
-                    print "\ndataset = %s" % dataset
+                    print "\n --- \n\ndataset = %s" % dataset
                     print "outDir = %s" % outDir
                     catalog_make_ntuple_catalog(dataset, outDir.split(":")[1])
                 iDataset+=1

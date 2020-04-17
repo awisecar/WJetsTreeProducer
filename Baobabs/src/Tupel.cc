@@ -46,6 +46,9 @@
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/BTauReco/interface/JetTag.h"
+#include "DataFormats/BTauReco/interface/SecondaryVertexTagInfo.h"
+#include "DataFormats/BTauReco/interface/TrackIPTagInfo.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
@@ -55,7 +58,8 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleFwd.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "DataFormats/BTauReco/interface/JetTag.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 
 #include "EgammaAnalysis/ElectronTools/interface/EGammaCutBasedEleId.h"
 #include "EgammaAnalysis/ElectronTools/interface/ElectronEffectiveArea.h"
@@ -184,9 +188,6 @@ private:
   void processMuons(const edm::Event& iEvent);
   void processJets();    
   void processJetsAK8();    
-
-  enum triggerObjectType { hltmuons, hltelectrons} ;
-  ULong64_t matchWithTriggerObject(const edm::Event&, TLorentzVector, triggerObjectType);
 
   /** Check if the argument is one of the
    * HLT trigger considered to be stored and if it is set
@@ -359,7 +360,7 @@ private:
   std::unique_ptr<std::vector<float> > 	MuDxy_;
   std::unique_ptr<std::vector<float> > 	MuPfIso_;
   std::unique_ptr<std::vector<float> > 	MuDz_;
-  std::unique_ptr<std::vector<unsigned> > MuHltMatch_;
+  std::unique_ptr<std::vector<bool> >   MuHltMatch_;
   std::unique_ptr<std::vector<bool> >   MuHltTrgPath1_;
   std::unique_ptr<std::vector<bool> >   MuHltTrgPath2_;
   std::unique_ptr<std::vector<bool> >   MuHltTrgPath3_;
@@ -394,11 +395,28 @@ private:
   std::unique_ptr<std::vector<bool> >  JetAk04PuIdMedium_;
   std::unique_ptr<std::vector<bool> >  JetAk04PuIdTight_;
   std::unique_ptr<std::vector<float> > JetAk04PuMva_;
-  // std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
+  std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
   std::unique_ptr<std::vector<float> > JetAk04BDiscDeepCSV_;
+  std::unique_ptr<std::vector<float> > JetAk04HadFlav_;
+
+
+
+  std::unique_ptr<std::vector<bool> >  JetAk04hasGoodSVIVF_;
+  std::unique_ptr<std::vector<int> >   JetAk04SVIVFnumTracks_;
+  std::unique_ptr<std::vector<float> > JetAk04SVIVFflightDist_;
+  std::unique_ptr<std::vector<float> > JetAk04SVIVFflightDistSig_;
+  std::unique_ptr<std::vector<float> > JetAk04SVIVFmass_;
+
+  std::unique_ptr<std::vector<bool> >  JetAk04hasGoodSVSSV_;
+  std::unique_ptr<std::vector<int> >   JetAk04SVSSVnumTracks_;
+  std::unique_ptr<std::vector<float> > JetAk04SVSSVflightDist_;
+  std::unique_ptr<std::vector<float> > JetAk04SVSSVflightDistSig_;
+  std::unique_ptr<std::vector<float> > JetAk04SVSSVmass_;
+
+
+
   std::unique_ptr<std::vector<float> > JetAk04JecUncUp_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncDwn_;
-  std::unique_ptr<std::vector<float> > JetAk04HadFlav_;
   std::unique_ptr<std::vector<float> > JetAk04PtUncorr_;
   std::unique_ptr<std::vector<float> > JetAk04EtaUncorr_;
   std::unique_ptr<std::vector<float> > JetAk04EUncorr_;
@@ -566,7 +584,7 @@ void Tupel::readEvent(const edm::Event& iEvent){
   if(analyzedEventCnt_==1) {
     if(yearToProcess_==std::string("2016")) std::cout << "\nProcessing 2016 legacy data/MC!" << std::endl;
     else if (yearToProcess_==std::string("2017")) std::cout << "\nProcessing 2017 data/MC!" << std::endl;
-    else if (yearToProcess_==std::string("2018")) std::cout << "\nProcessing 2018 data/MC!" << std::endl;
+    else if ( yearToProcess_==std::string("2018ABC") || yearToProcess_==std::string("2018D") ) std::cout << "\nProcessing 2018 data/MC!" << std::endl;
     else std::cout << "\nPlease pick a correct year..." << std::endl;
   }
 
@@ -1057,15 +1075,57 @@ void Tupel::processMuons(const edm::Event& iEvent){
         tight = mu.isTightMuon( vertices->at(*firstGoodVertexIdx_) ); // use PV obtained in processVtx function
       }
 
-      TLorentzVector muon4Momentum(0,0,0,0);
-      muon4Momentum.SetPtEtaPhiE(mu.pt(), mu.eta(), mu.phi(), mu.energy());
-      // Long64_t muonMatchingResults = matchWithTriggerObject(iEvent, muon4Momentum, triggerObjectType::hltmuons);
-      Long64_t muonMatchingResults = 0; //not including this hlt-reco muon matching right now
-
-      MuHltMatch_->push_back(muonMatchingResults);
       MuIdLoose_->push_back(loose);
       MuIdMedium_->push_back(medium);
       MuIdTight_->push_back(tight);
+
+      // Muon HLT matching --------
+      bool hasGoodHLTMatch(false);
+      
+      TLorentzVector vecMuOffline(0,0,0,0);
+      vecMuOffline.SetPtEtaPhiE(mu.pt(), mu.eta(), mu.phi(), mu.energy());
+
+      // Iterate over the collection of trigger objects
+      const edm::TriggerNames &names = iEvent.triggerNames(*HLTResHandle);
+      for (pat::TriggerObjectStandAlone trgobj : *triggerObjects_){
+        trgobj.unpackPathNames(names);
+        
+        // Req. 1) Demand that the trigger object is HLT muon candidate
+        if (!trgobj.hasTriggerObjectType(trigger::TriggerMuon)) continue;
+
+        // Req. 2) Compute dR between HLT and offline muons; pass if dR(offline, HLT) < 0.1
+        TLorentzVector vecMuHLT(0,0,0,0);
+        vecMuHLT.SetPtEtaPhiE(trgobj.pt(), trgobj.eta(), trgobj.phi(), trgobj.energy());
+        if ( !(deltar(vecMuOffline, vecMuHLT) < 0.1) ) continue;
+   
+        // Req. 3) Demand that matched HLT muon is associated to 'Last Filter' for trigger(s) of interest
+        // 'Last Filter = true' means that object successfully fired trigger
+        std::string tempHLTPath1 = muonHLTTriggerPath1_;
+        std::string tempHLTPath2 = muonHLTTriggerPath2_;
+        std::string tempHLTPath3 = muonHLTTriggerPath3_;
+        tempHLTPath1.append("*");
+        tempHLTPath2.append("*");
+        tempHLTPath3.append("*");
+
+        bool passHLT1(false);
+        bool passHLT2(false);
+        // bool passHLT3(false); // to use for 3rd trigger path
+        passHLT1 = ( trgobj.hasPathName(tempHLTPath1, true, false) || trgobj.hasPathName(tempHLTPath1, true, true) );
+        passHLT2 = ( trgobj.hasPathName(tempHLTPath2, true, false) || trgobj.hasPathName(tempHLTPath2, true, true) );
+        // passHLT3 = ( trgobj.hasPathName(tempHLTPath3, true, false) || trgobj.hasPathName(tempHLTPath3, true, true) ); // to use for 3rd trigger path
+
+        // If matched trigger object fired an (IsoMu) trigger of interest, it's a match
+        // For 2016, we trigger on HLT_IsoMu24 || HLT_IsoTkMu24
+        // For 2017, we trigger on HLT_IsoMu24 || HLT_IsoMu27
+        // For 2018, we trigger on HLT_IsoMu24
+        if ( (yearToProcess_ == "2016") && (passHLT1 || passHLT2) ) hasGoodHLTMatch = true;
+        if ( (yearToProcess_ == "2017") && (passHLT1 || passHLT2) ) hasGoodHLTMatch = true;
+        if ( (yearToProcess_ == "2018ABC" || yearToProcess_ == "2018D") && (passHLT1) ) hasGoodHLTMatch = true;
+
+      } // end loop over trigger objects
+
+      // hasGoodHLTMatch = true if at least one good HLT muon match is found
+      MuHltMatch_->push_back(hasGoodHLTMatch);
 
       // PF Isolation score --------
       double chargedHadronIso = mu.pfIsolationR04().sumChargedHadronPt;
@@ -1084,45 +1144,22 @@ void Tupel::processMuons(const edm::Event& iEvent){
       MuVtxZ_->push_back(mu.vz());
       MuDxy_->push_back(mu.dB());
 
-      // Other --------
       double dZ = 99.0;
-      if(*firstGoodVertexIdx_ >= 0) dZ = mu.muonBestTrack()->dz( vertices->at(*firstGoodVertexIdx_).position() );
-      MuDz_->push_back(dZ);
-
-      // if(mu.isGlobalMuon()){
-      //   MuTkNormChi2_->push_back(mu.globalTrack()->normalizedChi2());
-      // 	MuTkHitCnt_->push_back(mu.globalTrack()->hitPattern().numberOfValidMuonHits());
-      // } else {
-      // 	MuTkNormChi2_->push_back(-1);
-      // 	MuTkHitCnt_->push_back(-1);
-      // }	
-      // MuMatchedStationCnt_->push_back(mu.numberOfMatchedStations());
-      // MuPixelHitCnt_->push_back(mu.innerTrack()->hitPattern().numberOfValidPixelHits());
-      // MuTkLayerCnt_->push_back(mu.innerTrack()->hitPattern().trackerLayersWithMeasurement());    
+      if (*firstGoodVertexIdx_ >= 0) dZ = mu.muonBestTrack()->dz( vertices->at(*firstGoodVertexIdx_).position() );
+      MuDz_->push_back(dZ);   
 
       // Rochester corrections --------
       double rochSF(0.);
-
-      // IF DATA --
+      // For real data --
       if (*EvtIsRealData_) rochSF = rc.kScaleDT(mu.charge(), mu.pt(), mu.eta(), mu.phi());
-      // IF MC --
+      // For MC --
       else{
         // if gen particle match...
-        if (mu.genParticle()) {
-          // std::cout << "genParticle match!" << std::endl;
-          // std::cout << mu.genParticle()->pt() << std::endl;
-          rochSF = rc.kSpreadMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.genParticle()->pt());
-          
-        }
+        if (mu.genParticle()) rochSF = rc.kSpreadMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.genParticle()->pt());
         // if no match...
-        else {
-          // std::cout << "No match..." << std::endl;
-          rochSF = rc.kSmearMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.innerTrack()->hitPattern().trackerLayersWithMeasurement(), randomNum.Rndm());
-        }
+        else rochSF = rc.kSmearMC(mu.charge(), mu.pt(), mu.eta(), mu.phi(), mu.innerTrack()->hitPattern().trackerLayersWithMeasurement(), randomNum.Rndm());
       }
       // std::cout << "rochSF = " << rochSF << std::endl;
-
-      if (DEBUG) std::cout << "Stops after line " << __LINE__ << std::endl;
 
       // Now get corrected kinematics
       MuPtRoch_->push_back((mu.p4()*rochSF).pt());
@@ -1171,7 +1208,7 @@ void Tupel::processJets(){
     }
 
     //Soft cut on pt and eta to reduce Baobab size
-    if(jet.isPFJet() && jet.pt() > 20.0 && fabs(jet.eta()) < 2.7){
+    if(jet.isPFJet() && jet.pt() >= 20. && fabs(jet.eta()) < 2.7){
 
       // jet ID  --------
       // the ""...EnergyFraction" functions grab the raw, uncorrected energy fractions
@@ -1219,7 +1256,7 @@ void Tupel::processJets(){
       }
       else JetAk04PuMva_->push_back(-99.);
 
-      //JEC uncertainty --------
+      // JEC uncertainty --------
       jecUncAK4->setJetEta(jet.eta());
       jecUncAK4->setJetPt(jet.pt()); // here you must use the CORRECTED jet pt
       double unc = jecUncAK4->getUncertainty(true);
@@ -1228,10 +1265,116 @@ void Tupel::processJets(){
       JetAk04JecUncUp_->push_back(1. + unc);
       JetAk04JecUncDwn_->push_back(1. - unc);
 
-      //b-tag score, hadron flavor --------
-      // JetAk04BDiscCisvV2_->push_back(jet.bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags")); // CSVv2 tagger
-      JetAk04BDiscDeepCSV_->push_back(jet.bDiscriminator("pfDeepCSVJetTags:probb")+jet.bDiscriminator("pfDeepCSVJetTags:probbb")); // DeepCSV tagger
+      // b-tag score, hadron flavor --------
       JetAk04HadFlav_->push_back(jet.hadronFlavour());
+      JetAk04BDiscDeepCSV_->push_back(jet.bDiscriminator("pfDeepCSVJetTags:probb")+jet.bDiscriminator("pfDeepCSVJetTags:probbb")); // DeepCSV tagger
+      if (yearToProcess_ == "2017") JetAk04BDiscCisvV2_->push_back(jet.bDiscriminator("pfCombinedInclusiveSecondaryVertexV2BJetTags")); // CSVv2 tagger
+      else JetAk04BDiscCisvV2_->push_back(-1.);
+      
+      //----------------------------------------------------
+      // secondary vertex (SV) information -----------------
+
+      // 1) SSV vertices
+
+      // start with first assuming there is no good SV in jet
+      bool hasGoodSV(false);
+      // if good SV in jet, will fill value > 0, but if no SV, fill dummy value
+      float flightDistance(-1.), flightDistanceSignificance(-1.);
+      int   svNumTracks(-1);
+      float svPt(-1.), svMass(-1.);
+
+      // Reading the TagInfos for pfSecondaryVertex this time
+      const reco::CandSecondaryVertexTagInfo *candSVTagInfoSSV = jet.tagInfoCandSecondaryVertex("pfSecondaryVertex");
+      if (candSVTagInfoSSV != nullptr && candSVTagInfoSSV->nVertices() >= 1){
+        const reco::CandIPTagInfo *candIPTagInfo = candSVTagInfoSSV->trackIPTagInfoRef().get();
+        if (candIPTagInfo != nullptr && candSVTagInfoSSV->vertexTracks().size() > 0){
+
+          // Loop over SV's to find the one with highest-pT
+          int highestPtSVidx(0);
+          float svPtMax(-1.);
+          for (unsigned int isv = 0; isv < candSVTagInfoSSV->nVertices(); ++isv){
+            svPt = candSVTagInfoSSV->secondaryVertex(isv).pt();
+            if (svPt > svPtMax){
+              svPtMax = svPt;
+              highestPtSVidx = isv;
+              hasGoodSV = true;
+            }
+          } // end loop over SV's
+
+          // Get observables for highest-pT SV reconstructed in the jet ---
+          flightDistance             = candSVTagInfoSSV->flightDistance(highestPtSVidx, 2).value();
+          flightDistanceSignificance = candSVTagInfoSSV->flightDistance(highestPtSVidx, 2).significance(); // significance is value/error
+          svNumTracks                = candSVTagInfoSSV->nVertexTracks(highestPtSVidx);
+          svPt                       = candSVTagInfoSSV->secondaryVertex(highestPtSVidx).pt();
+          svMass                     = candSVTagInfoSSV->secondaryVertex(highestPtSVidx).p4().M();
+
+        } // end if candIPTagInfo
+      } // end if candSVTagInfoSSV
+
+      JetAk04hasGoodSVSSV_->push_back(hasGoodSV);
+      JetAk04SVSSVnumTracks_->push_back(svNumTracks);
+      JetAk04SVSSVflightDist_->push_back(flightDistance);
+      JetAk04SVSSVflightDistSig_->push_back(flightDistanceSignificance);
+      JetAk04SVSSVmass_->push_back(svMass);
+
+      // ------------------------
+
+      // 2) IVF vertices
+
+      // reset values before using next tagger
+      hasGoodSV = false;
+      flightDistance = -1.;
+      flightDistanceSignificance = -1.;
+      svNumTracks = -1;
+      svPt = -1.;
+      svMass = -1.;
+
+      // Reading the TagInfos for pfInclusiveSecondaryVertexFinder
+      // Can look at the code here: DataFormats/​BTauReco/​interface/​TemplatedSecondaryVertexTagInfo.h
+      const reco::CandSecondaryVertexTagInfo *candSVTagInfoIVF = jet.tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
+      if (candSVTagInfoIVF != nullptr && candSVTagInfoIVF->nVertices() >= 1){
+        // Fetching related impact parameter (IP) information
+        const reco::CandIPTagInfo *candIPTagInfo = candSVTagInfoIVF->trackIPTagInfoRef().get();
+        if (candIPTagInfo != nullptr && candSVTagInfoIVF->vertexTracks().size() > 0){
+
+          // Loop over SV's to find the one with highest-pT
+          int highestPtSVidx(0);
+          float svPtMax(-1.);
+          for (unsigned int isv = 0; isv < candSVTagInfoIVF->nVertices(); ++isv){
+            // Grab pT of SV
+            svPt = candSVTagInfoIVF->secondaryVertex(isv).pt();
+            // Fetch index for highest-pT SV in the jet ---
+            if (svPt > svPtMax){
+              // Update the index of the highest pT SV
+              svPtMax = svPt;
+              highestPtSVidx = isv;
+              // Only current quality requirement is that there is at least 1 SV in the collection
+              hasGoodSV = true;
+            }
+          } // end loop over SV's
+
+          // Get observables for highest-pT SV reconstructed in the jet ---
+          // Flight distance and its significance (2d)
+          flightDistance             = candSVTagInfoIVF->flightDistance(highestPtSVidx, 2).value();
+          flightDistanceSignificance = candSVTagInfoIVF->flightDistance(highestPtSVidx, 2).significance(); // significance is value/error
+          // Number of tracks in SV
+          svNumTracks                = candSVTagInfoIVF->nVertexTracks(highestPtSVidx);
+          // SV pT, mass
+          svPt                       = candSVTagInfoIVF->secondaryVertex(highestPtSVidx).pt();
+          svMass                     = candSVTagInfoIVF->secondaryVertex(highestPtSVidx).p4().M();
+
+        } // end if candIPTagInfo
+      } // end if candSVTagInfoIVF
+
+      // assuming that there is only one good SV (maximum) per jet...
+      // fill values with -1 if no SV's found, fill w/ non-zero values otherwise
+      JetAk04hasGoodSVIVF_->push_back(hasGoodSV);
+      JetAk04SVIVFnumTracks_->push_back(svNumTracks);
+      JetAk04SVIVFflightDist_->push_back(flightDistance);
+      JetAk04SVIVFflightDistSig_->push_back(flightDistanceSignificance);
+      JetAk04SVIVFmass_->push_back(svMass);
+
+      //----------------------------------------------------
 
       //kinematics --------
       JetAk04E_->push_back(jet.energy());
@@ -1502,9 +1645,24 @@ void Tupel::beginJob(){
   ADD_BRANCH(JetAk04PuIdMedium);
   ADD_BRANCH(JetAk04PuIdTight);
   treeHelper_->addDescription("JetAk04BTag", "B tagging with different algorithms");
-  // ADD_BRANCH_D(JetAk04BDiscCisvV2, "pfCombinedInclusiveSecondaryVertexV2BJetTags");
+  ADD_BRANCH_D(JetAk04BDiscCisvV2, "pfCombinedInclusiveSecondaryVertexV2BJetTags");
   ADD_BRANCH_D(JetAk04BDiscDeepCSV, "pfDeepCSVJetTags:probb+pfDeepCSVJetTags:probbb");
   ADD_BRANCH_D(JetAk04HadFlav, "Hadron-based jet flavor.");
+
+
+  ADD_BRANCH(JetAk04hasGoodSVIVF);
+  ADD_BRANCH(JetAk04SVIVFnumTracks);
+  ADD_BRANCH(JetAk04SVIVFflightDist);
+  ADD_BRANCH(JetAk04SVIVFflightDistSig);
+  ADD_BRANCH(JetAk04SVIVFmass);
+
+  ADD_BRANCH(JetAk04hasGoodSVSSV);
+  ADD_BRANCH(JetAk04SVSSVnumTracks);
+  ADD_BRANCH(JetAk04SVSSVflightDist);
+  ADD_BRANCH(JetAk04SVSSVflightDistSig);
+  ADD_BRANCH(JetAk04SVSSVmass);
+
+
   ADD_BRANCH(JetAk04JecUncUp);
   ADD_BRANCH(JetAk04JecUncDwn);
   ADD_BRANCH(JetAk04PtUncorr);
@@ -1617,8 +1775,8 @@ void Tupel::endRun(edm::Run const& iRun, edm::EventSetup const&){
   // Description of LHE weights is here in the tree
   treeHelper_->addDescription("EvtWeights", desc.c_str());
   
-  printf("\n>>>>>>>  Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d  <<<<<<<\n", 
-    failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
+  // printf("\n>>>>>>>  Failed: Vtx=%d, Gen=%d, LHE=%d, Genjets=%d, GenjetsAK8=%d, Triggers=%d, Muons=%d, Jets=%d, MET=%d, METFilters=%d  <<<<<<<\n", 
+  //   failedVtx, failedGen, failedLHE, failedGenJets, failedGenJetsAK8, failedTriggers, failedMuons, failedJets, failedMET, failedMetFilters);
 
   std::cout << "\nRun ending!\n" << std::endl;
 }
