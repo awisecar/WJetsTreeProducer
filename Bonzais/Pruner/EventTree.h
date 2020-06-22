@@ -35,10 +35,10 @@ public :
    vector<Double_t>*EvtWeights;
    Float_t         EvtFastJetRho;
    Double_t        firstGoodVertexIdx;
-   UInt_t          TrigHlt;
-   ULong64_t       TrigHltMu;
-   ULong64_t       TrigMET;
-   ULong64_t       TrigMETBit;
+  //  UInt_t          TrigHlt;
+  //  ULong64_t       TrigHltMu;
+  //  ULong64_t       TrigMET;
+  //  ULong64_t       TrigMETBit;
    Double_t        PreFiringWeight;
    Double_t        PreFiringWeightUp;
    Double_t        PreFiringWeightDown;
@@ -53,10 +53,10 @@ public :
    TBranch        *b_EvtWeights;   //!
    TBranch        *b_EvtFastJetRho;   //!
    TBranch        *b_firstGoodVertexIdx;
-   TBranch        *b_TrigHlt;   //!
-   TBranch        *b_TrigHltMu;   //!
-   TBranch        *b_TrigMET;   //!
-   TBranch        *b_TrigMETBit;   //!
+  //  TBranch        *b_TrigHlt;   //!
+  //  TBranch        *b_TrigHltMu;   //!
+  //  TBranch        *b_TrigMET;   //!
+  //  TBranch        *b_TrigMETBit;   //!
    TBranch        *b_PreFiringWeight;
    TBranch        *b_PreFiringWeightUp;
    TBranch        *b_PreFiringWeightDown;
@@ -149,7 +149,7 @@ public :
    vector<float>   *MuDxy;
    vector<float>   *MuPfIso;
    vector<float>   *MuDz;
-   vector<unsigned int> *MuHltMatch;
+   vector<bool>    *MuHltMatch;
    vector<bool>    *MuHltTrgPath1;
    vector<bool>    *MuHltTrgPath2;
    vector<bool>    *MuHltTrgPath3;
@@ -209,9 +209,19 @@ public :
    vector<bool>    *JetAk04PuIdLoose;
    vector<bool>    *JetAk04PuIdMedium;
    vector<bool>    *JetAk04PuIdTight;
-  //  vector<float>   *JetAk04BDiscCisvV2;
+   vector<float>   *JetAk04BDiscCisvV2;
    vector<float>   *JetAk04BDiscDeepCSV;
    vector<float>   *JetAk04HadFlav;
+   vector<bool>    *JetAk04hasGoodSVIVF;
+   vector<float>   *JetAk04SVIVFflightDist;
+   vector<float>   *JetAk04SVIVFflightDistSig;
+   vector<float>   *JetAk04SVIVFmass;
+   vector<int>     *JetAk04SVIVFnumTracks;
+   vector<bool>    *JetAk04hasGoodSVSSV;
+   vector<float>   *JetAk04SVSSVflightDist;
+   vector<float>   *JetAk04SVSSVflightDistSig;
+   vector<float>   *JetAk04SVSSVmass;
+   vector<int>     *JetAk04SVSSVnumTracks;
    vector<float>   *JetAk04JecUncUp;
    vector<float>   *JetAk04JecUncDwn;
    TBranch        *b_JetAk04Pt;   //!
@@ -224,9 +234,19 @@ public :
    TBranch        *b_JetAk04PuIdLoose;   //!
    TBranch        *b_JetAk04PuIdMedium;   //!
    TBranch        *b_JetAk04PuIdTight;   //!
-  //  TBranch        *b_JetAk04BDiscCisvV2;   //!
+   TBranch        *b_JetAk04BDiscCisvV2;   //!
    TBranch        *b_JetAk04BDiscDeepCSV;   //!
    TBranch        *b_JetAk04HadFlav;   //!
+   TBranch        *b_JetAk04hasGoodSVIVF;
+   TBranch        *b_JetAk04SVIVFflightDist;
+   TBranch        *b_JetAk04SVIVFflightDistSig;
+   TBranch        *b_JetAk04SVIVFmass;
+   TBranch        *b_JetAk04SVIVFnumTracks;
+   TBranch        *b_JetAk04hasGoodSVSSV;
+   TBranch        *b_JetAk04SVSSVflightDist;
+   TBranch        *b_JetAk04SVSSVflightDistSig;
+   TBranch        *b_JetAk04SVSSVmass;
+   TBranch        *b_JetAk04SVSSVnumTracks;
    TBranch        *b_JetAk04JecUncUp;
    TBranch        *b_JetAk04JecUncDwn;
 
@@ -325,10 +345,10 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("EvtWeights", &EvtWeights, &b_EvtWeights);
    fChain->SetBranchAddress("EvtFastJetRho", &EvtFastJetRho, &b_EvtFastJetRho);
    fChain->SetBranchAddress("firstGoodVertexIdx", &firstGoodVertexIdx, &b_firstGoodVertexIdx);
-   fChain->SetBranchAddress("TrigHlt", &TrigHlt, &b_TrigHlt);
-   fChain->SetBranchAddress("TrigHltMu", &TrigHltMu, &b_TrigHltMu);
-   fChain->SetBranchAddress("TrigMET", &TrigMET, &b_TrigMET);
-   fChain->SetBranchAddress("TrigMETBit", &TrigMETBit, &b_TrigMETBit);
+  //  fChain->SetBranchAddress("TrigHlt", &TrigHlt, &b_TrigHlt);
+  //  fChain->SetBranchAddress("TrigHltMu", &TrigHltMu, &b_TrigHltMu);
+  //  fChain->SetBranchAddress("TrigMET", &TrigMET, &b_TrigMET);
+  //  fChain->SetBranchAddress("TrigMETBit", &TrigMETBit, &b_TrigMETBit);
    fChain->SetBranchAddress("PreFiringWeight", &PreFiringWeight, &b_PreFiringWeight);
    fChain->SetBranchAddress("PreFiringWeightUp", &PreFiringWeightUp, &b_PreFiringWeightUp);
    fChain->SetBranchAddress("PreFiringWeightDown", &PreFiringWeightDown, &b_PreFiringWeightDown);
@@ -473,9 +493,19 @@ void EventTree::Init(TTree *tree){
    JetAk04PuIdLoose = 0;
    JetAk04PuIdMedium = 0;
    JetAk04PuIdTight = 0;
-  //  JetAk04BDiscCisvV2 = 0;
+   JetAk04BDiscCisvV2 = 0;
    JetAk04BDiscDeepCSV = 0;
    JetAk04HadFlav = 0;
+   JetAk04hasGoodSVIVF = 0;
+   JetAk04SVIVFflightDist = 0;
+   JetAk04SVIVFflightDistSig = 0;
+   JetAk04SVIVFmass = 0;
+   JetAk04SVIVFnumTracks = 0;
+   JetAk04hasGoodSVSSV = 0;
+   JetAk04SVSSVflightDist = 0;
+   JetAk04SVSSVflightDistSig = 0;
+   JetAk04SVSSVmass = 0;
+   JetAk04SVSSVnumTracks = 0;
    JetAk04JecUncUp = 0;
    JetAk04JecUncDwn = 0;
    fChain->SetBranchAddress("JetAk04Pt", &JetAk04Pt, &b_JetAk04Pt);
@@ -488,9 +518,19 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("JetAk04PuIdLoose", &JetAk04PuIdLoose, &b_JetAk04PuIdLoose);
    fChain->SetBranchAddress("JetAk04PuIdMedium", &JetAk04PuIdMedium, &b_JetAk04PuIdMedium);
    fChain->SetBranchAddress("JetAk04PuIdTight", &JetAk04PuIdTight, &b_JetAk04PuIdTight);
-  //  fChain->SetBranchAddress("JetAk04BDiscCisvV2", &JetAk04BDiscCisvV2, &b_JetAk04BDiscCisvV2);
+   fChain->SetBranchAddress("JetAk04BDiscCisvV2", &JetAk04BDiscCisvV2, &b_JetAk04BDiscCisvV2);
    fChain->SetBranchAddress("JetAk04BDiscDeepCSV", &JetAk04BDiscDeepCSV, &b_JetAk04BDiscDeepCSV);
    fChain->SetBranchAddress("JetAk04HadFlav", &JetAk04HadFlav, &b_JetAk04HadFlav);
+   fChain->SetBranchAddress("JetAk04hasGoodSVIVF", &JetAk04hasGoodSVIVF, &b_JetAk04hasGoodSVIVF);
+   fChain->SetBranchAddress("JetAk04SVIVFflightDist", &JetAk04SVIVFflightDist, &b_JetAk04SVIVFflightDist);
+   fChain->SetBranchAddress("JetAk04SVIVFflightDistSig", &JetAk04SVIVFflightDistSig, &b_JetAk04SVIVFflightDistSig);
+   fChain->SetBranchAddress("JetAk04SVIVFmass", &JetAk04SVIVFmass, &b_JetAk04SVIVFmass);
+   fChain->SetBranchAddress("JetAk04SVIVFnumTracks", &JetAk04SVIVFnumTracks, &b_JetAk04SVIVFnumTracks);
+   fChain->SetBranchAddress("JetAk04hasGoodSVSSV", &JetAk04hasGoodSVSSV, &b_JetAk04hasGoodSVSSV);
+   fChain->SetBranchAddress("JetAk04SVSSVflightDist", &JetAk04SVSSVflightDist, &b_JetAk04SVSSVflightDist);
+   fChain->SetBranchAddress("JetAk04SVSSVflightDistSig", &JetAk04SVSSVflightDistSig, &b_JetAk04SVSSVflightDistSig);
+   fChain->SetBranchAddress("JetAk04SVSSVmass", &JetAk04SVSSVmass, &b_JetAk04SVSSVmass);
+   fChain->SetBranchAddress("JetAk04SVSSVnumTracks", &JetAk04SVSSVnumTracks, &b_JetAk04SVSSVnumTracks);
    fChain->SetBranchAddress("JetAk04JecUncUp", &JetAk04JecUncUp, &b_JetAk04JecUncUp);
    fChain->SetBranchAddress("JetAk04JecUncDwn", &JetAk04JecUncDwn, &b_JetAk04JecUncDwn);
 

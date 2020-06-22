@@ -608,12 +608,12 @@ def _catalog_make_bonzai_catalog(baobab_catalog, ntuple_dir, sel, subsel):
 
     fout = open(bonzai_catalog, "w")
 
-    fout.write('''# primary dataset: %s
-    * data type: %s
-    * primary events: %s
-    * primary files: %s
-    * lumi: %s
-    * sample xsec: %s\n\n''' % (info['primary_dataset'], info['datatype'], info['primary_events'], info['primary_files'], info['luminosity'], xsec))
+ #   fout.write('''# primary dataset: %s
+ #   * data type: %s
+ #   * primary events: %s
+ #   * primary files: %s
+ #   * lumi: %s
+ #   * sample xsec: %s\n\n''' % (info['primary_dataset'], info['datatype'], info['primary_events'], info['primary_files'], info['luminosity'], xsec))
 
     ntuple_pattern = ntuple_dir_path + "/" + ntuple_subdir + "/*/Bonzai*.root"
     print("ntuple_pattern="+ntuple_pattern)
