@@ -5,11 +5,13 @@ crab submit -c crabBonzai_SingleMuon-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
+crab submit -c crabBonzai_WJetsToLNu_Wpt-0To50_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_Pt-50To100_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_Pt-400To600_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_WJetsToLNu_Pt-600ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
+crab submit -c crabBonzai_WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8-VJetPruner-SMu.py
 
 crab submit -c crabBonzai_DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8-VJetPruner-SMu.py
 crab submit -c crabBonzai_ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8-VJetPruner-SMu.py

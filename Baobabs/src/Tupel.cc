@@ -1268,25 +1268,11 @@ void Tupel::processJets(){
       int   svNumTracks(-1);
       float svPt(-1.), svMass(-1.);
 
-      // std::cout << ">>>>> new jet" << std::endl;
-
       // Reading the TagInfos for pfSecondaryVertex this time
       const reco::CandSecondaryVertexTagInfo *candSVTagInfoSSV = jet.tagInfoCandSecondaryVertex("pfSecondaryVertex");
-
-
-
-      // ALW 16 APRIL 20 -- Currently returning a nullptr, meaning the collection isn't properly being fetched!!!
-      // However, the name of the collection I'm trying to fetch is correct for getting the SSV's...
-      // TO FIX!
-      // std::cout << "\tcandSVTagInfoSSV == nullptr --> " << (candSVTagInfoSSV == nullptr) << std::endl;
-      
-
-      
       if (candSVTagInfoSSV != nullptr && candSVTagInfoSSV->nVertices() >= 1){
         const reco::CandIPTagInfo *candIPTagInfo = candSVTagInfoSSV->trackIPTagInfoRef().get();
         if (candIPTagInfo != nullptr && candSVTagInfoSSV->vertexTracks().size() > 0){
-
-          // std::cout << "\thas SSV vertices !!!!!!!!!!!!!!!!!" << std::endl;
 
           // Loop over SV's to find the one with highest-pT
           int highestPtSVidx(0);
@@ -1310,10 +1296,6 @@ void Tupel::processJets(){
         } // end if candIPTagInfo
       } // end if candSVTagInfoSSV
 
-      
-      // std::cout << "\thasGoodSV = " << hasGoodSV << std::endl;
-      // std::cout << "\tsvMass = " << svMass << std::endl;
-
       JetAk04hasGoodSVSSV_->push_back(hasGoodSV);
       JetAk04SVSSVnumTracks_->push_back(svNumTracks);
       JetAk04SVSSVflightDist_->push_back(flightDistance);
@@ -1332,8 +1314,6 @@ void Tupel::processJets(){
       svPt = -1.;
       svMass = -1.;
 
-      // std::cout << "\t -----" << std::endl;
-
       // Reading the TagInfos for pfInclusiveSecondaryVertexFinder
       // Can look at the code here: DataFormats/​BTauReco/​interface/​TemplatedSecondaryVertexTagInfo.h
       const reco::CandSecondaryVertexTagInfo *candSVTagInfoIVF = jet.tagInfoCandSecondaryVertex("pfInclusiveSecondaryVertexFinder");
@@ -1341,8 +1321,6 @@ void Tupel::processJets(){
         // Fetching related impact parameter (IP) information
         const reco::CandIPTagInfo *candIPTagInfo = candSVTagInfoIVF->trackIPTagInfoRef().get();
         if (candIPTagInfo != nullptr && candSVTagInfoIVF->vertexTracks().size() > 0){
-
-          // std::cout << "\thas IVF vertices !!!!!!!!!!!!!!!!!" << std::endl;
 
           // Loop over SV's to find the one with highest-pT
           int highestPtSVidx(0);
@@ -1372,10 +1350,6 @@ void Tupel::processJets(){
 
         } // end if candIPTagInfo
       } // end if candSVTagInfoIVF
-
-      
-      // std::cout << "\thasGoodSV = " << hasGoodSV << std::endl;
-      // std::cout << "\tsvMass = " << svMass << std::endl;
 
       // assuming that there is only one good SV (maximum) per jet...
       // fill values with -1 if no SV's found, fill w/ non-zero values otherwise

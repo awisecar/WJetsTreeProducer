@@ -95,6 +95,8 @@ updateJetCollection(
    jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None'), 
    btagDiscriminators = [
     'pfCombinedInclusiveSecondaryVertexV2BJetTags',
+    'pfJetProbabilityBJetTags',
+    'pfCombinedMVAV2BJetTags',
     'pfDeepCSVJetTags:probudsg',
     'pfDeepCSVJetTags:probbb',
     'pfDeepCSVJetTags:probb',
@@ -106,8 +108,13 @@ process.jecSequenceAK4 = cms.Sequence(
   process.updatedPatJets *
   process.pfImpactParameterTagInfos *                   
   process.pfSecondaryVertexTagInfos *                   
-  process.pfInclusiveSecondaryVertexFinderTagInfos *    
+  process.pfInclusiveSecondaryVertexFinderTagInfos *   
+  process.pfJetProbabilityBJetTags *
   process.pfCombinedInclusiveSecondaryVertexV2BJetTags * 
+  process.pfJetProbabilityBJetTags *
+  process.softPFMuonsTagInfos *   
+  process.softPFElectronsTagInfos *
+  process.pfCombinedMVAV2BJetTags *
   process.pfInclusiveSecondaryVertexFinderCvsLTagInfos *
   process.pfDeepCSVTagInfos *
   process.pfDeepCSVJetTags *                       

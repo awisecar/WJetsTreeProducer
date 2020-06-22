@@ -77,7 +77,7 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200) )
+# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 
 outputFilename = "ntupleTest"
@@ -161,8 +161,8 @@ updateJetCollection(
    # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
    btagDiscriminators = [
     'pfCombinedInclusiveSecondaryVertexV2BJetTags',
-    # 'pfJetProbabilityBJetTags',
-    # 'pfCombinedMVAV2BJetTags',
+    'pfJetProbabilityBJetTags',
+    'pfCombinedMVAV2BJetTags',
     # 'pfCombinedCvsLJetTags',
     # 'pfCombinedCvsBJetTags',
     'pfDeepCSVJetTags:probudsg',
@@ -188,12 +188,12 @@ process.jecSequenceAK4 = cms.Sequence(
   process.pfImpactParameterTagInfos *                    # essential accessing later information
   process.pfSecondaryVertexTagInfos *                    # SSV algorithm for SV's
   process.pfInclusiveSecondaryVertexFinderTagInfos *     # IVF algorithm for SV's
-  # process.pfJetProbabilityBJetTags *
+  process.pfJetProbabilityBJetTags *
   process.pfCombinedInclusiveSecondaryVertexV2BJetTags * # CSVv2 tagger
-  # process.pfJetProbabilityBJetTags *
-  # process.softPFMuonsTagInfos *                        
-  # process.softPFElectronsTagInfos *
-  # process.pfCombinedMVAV2BJetTags *
+  process.pfJetProbabilityBJetTags *
+  process.softPFMuonsTagInfos *                        
+  process.softPFElectronsTagInfos *
+  process.pfCombinedMVAV2BJetTags *
   process.pfInclusiveSecondaryVertexFinderCvsLTagInfos *
   # process.pfCombinedCvsLJetTags *
   # process.pfCombinedCvsBJetTags *
