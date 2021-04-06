@@ -21,7 +21,7 @@ process = cms.Process("BAOBAB")
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
-process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
+process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(False) )
 
 # Load the standard set of configuration modules
 process.load('Configuration.StandardSequences.Services_cff')
@@ -78,7 +78,7 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5000) )
 # process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 outputFilename = "ntupleTest"
@@ -162,22 +162,49 @@ updateJetCollection(
    # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
 )
 # new jet collection will be called: updatedPatJetsUpdatedJECAK4PFchs
-# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
+# because new jet collection takes the form "updatedPatJets+labelName+postfix"
 
 # AK8 PF PUPPI
-updateJetCollection(
-   process,
-   jetSource = cms.InputTag('slimmedJetsAK8'),
-   labelName = 'UpdatedJECAK8PFPuppi',
-   jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
-   # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
-)
+# updateJetCollection(
+#    process,
+#    jetSource = cms.InputTag('slimmedJetsAK8'),
+#    labelName = 'UpdatedJECAK8PFPuppi',
+#    jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+#    # Update: Safe to always add 'L2L3Residual' as MC contains dummy L2L3Residual corrections (always set to 1)
+# )
 # new jet collection will be called: updatedPatJetsUpdatedJECAK8PFPuppi
-# because new jet colleciton takes the form "updatedPatJets+labelName+postfix"
+# because new jet collection takes the form "updatedPatJets+labelName+postfix"
 
 # add these sequences to the path below
 process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
-process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
+# process.jecSequenceAK8 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK8PFPuppi * process.updatedPatJetsUpdatedJECAK8PFPuppi)
+
+
+
+
+# ----- RE-CLUSTER THE AK8 PF PUPPI JET COLLECTION TO LOWER PT THRESHOLD -----
+from JMEAnalysis.JetToolbox.jetToolbox_cff import jetToolbox
+
+jetToolbox(
+  # -- mandatory arguments --
+  process, 'ak8', 'jetToolboxAK8PFPuppi', 'noOutput',
+  # -- optional arguments --
+  PUMethod='Puppi', 
+  miniAOD='True',
+  runOnMC= not options.isData,
+  bTagDiscriminators=[
+    # 'pfCombinedInclusiveSecondaryVertexV2BJetTags', 
+    'pfDeepCSVJetTags:probb', 
+    'pfDeepCSVJetTags:probbb'
+  ],
+  # JETCorrPayload='AK8PFPuppi',
+  # JETCorrLevels=['L2Relative', 'L3Absolute', 'L2L3Residual'], # Puppi jets don't need the "L1FastJet" correction
+  GetJetMCFlavour = True,
+  Cut='pt >= 30.0',
+  verbosity=2
+)
+
+
 
 #--------------------------------------------
 
@@ -236,9 +263,15 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ##### Muons, Jets, MET
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
   # jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet collection in miniAOD
-  # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet collection in miniAOD
+  # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet collection in miniAOD (actually these are AK8PFchs jets???)
   jetSrc              = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs
-  jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
+
+
+  # jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
+  jetAK8Src           = cms.untracked.InputTag("selectedPatJetsAK8PFPuppi"), #reclustered with JetToolbox
+
+
+
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   # metSrc       = cms.untracked.InputTag("slimmedMETsPuppi"),
   ##### MET Filters (grab either PAT or RECO depending on data or MC)
@@ -253,13 +286,13 @@ process.tupel = cms.EDAnalyzer("Tupel",
   ##### Other stuff
   mSrcRho             = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Extra printout statements
-  DJALOG              = cms.untracked.bool(True), #prints out info about gen weight structure, HLT trigger paths, etc.
+  DJALOG              = cms.untracked.bool(False), #prints out info about gen weight structure, HLT trigger paths, etc.
   printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
 )
 
 process.p = cms.Path(
   process.jecSequenceAK4 * 
-  process.jecSequenceAK8 *
+  # process.jecSequenceAK8 *
   process.fullPatMetSequence *
   process.prefiringweight *
   process.tupel 

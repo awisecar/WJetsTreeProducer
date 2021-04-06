@@ -64,6 +64,9 @@ public :
    ///////////////////////////////////////
    // GENERATOR LEVEL
 
+   vector<float>   *GWbosonPt;
+   TBranch        *b_GWbosonPt;   //!
+
    vector<float>   *GLepBarePt;
    vector<float>   *GLepBareEta;
    vector<float>   *GLepBarePhi;
@@ -260,6 +263,7 @@ public :
    vector<float>   *JetAk08HadFlav;
    vector<float>   *JetAk08JecUncUp;
    vector<float>   *JetAk08JecUncDwn;
+   vector<float>   *JetAk08JecUncSrcs;
    TBranch        *b_JetAk08Pt;   //!
    TBranch        *b_JetAk08Eta;   //!
    TBranch        *b_JetAk08Phi;   //!
@@ -270,6 +274,7 @@ public :
    TBranch        *b_JetAk08HadFlav;   //!
    TBranch        *b_JetAk08JecUncUp;
    TBranch        *b_JetAk08JecUncDwn;
+   TBranch        *b_JetAk08JecUncSrcs;
 
    EventTree(TTree *tree=0);
    virtual ~EventTree();
@@ -352,6 +357,9 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("PreFiringWeight", &PreFiringWeight, &b_PreFiringWeight);
    fChain->SetBranchAddress("PreFiringWeightUp", &PreFiringWeightUp, &b_PreFiringWeightUp);
    fChain->SetBranchAddress("PreFiringWeightDown", &PreFiringWeightDown, &b_PreFiringWeightDown);
+
+   GWbosonPt = 0;
+   fChain->SetBranchAddress("GWbosonPt", &GWbosonPt, &b_GWbosonPt);
 
    GLepBarePt = 0;
    GLepBareEta = 0;
@@ -544,6 +552,7 @@ void EventTree::Init(TTree *tree){
    JetAk08HadFlav = 0;
    JetAk08JecUncUp = 0;
    JetAk08JecUncDwn = 0;
+   JetAk08JecUncSrcs = 0;
    fChain->SetBranchAddress("JetAk08Pt", &JetAk08Pt, &b_JetAk08Pt);
    fChain->SetBranchAddress("JetAk08Eta", &JetAk08Eta, &b_JetAk08Eta);
    fChain->SetBranchAddress("JetAk08Phi", &JetAk08Phi, &b_JetAk08Phi);
@@ -554,6 +563,9 @@ void EventTree::Init(TTree *tree){
    fChain->SetBranchAddress("JetAk08HadFlav", &JetAk08HadFlav, &b_JetAk08HadFlav);
    fChain->SetBranchAddress("JetAk08JecUncUp", &JetAk08JecUncUp, &b_JetAk08JecUncUp);
    fChain->SetBranchAddress("JetAk08JecUncDwn", &JetAk08JecUncDwn, &b_JetAk08JecUncDwn);
+   fChain->SetBranchAddress("JetAk08JecUncSrcs", &JetAk08JecUncSrcs, &b_JetAk08JecUncSrcs);
+
+   
 
    Notify();
 }

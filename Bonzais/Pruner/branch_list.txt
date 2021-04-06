@@ -16,6 +16,7 @@ EvtWeights
 PreFiringWeight
 PreFiringWeightUp
 PreFiringWeightDown
+GWbosonPt
 GLepBarePt
 GLepBareEta
 GLepBarePhi
@@ -113,6 +114,7 @@ JetAk08BDiscDeepCSV
 JetAk08HadFlav
 JetAk08JecUncUp
 JetAk08JecUncDwn
+JetAk08JecUncSrcs
 
 
 

@@ -16,6 +16,7 @@ crab submit -c crab_2017_WJetsToLNu_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythi
 crab submit -c crab_2017_WJetsToLNu_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8.py
 crab submit -c crab_2017_WJetsToLNu_Pt-400To600_TuneCP5_13TeV-amcatnloFXFX-pythia8.py
 crab submit -c crab_2017_WJetsToLNu_Pt-600ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8.py
+crab submit -c crab_2017_WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8.py
 crab submit -c crab_2017_WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8.py
 
 crab submit -c crab_2017_DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8.py
@@ -34,8 +35,14 @@ crab submit -c crab_2017_TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8.
 crab submit -c crab_2017_TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8.py
 crab submit -c crab_2017_TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8.py
 crab submit -c crab_2017_WWTo2L2Nu_NNPDF31_TuneCP5_PSweights_13TeV-powheg-pythia8.py
-crab submit -c crab_2017_WZ_TuneCP5_13TeV-pythia8.py
-crab submit -c crab_2017_ZZ_TuneCP5_13TeV-pythia8.py
+crab submit -c crab_2017_WWToLNuQQ_NNPDF31_TuneCP5_13TeV-powheg-pythia8.py
+crab submit -c crab_2017_WZTo1L1Nu2Q_13TeV_amcatnloFXFX_madspin_pythia8.py
+crab submit -c crab_2017_WZTo1L3Nu_13TeV_amcatnloFXFX_madspin_pythia8_v2.py
+crab submit -c crab_2017_WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8.py
+crab submit -c crab_2017_ZZTo2L2Nu_13TeV_powheg_pythia8.py
+crab submit -c crab_2017_ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8.py
+#crab submit -c crab_2017_WZ_TuneCP5_13TeV-pythia8.py
+#crab submit -c crab_2017_ZZ_TuneCP5_13TeV-pythia8.py
 
 
 

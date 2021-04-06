@@ -291,7 +291,10 @@ private:
   std::vector<TrigHltMapRcd> trigHltMapList_; //list of trigger maps.
   std::vector<TrigHltMapRcd> TrigMETBitMapList_;
 
-  //Generator level leptons, not-dressed
+  // Generator level W boson (W boson is mother of the decayed muon and neutrino)
+  std::unique_ptr<std::vector<float> >  GWbosonPt_;
+
+  // Generator level leptons, not-dressed
   std::unique_ptr<std::vector<float> > 	GLepBarePt_;
   std::unique_ptr<std::vector<float> > 	GLepBareEta_;
   std::unique_ptr<std::vector<float> > 	GLepBarePhi_;
@@ -300,7 +303,7 @@ private:
   std::unique_ptr<std::vector<int> > 	  GLepBareSt_;
   std::unique_ptr<std::vector<bool> >   GLepBarePrompt_;
 
-  //Photons in the vicinity of the leptons
+  // Photons in the vicinity of the leptons
   std::unique_ptr<std::vector<float> > GLepClosePhotPt_;
   std::unique_ptr<std::vector<float> > GLepClosePhotEta_;
   std::unique_ptr<std::vector<float> > GLepClosePhotPhi_;
@@ -398,23 +401,19 @@ private:
   std::unique_ptr<std::vector<float> > JetAk04BDiscCisvV2_;
   std::unique_ptr<std::vector<float> > JetAk04BDiscDeepCSV_;
   std::unique_ptr<std::vector<float> > JetAk04HadFlav_;
-
-
-
+  // --
   std::unique_ptr<std::vector<bool> >  JetAk04hasGoodSVIVF_;
   std::unique_ptr<std::vector<int> >   JetAk04SVIVFnumTracks_;
   std::unique_ptr<std::vector<float> > JetAk04SVIVFflightDist_;
   std::unique_ptr<std::vector<float> > JetAk04SVIVFflightDistSig_;
   std::unique_ptr<std::vector<float> > JetAk04SVIVFmass_;
-
+  // --
   std::unique_ptr<std::vector<bool> >  JetAk04hasGoodSVSSV_;
   std::unique_ptr<std::vector<int> >   JetAk04SVSSVnumTracks_;
   std::unique_ptr<std::vector<float> > JetAk04SVSSVflightDist_;
   std::unique_ptr<std::vector<float> > JetAk04SVSSVflightDistSig_;
   std::unique_ptr<std::vector<float> > JetAk04SVSSVmass_;
-
-
-
+  // --
   std::unique_ptr<std::vector<float> > JetAk04JecUncUp_;
   std::unique_ptr<std::vector<float> > JetAk04JecUncDwn_;
   std::unique_ptr<std::vector<float> > JetAk04PtUncorr_;
@@ -439,6 +438,7 @@ private:
   std::unique_ptr<std::vector<float> > JetAk08PtUncorr_;
   std::unique_ptr<std::vector<float> > JetAk08EtaUncorr_;
   std::unique_ptr<std::vector<float> > JetAk08EUncorr_;
+  std::unique_ptr<std::vector<float> > JetAk08JecUncSrcs_; // for now, put all the uncert. source values for all jets into one vector
 
   /// EDM Handles for collections ---
   // RECO handles
@@ -727,16 +727,13 @@ void Tupel::processGenJets(const edm::Event& iEvent){
   
   for(unsigned int k=0; k < genjetColl_->size(); ++k){
     const reco::GenJet & genJet = genjetColl_->at(k);    
-    if(genJet.pt() > 20.0 && fabs(genJet.eta()) < 2.7){
-
+    if(genJet.pt() >= 20.0 && fabs(genJet.eta()) <= 3.0){
       GJetAk04Pt_->push_back(genJet.pt());
       GJetAk04Eta_->push_back(genJet.eta());
       GJetAk04Phi_->push_back(genJet.phi());
       GJetAk04E_->push_back(genJet.energy());
-
     }
   }
-
 }
 
 void Tupel::processGenJetsAK8(const edm::Event& iEvent){  
@@ -748,14 +745,13 @@ void Tupel::processGenJetsAK8(const edm::Event& iEvent){
 
   for(unsigned int k=0; k < genjetAK8Coll_->size(); ++k){
     const reco::GenJet & genJetAK8 = genjetAK8Coll_->at(k);    
-    if(genJetAK8.pt() > 200.0 && fabs(genJetAK8.eta()) < 2.7){
+    if(genJetAK8.pt() >= 30.0 && fabs(genJetAK8.eta()) <= 3.0){
       GJetAk08Pt_->push_back(genJetAK8.pt());
       GJetAk08Eta_->push_back(genJetAK8.eta());
       GJetAk08Phi_->push_back(genJetAK8.phi());
       GJetAk08E_->push_back(genJetAK8.energy());
     }
   }
-
 }
 
 void Tupel::processGenParticles(const edm::Event& iEvent){
@@ -765,6 +761,117 @@ void Tupel::processGenParticles(const edm::Event& iEvent){
     return;
   }
   
+
+  //////////////////////////////////////////////////////////////////
+
+  // Print out information for every gen particle in a single event
+  if (DJALOG_ && analyzedEventCnt_==1){
+    std::cout << std::endl;
+    for(size_t i=0; i < genParticles->size(); ++i){
+      const reco::GenParticle & gen = genParticles->at(i);
+
+      // kinematics
+      double pt = gen.pt();
+      double eta = gen.eta();
+      double phi = gen.phi();
+      double energy = gen.energy();
+      double mass = gen.mass();
+
+      // generator information
+      int id = gen.pdgId();
+      int st = gen.status();
+      bool isHard = gen.isHardProcess();
+      bool isPrompt = gen.isPromptFinalState();
+
+      // Print out information for all gen particles involved in hard (ME-level) process
+      // Note: can remove this requirement if need be, it merely just reduces the output printed to screen
+      if (isHard){
+
+        std::cout << "\n\n------------------------------------------------" << std::endl;
+        
+        // PDG Particle ID codes
+        if (abs(id) == 13) std::cout << " >>> Found a muon! <<< " << std::endl;
+        if (abs(id) == 14) std::cout << " >>> Found a muon neutrino! <<< " << std::endl;
+        if (abs(id) == 24) std::cout << " >>> Found a W boson! <<< " << std::endl;
+
+        // Pythia8 status codes, see here:
+        // http://home.thep.lu.se/~torbjorn/pythia81html/ParticleProperties.html
+        if (st == 1) std::cout << " ~~~ status code 1! ~~~ " << std::endl;
+        else if (st >= 11 && st <= 19) std::cout << " ~~~ status: beam particles ~~~ " << std::endl;
+        else if (st >= 21 && st <= 29) std::cout << " ~~~ status: particles of the hardest subprocess ~~~ " << std::endl;
+        else if (st >= 31 && st <= 39) std::cout << " ~~~ status: particles of subsequent subprocesses ~~~ " << std::endl;
+        else if (st >= 41 && st <= 49) std::cout << " ~~~ status: particles produced by initial-state-showers ~~~ " << std::endl;
+        else if (st >= 51 && st <= 59) std::cout << " ~~~ status: particles produced by final-state-showers ~~~ " << std::endl;
+        else if (st >= 61 && st <= 69) std::cout << " ~~~ status: particles produced by beam-remnant treatment ~~~ " << std::endl;
+        else if (st >= 71 && st <= 79) std::cout << " ~~~ status: partons in preparation of hadronization process ~~~ " << std::endl;
+        else if (st >= 81 && st <= 89) std::cout << " ~~~ status: primary hadrons produced by hadronization process ~~~ " << std::endl;
+        else if (st >= 91 && st <= 99) std::cout << " ~~~ status: particles produced in decay process, or by Bose-Einstein effects ~~~ " << std::endl;
+        else std::cout << " ~~~ status: other (see reference) ~~~ " << std::endl;
+
+        // particle properties and kinematics
+        std::cout << "pdgId = " << id << ", status = " << st << ", isHardProcess = " << isHard << ", isPromptFinalState = " << isPrompt << std::endl;
+        std::cout << "pT = " << pt << ", abs(eta) = " << fabs(eta) << ", phi = " << phi << ", energy = " << energy << ", mass = " << mass << std::endl;
+
+        // information on mother particles
+        if (gen.numberOfMothers() > 0){
+          std::cout << "\n    >>> " << gen.numberOfMothers() << " mother particle(s) exist!" << std::endl;
+          for(size_t j = 0; j < gen.numberOfMothers(); ++ j){
+            std::cout << "    mother #" << j << ": " << std::endl; 
+            std::cout << "      pdgId_mother = " << gen.mother(j)->pdgId() << ", status_mother = " << gen.mother(j)->status() << std::endl;
+            std::cout << "      pT_mother = " << gen.mother(j)->pt() << ", abs(eta_mother) = " << fabs(gen.mother(j)->eta()) << ", energy_mother = " << gen.mother(j)->energy() << ", mass_mother = " << gen.mother(j)->mass() << std::endl;
+          }
+        }
+
+        // information on daughter particles
+        if (gen.numberOfDaughters() > 0){
+          std::cout << "\n    >>> " << gen.numberOfDaughters() << " daughter particle(s) exist!" << std::endl;
+          for(size_t j = 0; j < gen.numberOfDaughters(); ++ j){
+            std::cout << "    daughter #" << j << ": " << std::endl;
+            std::cout << "      pdgId_daughter = " << gen.daughter(j)->pdgId() << ", status_daughter = " << gen.daughter(j)->status() << std::endl;
+            std::cout << "      pT_daughter = " << gen.daughter(j)->pt() << ", abs(eta_daughter) = " << fabs(gen.daughter(j)->eta()) << ", energy_daughter = " << gen.daughter(j)->energy() << ", mass_daughter = " << gen.daughter(j)->mass() << std::endl;
+          }
+        }
+          
+        std::cout << "------------------------------------------------" << std::endl;
+
+      } // end if (isHard)
+    } // end loop over genParticles
+  }
+
+  //////////////////////////////////////////////////////////////////
+
+  bool foundGoodGenMuon(false), foundGoodGenNeutrino(false);
+  int idxGoodGenMuon(-1);
+
+  for(size_t i=0; i < genParticles->size(); ++i){
+    const reco::GenParticle & gen = genParticles->at(i);
+
+    int id = gen.pdgId();
+    int st = gen.status();
+    bool isHard = gen.isHardProcess();
+    bool isPrompt = gen.isPromptFinalState();
+
+    // check for a muon and muon neutrino that come from a W decay
+    // muon --
+    if ( (abs(id) == 13) && (st == 1) && isHard && isPrompt && (abs(gen.mother(0)->pdgId()) == 24) ){
+      foundGoodGenMuon = true;
+      idxGoodGenMuon = i;
+    }
+    // (muon) neutrino --
+    if ( (abs(id) == 14) && (st == 1) && isHard && isPrompt && (abs(gen.mother(0)->pdgId()) == 24) ){
+      foundGoodGenNeutrino = true;
+    }
+
+  } // end loop over genParticles
+
+  if (foundGoodGenMuon && foundGoodGenNeutrino){
+    double ptW = (genParticles->at(idxGoodGenMuon)).mother(0)->pt();
+    GWbosonPt_->push_back(ptW);
+  }
+  else GWbosonPt_->push_back(-1);
+
+  //////////////////////////////////////////////////////////////////
+
   for(size_t i=0; i < genParticles->size(); ++i){
     const reco::GenParticle & gen = genParticles->at(i);
 
@@ -805,7 +912,7 @@ void Tupel::processGenParticles(const edm::Event& iEvent){
               GLepClosePhotPhi_->push_back(thisPho1.Phi());
               GLepClosePhotE_->push_back(thisPho1.Energy());
               GLepClosePhotId_->push_back(gen2.pdgId());
-              GLepClosePhotMother0Id_->push_back(fabs(gen2.mother()->pdgId())); //not being accessed correctly?
+              GLepClosePhotMother0Id_->push_back(fabs(gen2.mother(0)->pdgId())); //not being accessed correctly?
               GLepClosePhotMotherCnt_->push_back(gen2.numberOfMothers());
               GLepClosePhotSt_->push_back(gen2.status());
             }
@@ -823,6 +930,8 @@ void Tupel::processGenParticles(const edm::Event& iEvent){
 
     } //end status lepton or neutrino
   } //end gen particle loop
+
+
 }
 
 void Tupel::processPu(const edm::Event& iEvent){
@@ -1192,7 +1301,10 @@ void Tupel::processJets(){
     }
 
     //Soft cut on pt and eta to reduce Baobab size
-    if(jet.isPFJet() && jet.pt() >= 20. && fabs(jet.eta()) < 2.7){
+    if(jet.isPFJet() && jet.pt() >= 20.0 && fabs(jet.eta()) <= 3.0){
+
+      // for testing
+      // std::cout << "corrected AK4PFchs jet pt: " << jet.pt() << ", uncorrected AK4PFchs jet pt: " << jet.correctedP4("Uncorrected").pt() << std::endl;
 
       // jet ID  --------
       // the ""...EnergyFraction" functions grab the raw, uncorrected energy fractions
@@ -1415,7 +1527,11 @@ void Tupel::processJetsAK8(){
 
     // PF jets in AK8 collection start at pT of 200 GeV 
     // (PF jets start at 170, but should start at 200 GeV if JECs reapplied)
-    if(jetAK8.isPFJet() && jetAK8.pt() > 200.0 && fabs(jetAK8.eta()) < 2.7){
+    // NOTE: USING JET_TOOLBOX MODULE TO RE-CLUSTER THIS COLLECTION AND DROP THE PT THRESHOLD OF THE JET COLLECTION
+    if(jetAK8.isPFJet() && jetAK8.pt() >= 30.0 && fabs(jetAK8.eta()) <= 3.0){
+
+      // for testing
+      // std::cout << "corrected AK8PFPuppi jet pt: " << jetAK8.pt() << ", uncorrected AK8PFPuppi jet pt: " << jetAK8.correctedP4("Uncorrected").pt() << std::endl;
 
       // jet ID --------
       NHF = jetAK8.neutralHadronEnergyFraction();
@@ -1477,6 +1593,51 @@ void Tupel::processJetsAK8(){
       JetAk08EtaUncorr_->push_back(uncorrJetAK8.eta());
       JetAk08EUncorr_->push_back(uncorrJetAK8.energy());
 
+      // grab individual JEC uncertainty sources --------
+      // -- get setup by year --
+      // using the “Run 2 reduced set of uncertainty sources” from this twiki:
+      // https://twiki.cern.ch/twiki/bin/view/CMS/JECUncertaintySources#Run_2_reduced_set_of_uncertainty
+      std::string jecUncSrc_file = "";
+      int nsrc = 12;
+      std::vector<std::string> jesUncSrcNames;
+      if (yearToProcess_ == "2016"){
+        jecUncSrc_file = edm::FileInPath("data/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.txt").fullPath(); 
+        jesUncSrcNames = {"Total", "Absolute", "Absolute_2016", "BBEC1", "BBEC1_2016", "EC2", "EC2_2016", "FlavorQCD", "HF", "HF_2016", "RelativeBal", "RelativeSample_2016"};
+      }
+      else if (yearToProcess_ == "2017"){
+        jecUncSrc_file = edm::FileInPath("data/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.txt").fullPath(); 
+        jesUncSrcNames = {"Total", "Absolute", "Absolute_2017", "BBEC1", "BBEC1_2017", "EC2", "EC2_2017", "FlavorQCD", "HF", "HF_2017", "RelativeBal", "RelativeSample_2017"};
+      }
+      else{                               
+        jecUncSrc_file = edm::FileInPath("data/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.txt").fullPath(); 
+        jesUncSrcNames = {"Total", "Absolute", "Absolute_2018", "BBEC1", "BBEC1_2018", "EC2", "EC2_2018", "FlavorQCD", "HF", "HF_2018", "RelativeBal", "RelativeSample_2018"};
+      }
+      // -- for each uncertainty source, get an instance of JetCorrectionUncertainty --
+      std::vector<JetCorrectionUncertainty*> vec_jesUncSrcNames(nsrc);
+      for (int isrc = 0; isrc < nsrc; isrc++){
+        std::string name = jesUncSrcNames[isrc];
+        JetCorrectorParameters *p = new JetCorrectorParameters(jecUncSrc_file, name);
+        JetCorrectionUncertainty *unc = new JetCorrectionUncertainty(*p);
+        vec_jesUncSrcNames[isrc] = unc;
+        delete p;
+      }
+      // -- get uncertainty per source --
+      // NOTE: branches with type vector(vector(float)) currently not supported by TreeHelper.h.
+      //       it makes sense to code this variable as this type because the i-th element of this vector 
+      //       will give you the vector(float) of unc sources for the i-th jet. in the interest of time,
+      //       just push back all uncert src values for all jets into one vector(float). this means that
+      //       when we loop through the branch in the evt. selection code, the # uncert sources will 
+      //       be hard-coded, which will be confusing to index. in the future, this would be good to fix.
+      for (int isrc = 0; isrc < nsrc; isrc++){
+        JetCorrectionUncertainty *unc = vec_jesUncSrcNames[isrc];
+        // note: from looking at printouts it looks like the up and down uncertainty variations are symmetric (i.e. the same)
+        unc->setJetPt(jetAK8.pt());
+        unc->setJetEta(jetAK8.eta());
+        double uncSrcValue = unc->getUncertainty(true);
+        JetAk08JecUncSrcs_->push_back(uncSrcValue);
+        delete vec_jesUncSrcNames[isrc];
+      }
+
     }
   }
   delete jecUncAK8;
@@ -1514,6 +1675,10 @@ void Tupel::beginJob(){
   ADD_BRANCH_D(PreFiringWeightDown, "L1 Prefire Weight Down");
 
   ////////////////// GENERATOR LEVEL
+
+  // Generator level W boson
+  treeHelper_->addDescription("GWboson", "Generator level W boson (W boson is mother of the decayed muon and neutrino)");
+  ADD_BRANCH(GWbosonPt);
 
   //Generator level leptons.
   treeHelper_->addDescription("GLepBare", "Generator-level leptons, status 1 without dressing.");
@@ -1674,6 +1839,7 @@ void Tupel::beginJob(){
   ADD_BRANCH(JetAk08PtUncorr);
   ADD_BRANCH(JetAk08EtaUncorr);
   ADD_BRANCH(JetAk08EUncorr);
+  ADD_BRANCH(JetAk08JecUncSrcs);
 
 }
 

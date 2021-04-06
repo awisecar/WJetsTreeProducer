@@ -18,6 +18,7 @@ crab status -d crab_2016_WJetsToLNu_Pt-100To250_TuneCUETP8M1_13TeV-amcatnloFXFX-
 crab status -d crab_2016_WJetsToLNu_Pt-250To400_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8
 crab status -d crab_2016_WJetsToLNu_Pt-400To600_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8
 crab status -d crab_2016_WJetsToLNu_Pt-600ToInf_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8
+crab status -d crab_2016_WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8
 crab status -d crab_2016_WJetsToLNu_TuneCUETP8M1_13TeV-madgraphMLM-pythia8
 
 crab status -d crab_2016_DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8
@@ -34,8 +35,14 @@ crab status -d crab_2016_TTWJetsToQQ_TuneCUETP8M1_13TeV-amcatnloFXFX-madspin-pyt
 crab status -d crab_2016_TTZToLLNuNu_M-10_TuneCUETP8M1_13TeV-amcatnlo-pythia8
 crab status -d crab_2016_TTZToQQ_TuneCUETP8M1_13TeV-amcatnlo-pythia8
 crab status -d crab_2016_WWTo2L2Nu_13TeV-powheg
-crab status -d crab_2016_WZ_TuneCUETP8M1_13TeV-pythia8
-crab status -d crab_2016_ZZ_TuneCUETP8M1_13TeV-pythia8
+crab status -d crab_2016_WWToLNuQQ_13TeV-powheg
+crab status -d crab_2016_WZTo1L1Nu2Q_13TeV_amcatnloFXFX_madspin_pythia8
+crab status -d crab_2016_WZTo1L3Nu_13TeV_amcatnloFXFX_madspin_pythia8
+crab status -d crab_2016_WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8
+crab status -d crab_2016_ZZTo2L2Nu_13TeV_powheg_pythia8
+crab status -d crab_2016_ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8
+#crab status -d crab_2016_WZ_TuneCUETP8M1_13TeV-pythia8
+#crab status -d crab_2016_ZZ_TuneCUETP8M1_13TeV-pythia8
 
 
 

@@ -11,6 +11,7 @@ Baobabs-WJetsToLNu_Pt-100To250_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt       
 Baobabs-WJetsToLNu_Pt-250To400_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   6
 Baobabs-WJetsToLNu_Pt-400To600_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   6
 Baobabs-WJetsToLNu_Pt-600ToInf_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   6
+Baobabs-WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                         VJetPruner        SMu                   6
 Baobabs-WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8-all.txt                                          VJetPruner        SMu                   6
 Baobabs-DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8-all.txt                                    VJetPruner        SMu                   6 
 Baobabs-ST_s-channel_4f_leptonDecays_TuneCP5_PSweights_13TeV-amcatnlo-pythia8-all.txt                 VJetPruner        SMu                   6 
@@ -28,6 +29,10 @@ Baobabs-TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8-all.txt          
 Baobabs-TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8-all.txt                                       VJetPruner        SMu                   6
 Baobabs-TTZToQQ_TuneCP5_13TeV-amcatnlo-pythia8-all.txt                                                VJetPruner        SMu                   6
 Baobabs-WWTo2L2Nu_NNPDF31_TuneCP5_PSweights_13TeV-powheg-pythia8-all.txt                              VJetPruner        SMu                   6 
-Baobabs-WZ_TuneCP5_13TeV-pythia8-all.txt                                                              VJetPruner        SMu                   6 
-Baobabs-ZZ_TuneCP5_13TeV-pythia8-all.txt                                                              VJetPruner        SMu                   6 
+Baobabs-WWToLNuQQ_NNPDF31_TuneCP5_13TeV-powheg-pythia8-all.txt                                        VJetPruner        SMu                   6
+Baobabs-WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8-all.txt                                           VJetPruner        SMu                   6
+Baobabs-WZTo1L3Nu_13TeV_amcatnloFXFX_madspin_pythia8_v2-all.txt                                       VJetPruner        SMu                   6   
+Baobabs-WZTo1L1Nu2Q_13TeV_amcatnloFXFX_madspin_pythia8-all.txt                                        VJetPruner        SMu                   6     
+Baobabs-ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8-all.txt                                           VJetPruner        SMu                   6
+Baobabs-ZZTo2L2Nu_13TeV_powheg_pythia8-all.txt                                                        VJetPruner        SMu                   6
 
