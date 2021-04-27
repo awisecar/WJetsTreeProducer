@@ -99,9 +99,25 @@ elif (options.isData == 1):
 ## PRODUCERS
 ##
 
-# Updating JECs and Getting B-tagging TagInfos ---
+# -----
 
-# -- AK4 PF CHS --
+#### AK4 JETS WITH JECS ONLY
+# AK4PFchs Jets --
+# Updating JECs ONLY
+# from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+# updateJetCollection(
+#    process,
+#    jetSource = cms.InputTag('slimmedJets'),
+#    labelName = 'UpdatedJECAK4PFchs',
+#    jetCorrections = ('AK4PFchs', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
+# )
+# process.jecSequenceAK4 = cms.Sequence(process.patJetCorrFactorsUpdatedJECAK4PFchs * process.updatedPatJetsUpdatedJECAK4PFchs)
+
+# -----
+
+#### AK4 JETS WITH RE-RUNNING B-TAGGING AND JECS
+# AK4PFchs Jets --
+# Updating JECs and Getting B-tagging TagInfos
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 updateJetCollection(
    process,
@@ -138,16 +154,20 @@ process.jecSequenceAK4 = cms.Sequence(
 process.updatedPatJetsTransientCorrected.addTagInfos = cms.bool(True)
 process.pfInclusiveSecondaryVertexFinderCvsLTagInfos.extSVCollection = cms.InputTag("slimmedSecondaryVertices")
 
-# -- AK8 PF PUPPI --
-updateJetCollection(
-   process,
-   jetSource = cms.InputTag('slimmedJetsAK8'),  # AK8 PF PUPPI
-   labelName = 'UpdatedJECAK8PFPuppi',
-   jetCorrections = ('AK8PFPuppi', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute', 'L2L3Residual']), 'None')  
-)
-process.jecSequenceAK8 = cms.Sequence(
-  process.patJetCorrFactorsUpdatedJECAK8PFPuppi * 
-  process.updatedPatJetsUpdatedJECAK8PFPuppi
+# -----
+
+# AK8PFPuppi Jets --
+# Re-cluster the jet collection to a lower pT threshold
+from JMEAnalysis.JetToolbox.jetToolbox_cff import jetToolbox
+jetToolbox(
+  process, 'ak8', 'jetToolboxAK8PFPuppi', 'noOutput',
+  PUMethod='Puppi', 
+  dataTier='miniAOD',
+  runOnMC= not options.isData,
+  bTagDiscriminators=['pfDeepCSVJetTags:probb', 'pfDeepCSVJetTags:probbb'],
+  GetJetMCFlavour = True,
+  Cut='pt >= 30.0',
+  verbosity=2
 )
 
 # Updating MET ---
@@ -180,10 +200,11 @@ process.tupel = cms.EDAnalyzer("Tupel",
   muonHLTTriggerPath3 = cms.untracked.string(hltTriggerPath3),
   ##### Muons, Jets, MET
   muonSrc             = cms.untracked.InputTag("slimmedMuons"),
-  # jetSrc              = cms.untracked.InputTag("slimmedJets"), #default ak4 chs jet colleciton in miniAOD
-  # jetAK8Src           = cms.untracked.InputTag("slimmedJetsAK8"), #default ak8 puppi jet colleciton in miniAOD
+  # -----
+  # jetSrc              = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK4PFchs"), #updated with JECs ONLY
   jetSrc              = cms.untracked.InputTag("updatedPatJetsTransientCorrected"), #updated with JECs, b-tagging TagInfos
-  jetAK8Src           = cms.untracked.InputTag("updatedPatJetsUpdatedJECAK8PFPuppi"), #updated with JECs
+  # -----
+  jetAK8Src           = cms.untracked.InputTag("selectedPatJetsAK8PFPuppi"), #reclustered with JetToolbox
   metSrc              = cms.untracked.InputTag("slimmedMETs"),
   ##### MET Filters
   noiseFilterTag      = cms.InputTag("TriggerResults","",metFilterSwitch),
@@ -205,10 +226,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
 
 process.p = cms.Path(
   process.jecSequenceAK4 * 
-  process.jecSequenceAK8 *
   process.fullPatMetSequence *
   process.tupel 
 )
-
-
 

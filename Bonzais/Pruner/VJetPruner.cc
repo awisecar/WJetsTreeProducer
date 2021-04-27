@@ -16,6 +16,7 @@ void EventTree::Loop(){} //To make the compiler/linker happy.
 #define DEBUG 0
 
 /** Selection parameters **/
+static float minWbosonPt = 0.;
 static float minLepPt = 20.;
 static float minMET = 0.;
 static float minJetAk04Pt = 20.;
@@ -34,6 +35,7 @@ protected:
   bool filterEvent();
   
   // GEN
+  bool filterGWboson(int iGenWboson);
   bool filterGLepBare(int iGenLep);
   bool filterGLepClosePhot(int iGenLepClosePhot);
   bool filterGMET(int iGenMET);
@@ -100,6 +102,12 @@ bool VJetPruner::filterEvent(){
 void VJetPruner::skimCollections(){
   if(DEBUG) printf("VJetPruner::skimCollections()");
   std::vector<bool> mask;
+
+  if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGWboson, mask);\n");
+  //Gen W boson collections --------------------
+  mask.resize(GWbosonPt->size());
+  makeFilterMask(&VJetPruner::filterGWboson, mask);
+  filter(GWbosonPt,  mask);
   
   if(DEBUG) printf("makeFilterMask(&VJetPruner::filterGLepBare, mask);\n");
   //Gen lepton collections --------------------
@@ -239,6 +247,7 @@ void VJetPruner::skimCollections(){
   filter(JetAk08HadFlav, mask);
   filter(JetAk08JecUncUp, mask);
   filter(JetAk08JecUncDwn, mask);
+  filter(JetAk08JecUncSrcs, mask);
 }
 
 //to be run after skimCollections
@@ -313,6 +322,10 @@ double VJetPruner::mll(std::vector<float>* lepColPt, std::vector<float>* lepColE
     v1.SetPtEtaPhiE((*lepColPt)[i1],(*lepColEta)[i1],(*lepColPhi)[i1],(*lepColE)[i1]);
     return (v0 + v1).M();
   }
+}
+
+bool VJetPruner::filterGWboson(int iGenWboson){
+  return ((*GWbosonPt)[iGenWboson] > minWbosonPt);
 }
 
 bool VJetPruner::filterGLepBare(int iGenLep){
