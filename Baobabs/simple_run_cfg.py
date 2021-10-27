@@ -78,8 +78,8 @@ process.source = cms.Source("PoolSource",
 )
 
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000) )
-# process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(5) )
 
 outputFilename = "ntupleTest"
 if (options.year == "2016"):
@@ -254,7 +254,7 @@ process.tupel = cms.EDAnalyzer("Tupel",
   mSrcRho             = cms.untracked.InputTag('fixedGridRhoFastjetAll'),
   ##### Extra printout statements
   DJALOG              = cms.untracked.bool(True), #prints out info about gen weight structure, HLT trigger paths, etc.
-  printLHEWeightsInfo = cms.untracked.bool(False) #prints out info about weights from LHERunInfoProduct
+  printLHEWeightsInfo = cms.untracked.bool(True) #prints out info about weights from LHERunInfoProduct
 )
 
 process.p = cms.Path(

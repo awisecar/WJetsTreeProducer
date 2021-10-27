@@ -35,8 +35,4 @@ crab status -d crab_WZTo1L3Nu_13TeV_amcatnloFXFX_madspin_pythia8-VJetPruner-SMu
 crab status -d crab_WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8-VJetPruner-SMu
 crab status -d crab_ZZTo2L2Nu_13TeV_powheg_pythia8-VJetPruner-SMu
 crab status -d crab_ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8-VJetPruner-SMu
-#crab status -d crab_WZ_TuneCUETP8M1_13TeV-pythia8-VJetPruner-SMu
-#crab status -d crab_ZZ_TuneCUETP8M1_13TeV-pythia8-VJetPruner-SMu
-
-
 

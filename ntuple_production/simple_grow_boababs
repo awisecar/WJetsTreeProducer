@@ -115,8 +115,8 @@ def getCrabConfig(dataset, iDataset, unitsPerJob, year, outDir, maxEvents):
         config.JobType.pyCfgParams = ["maxEvents=-1", "year="+str(year), "isData=1", "doGenInfo=0"]
 
     # Increase required time to run jobs (defaults to 1315)
-    #config.JobType.maxJobRuntimeMin = 1800
-    config.JobType.maxJobRuntimeMin = 1315 #based on crab logs for current event submission numbers
+    config.JobType.maxJobRuntimeMin = 2400
+    #config.JobType.maxJobRuntimeMin = 1315 #based on crab logs for current event submission numbers
 
     # Increase maximum memory (in MB) a job is allowed to use
     #config.JobType.maxMemoryMB = 2500

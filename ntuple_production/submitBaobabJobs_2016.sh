@@ -41,8 +41,4 @@ crab submit -c crab_2016_WZTo1L3Nu_13TeV_amcatnloFXFX_madspin_pythia8.py
 crab submit -c crab_2016_WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8.py
 crab submit -c crab_2016_ZZTo2L2Nu_13TeV_powheg_pythia8.py
 crab submit -c crab_2016_ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8.py
-#crab submit -c crab_2016_WZ_TuneCUETP8M1_13TeV-pythia8.py
-#crab submit -c crab_2016_ZZ_TuneCUETP8M1_13TeV-pythia8.py
-
-
 

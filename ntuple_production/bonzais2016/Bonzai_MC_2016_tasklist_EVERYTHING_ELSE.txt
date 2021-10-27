@@ -12,7 +12,6 @@ Baobabs-WJetsToLNu_Pt-250To400_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt  
 Baobabs-WJetsToLNu_Pt-400To600_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8 
 Baobabs-WJetsToLNu_Pt-600ToInf_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                             VJetPruner        SMu                   8 
 Baobabs-WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                                         VJetPruner        SMu                   8 
-Baobabs-WJetsToLNu_TuneCUETP8M1_13TeV-madgraphMLM-pythia8-all.txt                                          VJetPruner        SMu                   8 
 Baobabs-DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-all.txt                                    VJetPruner        SMu                   8
 Baobabs-ST_s-channel_4f_leptonDecays_13TeV-amcatnlo-pythia8_TuneCUETP8M1-all.txt                           VJetPruner        SMu                   8
 Baobabs-ST_t-channel_antitop_4f_inclusiveDecays_13TeV-powhegV2-madspin-pythia8_TuneCUETP8M1-all.txt        VJetPruner        SMu                   8

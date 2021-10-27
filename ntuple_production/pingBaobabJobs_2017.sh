@@ -41,7 +41,4 @@ crab status -d crab_2017_WZTo1L3Nu_13TeV_amcatnloFXFX_madspin_pythia8_v2
 crab status -d crab_2017_WZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8
 crab status -d crab_2017_ZZTo2L2Nu_13TeV_powheg_pythia8
 crab status -d crab_2017_ZZTo2L2Q_13TeV_amcatnloFXFX_madspin_pythia8
-#crab status -d crab_2017_WZ_TuneCP5_13TeV-pythia8
-#crab status -d crab_2017_ZZ_TuneCP5_13TeV-pythia8
-
 
